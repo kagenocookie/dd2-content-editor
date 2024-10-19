@@ -1,0 +1,57 @@
+{
+	"data": {
+		"_EndTalkSetting": {
+			"_Distance": 8.0,
+			"_LetterMessageID": "00000000-0000-0000-0000-000000000000",
+			"_TalkEventID": 2120
+		},
+		"_EnemySettingList": [
+			{
+				"_Distance": 100.0,
+				"_Location": 0,
+				"_RequestID": 21,
+				"_SpawnType": 0
+			}
+		],
+		"_ExecuteTalkSetting": {
+			"_TalkEventID": 1
+		},
+		"_FailureSetting": {
+			"_Distance": 200.0,
+			"_Flags": 7,
+			"_Time": 5.0
+		},
+		"_IntervalTime": {
+			"_Day": 30,
+			"_Hour": 0
+		},
+		"_NpcID": 1071544705,
+		"_RelayTalkSetting": {
+			"_Distance": 20.0,
+			"_LetterMessageID": "00000000-0000-0000-0000-000000000000",
+			"_TalkEventID": 1
+		},
+		"_RemainTalkSetting": {
+			"_TalkEventID": 1
+		},
+		"_SentimentSetting": {
+			"_FailureValue": 0,
+			"_SuccessValue": 30
+		},
+		"_StartTalkSetting": {
+			"_Distance": 20.0,
+			"_LetterMessageID": "00000000-0000-0000-0000-000000000000",
+			"_TalkEventID": 1967
+		},
+		"_SuccessSetting": {
+			"_Distance": 10.0,
+			"_Flags": 1
+		},
+		"_TaskSetting": {
+			"_ResourceData": "null",
+			"_Timing": 1
+		},
+		"_Type": 1
+	},
+	"type": "event_context"
+}

@@ -1,0 +1,25 @@
+{
+    "data": {
+		"$type": "app.ItemDataParam",
+        "<DataType>k__BackingField": 1,
+        "_Attr": 2603,
+        "_AutoSellPrio": 100,
+        "_BuyPrice": 5,
+        "_Category": 0,
+        "_Favor": 1,
+        "_FavoriteAttr": 0,
+        "_FieldModelId": 21,
+        "_IconNo": 12,
+        "_Id": 3,
+        "_ItemDropId": 4,
+        "_Material": 0,
+        "_ModelId": 21,
+        "_SellPrice": 1,
+        "_SortNo": 30,
+        "_StackNum": 99,
+        "_StolenPrio": 0,
+        "_Weight": 15,
+        "_Worth": 0
+    },
+    "type": "item_data"
+}

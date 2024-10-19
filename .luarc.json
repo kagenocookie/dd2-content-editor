@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "__comment - if vscode, add to workspace settings": {
+    "Lua.workspace.library": [
+      "E:/mods/dd2/lua_reference (output of https://github.com/kagenocookie/REFDumpFormatter)"
+    ]
+  },
+  "runtime.version": "Lua 5.4",
+  "hint.enable": false,
+  "diagnostics.disable": [
+    "lowercase-global"
+  ]
+}

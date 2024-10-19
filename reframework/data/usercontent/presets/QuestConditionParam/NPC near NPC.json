@@ -1,0 +1,9 @@
+{
+	"type": "CheckNpcDistanceParam",
+	"_CharaA": "ch000000_00",
+	"_KindA": "Player",
+	"_CharaB": "ch310002",
+	"_KindB": "NPC",
+	"_Logic": "Less",
+	"_Distance": "10"
+}

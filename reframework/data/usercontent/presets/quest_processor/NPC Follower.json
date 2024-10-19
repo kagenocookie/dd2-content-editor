@@ -1,0 +1,28 @@
+{
+	"data": {
+		"PrevProcCondition": {
+			"_ElementArray": null
+		},
+		"QuestAction": {
+			"$type": "NpcControl",
+			"_Param": [
+				{
+					"$type": "NpcControlParam",
+					"_FinishConditionParam": {
+						"ConditionParamArray": [
+							{
+								"$type": "CheckPlayerJailParam"
+							}
+						]
+					},
+					"_NpcID": 1071544705,
+					"_Task": {
+						"_ResourceData": "AppSystem/AI/Situation/TaskData/AITask_1_2_059.user",
+						"_SkipControl": false
+					}
+				}
+			]
+		}
+	},
+	"type": "quest_processor"
+}

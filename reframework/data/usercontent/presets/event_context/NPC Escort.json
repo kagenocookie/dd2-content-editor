@@ -1,0 +1,49 @@
+{
+	"data": {
+		"_EndTalkSetting": {
+			"_Distance": 6.0,
+			"_LetterMessageID": "744b1f2c-5c4c-44c4-9f63-28cb385022b9",
+			"_TalkEventID": 1966
+		},
+		"_EnemySettingList": null,
+		"_ExecuteTalkSetting": {
+			"_TalkEventID": 1965
+		},
+		"_FailureSetting": {
+			"_Distance": 200.0,
+			"_Flags": 4,
+			"_Time": 30.0
+		},
+		"_IntervalTime": {
+			"_Day": 30,
+			"_Hour": 0
+		},
+		"_NpcID": 1071544705,
+		"_RelayTalkSetting": {
+			"_Distance": 20.0,
+			"_LetterMessageID": "00000000-0000-0000-0000-000000000000",
+			"_TalkEventID": 1
+		},
+		"_RemainTalkSetting": {
+			"_TalkEventID": 1969
+		},
+		"_SentimentSetting": {
+			"_FailureValue": 0,
+			"_SuccessValue": 150
+		},
+		"_StartTalkSetting": {
+			"_Distance": 5.0,
+			"_LetterMessageID": "9812887d-f4c5-44d3-ae95-a569bd23d343",
+			"_TalkEventID": 1964
+		},
+		"_SuccessSetting": {
+			"_Distance": 10.0,
+			"_Flags": 2
+		},
+		"_TaskSetting": {
+			"_ResourceData": "AppSystem/AI/Situation/TaskData/AITask_1_2_059.user",
+			"_Timing": 1
+		},
+		"_Type": 2
+	}
+}
