@@ -9,8 +9,6 @@ local helpers = require('content_editor.helpers')
 -- helper functions
 local type_guid = sdk.find_type_definition('System.Guid')
 
-local return_value_as_is = function (src) return src end
-
 --#endregion
 local function vec2(classname)
     --- @return ValueImporter
@@ -33,7 +31,6 @@ end
 local function vec3(classname)
     --- @return ValueImporter
     return {
-        createInstance = function () return ValueType.new(sdk.find_type_definition(classname)) end,
         export = function (src, target)
             target = target or {}
             target.x = src.x
@@ -52,18 +49,32 @@ local function vec3(classname)
     }
 end
 
--- import_export_as_is
+--- @return ValueImporter
+local prefab = {
+    export = function (src)
+        if src == nil then return '' end
+        return src:get_Path()
+    end,
+    import = function (src, target)
+        if src == nil or src == '' then return nil end
+        target = target or sdk.create_instance('via.Prefab')
+        target:set_Path(src)
+        return target
+    end
+}
+
 --- @type table<string, ValueImporter>
 local known_importers = {
     ['via.Position'] = vec3('via.Position'),
     ['via.vec3'] = vec3('via.vec3'),
     ['via.vec2'] = vec2('via.vec2'),
+    ['via.Prefab'] = prefab,
 }
 
 --- @type ValueImporter
 local import_export_as_is = {
-    import = return_value_as_is,
-    export = return_value_as_is,
+    import = function (src) return src end,
+    export = function (src) return src end,
 }
 
 local import_export_ignore = {
