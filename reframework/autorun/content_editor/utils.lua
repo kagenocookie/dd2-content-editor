@@ -21,9 +21,11 @@ local function float_round(n, decimals)
     return math.floor(n * mult + 0.5) / mult
 end
 
-local function dictionary_to_table(dict)
+local function dictionary_get_values(dict)
     local result = {}
     local entries = dict:get_field('_entries')
+    -- an empty dictionary can have a null entries field
+    if not entries then return {} end
 
     for k, entry in pairs(entries) do
         -- the key is the dictionary hash, if it's 0 then it's an empty entry
@@ -32,6 +34,17 @@ local function dictionary_to_table(dict)
             -- print_type_info(item)
             result[k] = item
         end
+    end
+
+    return result
+end
+
+local function dictionary_to_table(dict)
+    local result = {}
+    local enumerator = dict:GetEnumerator()
+    while enumerator:MoveNext() do
+        local current = enumerator:get_Current()
+        result[current.key] = current.value
     end
 
     return result
@@ -623,6 +636,7 @@ _shadowcookie_utils = {
     get_sorted_table_values = get_sorted_table_values,
     get_sorted_list_table = get_sorted_list_table,
     flip_table_keys_values = flip_table_keys_values,
+    dictionary_get_values = dictionary_get_values,
     dictionary_to_table = dictionary_to_table,
     merge_into_table = merge_into_table,
     table_assign = table_assign,

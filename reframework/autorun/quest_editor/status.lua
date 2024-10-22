@@ -56,7 +56,7 @@ local function draw_imgui_quest_status()
         local pos_data = {
             locations = {}
         }
-        local sq_entities = utils.dictionary_to_table(SuddenQuestManager._EntityDict)
+        local sq_entities = utils.dictionary_get_values(SuddenQuestManager._EntityDict)
         for id, entity in pairs(sq_entities) do
             local selectId = entity:get_Key()
             local sq = db.events.get(selectId)
@@ -74,7 +74,7 @@ local function draw_imgui_quest_status()
         local pos_data = {
             locations = {}
         }
-        local sq_entities = utils.dictionary_to_table(SuddenQuestManager._EntityDict)
+        local sq_entities = utils.dictionary_get_values(SuddenQuestManager._EntityDict)
         for id, entity in pairs(sq_entities) do
             local selectId = entity:get_Key()
             local sq = db.events.get(selectId)
