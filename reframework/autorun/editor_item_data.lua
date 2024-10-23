@@ -71,6 +71,12 @@ udb.register_entity_type('item_data', {
         if not ItemManager._ItemDataDict:ContainsKey(data.id) then
             ItemManager._ItemDataDict[data.id] = instance.runtime_instance
         end
+        -- local dataType = instance.runtime_instance:get_DataType()
+        -- if dataType == 2 or dataType == 3 then
+            -- _EquipDataDict contains conversion between item id and style string (why strings, capcom? don't you have enums everywhere??)
+            -- I'm actually not sure whether this is even needed and how we're gonna tell the game to fetch it by string
+            -- ItemManager._EquipDataDict[tostring(data.id)] = data.id
+        -- end
         return instance
     end,
     generate_label = function (entity)

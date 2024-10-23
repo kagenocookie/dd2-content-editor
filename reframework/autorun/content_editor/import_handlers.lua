@@ -56,7 +56,7 @@ local prefab = {
         return src:get_Path()
     end,
     import = function (src, target)
-        if src == nil or src == '' then return nil end
+        if src == nil or src == '' or src == 'null' then return nil end
         target = target or sdk.create_instance('via.Prefab')
         target:set_Path(src)
         return target
@@ -177,7 +177,6 @@ local default_accessors = {
 }
 
 local importer_factories
-local get_or_create_handler
 local get_handler
 
 --- @type table<HandlerType, fun(meta: TypeCacheData, fullname: string): ValueImporter>
@@ -197,7 +196,7 @@ importer_factories = {
                 local fieldName = fieldData[1]
                 local fieldClass = fieldData[2]
                 local submeta = typecache.get(fieldClass)
-                local subhandler = get_or_create_handler(submeta, fieldClass)
+                local subhandler = get_handler(fieldClass, submeta)
                 fields[#fields+1] = { fieldName, subhandler }
             end
         end
@@ -226,7 +225,7 @@ importer_factories = {
     [typecache.handlerTypes.nullableValue] = function (meta, fullname)
         local typedef = sdk.find_type_definition(fullname)
         local implicit = typedef:get_method('op_Implicit')
-        local innerHandler = get_or_create_handler(typecache.get(meta.elementType), meta.elementType)
+        local innerHandler = get_handler(meta.elementType, typecache.get(meta.elementType))
         --- @type ValueImporter
         return {
             export = function (src, target, options)
@@ -259,7 +258,7 @@ importer_factories = {
 
     [typecache.handlerTypes.array] = function (meta, fullname)
         local elementMeta = typecache.get(meta.elementType)
-        local elementHandler = get_or_create_handler(elementMeta, meta.elementType)
+        local elementHandler = get_handler(meta.elementType, elementMeta)
         if elementMeta.type == typecache.handlerTypes.enum then
             elementHandler = boxed_enum_handler(elementHandler)
         elseif elementMeta.type == typecache.handlerTypes.value then
@@ -290,7 +289,7 @@ importer_factories = {
     end,
 
     [typecache.handlerTypes.genericList] = function (meta, fullname)
-        local elementHandler = get_or_create_handler(typecache.get(meta.elementType), meta.elementType)
+        local elementHandler = get_handler(meta.elementType, typecache.get(meta.elementType))
         --- @type ValueImporter
         return {
             export = function (src, target, options)
@@ -388,7 +387,7 @@ importer_factories = {
                         fields[#fields+1] = { fieldName, override.import_handler, override and override.accessors or default_accessors, fieldClass }
                     else
                         local submeta = typecache.get(fieldClass)
-                        local subhandler = get_or_create_handler(submeta, fieldClass)
+                        local subhandler = get_handler(fieldClass, submeta)
                         fields[#fields+1] = { fieldName, subhandler, override and override.accessors or default_accessors, fieldClass }
                     end
                 end
@@ -458,30 +457,25 @@ importer_factories = {
     end,
 }
 
---- @param meta TypeCacheData
 --- @param classname string
+--- @param meta TypeCacheData|nil
 --- @return ValueImporter
-get_or_create_handler = function(meta, classname)
+get_handler = function(classname, meta)
     local handler = known_importers[classname]
     if not handler then
-        local factory = importer_factories[meta.type]
-        handler = factory(meta, classname)
-        known_importers[classname] = handler
-    end
-    return handler
-end
-
---- @param classname string
---- @return ValueImporter|nil
-get_handler = function(classname)
-    local handler = known_importers[classname]
-    if not handler then
-        local meta = typecache.get(classname)
+        meta = meta or typecache.get(classname)
         if not meta then print('ERROR: invalid import handler type', classname) return nil end
 
-        local factory = importer_factories[meta.type]
-        handler = factory(meta, classname)
-        known_importers[classname] = handler
+        local stg = type_settings.type_settings[classname]
+        if stg and stg.import_handler then
+            known_importers[classname] = stg.import_handler
+            return stg.import_handler
+        else
+            local factory = importer_factories[meta.type]
+            handler = factory(meta, classname)
+            known_importers[classname] = handler
+            return handler
+        end
     end
     return handler
 end
