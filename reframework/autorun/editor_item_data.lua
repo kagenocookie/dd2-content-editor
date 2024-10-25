@@ -11,9 +11,10 @@ local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.I
 local helpers = require('content_editor.helpers')
 local scripts = require('content_editor.editors.custom_scripts')
 
-
 --- @class ItemDataEntity : DBEntity
 --- @field runtime_instance app.ItemDataParam|app.ItemArmorParam|app.ItemWeaponParam
+--- @field name string|nil
+--- @field description string|nil
 
 local ItemDataType = enums.get_enum('app.ItemDataType')
 local ItemAttrBits = enums.get_enum('app.ItemAttrBits')
@@ -32,6 +33,8 @@ local function register_entity(id, type, runtime_instance)
 end
 
 local type_weaponparam = sdk.find_type_definition('app.ItemWeaponParam')
+local get_item_name = sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName(System.Int32, System.Boolean)')
+local get_item_desc = sdk.find_type_definition('app.GUIBase'):get_method('getElfItemDetail(System.Int32, System.Boolean)')
 
 udb.events.on('get_existing_data', function ()
     local enumerator = ItemManager._ItemDataDict:GetEnumerator()
@@ -62,15 +65,25 @@ end)
 udb.register_entity_type('item_data', {
     export = function (instance)
         --- @cast instance ItemDataEntity
-        return { data = import_handlers.export(instance.runtime_instance, 'app.ItemCommonParam') }
+        return {
+            name = instance.name,
+            description = instance.description,
+            data = import_handlers.export(instance.runtime_instance, 'app.ItemCommonParam')
+        }
     end,
     import = function (data, instance)
         --- @cast instance ItemDataEntity
         instance = instance or {}
         instance.runtime_instance = import_handlers.import('app.ItemCommonParam', data.data, instance.runtime_instance)
-        if not ItemManager._ItemDataDict:ContainsKey(data.id) then
-            ItemManager._ItemDataDict[data.id] = instance.runtime_instance
+        instance.name = data.name or instance.name
+        instance.description = data.description or instance.description
+        if not instance.runtime_instance then
+            print('Missing item runtime instance lol')
+            log.info('Missing item runtime instance lol')
         end
+        -- if instance.runtime_instance and not ItemManager._ItemDataDict:ContainsKey(data.id) then
+        --     ItemManager._ItemDataDict[data.id] = instance.runtime_instance
+        -- end
         -- local dataType = instance.runtime_instance:get_DataType()
         -- if dataType == 2 or dataType == 3 then
             -- _EquipDataDict contains conversion between item id and style string (why strings, capcom? don't you have enums everywhere??)
@@ -130,6 +143,72 @@ definitions.override('items', {
         extensions = { { type = 'item_instance_type_fixer' } },
     },
 })
+
+-- icon overrides
+sdk.hook(
+    -- game calls getUVSequenceResourceHolder() and then applyUVSettings() when setting item icons
+    sdk.find_type_definition('app.UVSequenceResourceManager'):get_method('applyUVSettings'),
+    function (args)
+        local iconNo = sdk.to_int64(args[4]) & 0xffffffff
+        if iconNo >= 30000 then -- minimum custom item id
+            local tex = sdk.to_managed_object(args[3]) --[[@as via.gui.Texture]]
+            print('Add a custom icon pls for item id', iconNo)
+        end
+    end
+)
+
+-- name overrides
+-- NOTE: potential other avenues of overriding names:
+-- sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName') works fine for name
+-- sdk.find_type_definition('app.GUIBase'):get_method('getElfItemDetail') works but isn't actually ever getting called (likely inlined)
+-- sdk.find_type_definition('app.GUIBase'):get_method('getElfMsg') would work fine for both name and detail but receives a full string so we'd need to parse that which isn't nice
+-- anything else mostly just ends up calling these methods anyway, so then the simplest solution is to hook to setups of relevant gui elements
+-- need to see if it works fine for item pickups as well
+
+sdk.hook(
+    sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName'),
+    function (args)
+        local itemId = sdk.to_int64(args[2]) & 0xffffffff
+        if itemId >= 30000 then -- minimum custom item id
+            local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
+            if item and item.name then
+                -- TODO cache the managed string pointer somewhere instead of making new ones each time?
+                thread.get_hook_storage().name = sdk.to_ptr(sdk.create_managed_string(item.name))
+            end
+        end
+    end,
+    function (ret)
+        return thread.get_hook_storage().name or ret
+    end
+)
+
+sdk.hook(
+    sdk.find_type_definition('app.GUIBase.ItemWindowRef'):get_method('setup(app.ItemCommonParam, System.Int32, System.Boolean)'),
+    function (args)
+        local data = sdk.to_managed_object(args[3]) --[[@as app.ItemCommonParam]]
+        local id = data and data._Id
+        if id and id >= 30000 then -- minimum custom item id
+            local item = udb.get_entity('item_data', id) --[[@as ItemDataEntity]]
+            if item and item.name then
+                local s = thread.get_hook_storage()
+                s.this = sdk.to_managed_object(args[2])
+                -- s.name = item.name
+                s.description = item.description
+
+            end
+        end
+    end,
+    function (ret)
+        local s = thread.get_hook_storage()
+        if s.this then
+            local this = s.this --[[@as app.GUIBase.ItemWindowRef]]
+            this._TxtInfo:set_Message(s.description)
+            -- this._TxtName:set_Message(s.name)
+        end
+        return ret
+    end
+)
+
 
 scripts.define_script_hook(
     'app.ItemManager',
@@ -193,7 +272,6 @@ if core.editor_enabled then
         },
     })
 
-    object_explorer:handle_address()
     ui.handlers.register_extension('item_instance_type_fixer', function (handler)
         --- @type UIHandler
         return function (ctx)
@@ -240,6 +318,17 @@ if core.editor_enabled then
 
     --- @param item ItemDataEntity
     local function show_item_editor(item)
+        if not item.name then item.name = get_item_name:call(nil, item.id, false) end
+        if not item.description then item.description = get_item_desc:call(nil, item.id, false) end
+        local changed
+
+        changed, item.name = imgui.input_text('Name', item.name or '')
+        if changed then udb.mark_entity_dirty(item) end
+
+        changed, item.description = imgui.input_text_multiline('Description', item.description or '', 5)
+        if changed then udb.mark_entity_dirty(item) end
+        imgui.spacing()
+
         ui.handlers.show_editable(item, 'runtime_instance', item)
     end
 
@@ -270,12 +359,3 @@ if core.editor_enabled then
 
     editor.add_editor_tab('item_data')
 end
-
---- notes
--- inventory items are stored within app.ItemManager.StorageMasterData
--- _StorageID doesn't matter, autogenerated
--- item name is fetched from app.GUIBase:getItemName(ID)
---  this method then does int.tostring(), some lookups somewhere, and finally gets the real message from via.gui.MessageAccessData:get_Message()
-
--- TODO
--- figure out how IconNo numbers are mapped
