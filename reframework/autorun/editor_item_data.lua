@@ -81,9 +81,9 @@ udb.register_entity_type('item_data', {
             print('Missing item runtime instance lol')
             log.info('Missing item runtime instance lol')
         end
-        -- if instance.runtime_instance and not ItemManager._ItemDataDict:ContainsKey(data.id) then
-        --     ItemManager._ItemDataDict[data.id] = instance.runtime_instance
-        -- end
+        if instance.runtime_instance and not ItemManager._ItemDataDict:ContainsKey(data.id) then
+            ItemManager._ItemDataDict[data.id] = instance.runtime_instance
+        end
         -- local dataType = instance.runtime_instance:get_DataType()
         -- if dataType == 2 or dataType == 3 then
             -- _EquipDataDict contains conversion between item id and style string (why strings, capcom? don't you have enums everywhere??)
