@@ -8,6 +8,10 @@ local enums = require('content_editor.enums')
 local ui = require('content_editor.ui')
 local editor = require('content_editor.editor')
 
+local AIKeyLocation = enums.get_enum('app.AIKeyLocation')
+local ItemID = enums.get_enum('app.ItemIDEnum')
+local CharacterID = enums.get_enum('app.CharacterID')
+
 local storage = editor.persistent_storage.get('devtools', {
     show_locations = false,
 })
@@ -102,8 +106,8 @@ local function fetch_all_locations()
 
     location_cache_anchor = nil
     local i = 1
-    for _, loc in ipairs(enums.AIKeyLocation.labels) do
-        local locId = enums.AIKeyLocation.labelToValue[loc]
+    for _, loc in ipairs(AIKeyLocation.labels) do
+        local locId = AIKeyLocation.labelToValue[loc]
         local pos = get_AIKeyLocation_position(locId)
         if pos then
             all_locations_cache[i] = { pos = pos, name = loc }
@@ -118,19 +122,19 @@ local ItemManager = sdk.get_managed_singleton('app.ItemManager')
 local getItem = sdk.find_type_definition('app.ItemManager'):get_method('getItem(System.Int32, System.Int32, app.CharacterID, System.Boolean, System.Boolean, System.Boolean, app.ItemManager.GetItemEventType)')
 local function give_item(itemId, count)
     print('giving player item id ', itemId, count)
-    getItem:call(ItemManager, itemId, count, enums.CharacterID.labelToValue.ch000000_00, true, false, false, 1)
+    getItem:call(ItemManager, itemId, count, CharacterID.labelToValue.ch000000_00, true, false, false, 1)
 end
 
 --#region IMGUI
 
 editor.define_window('dev_tools', 'Dev tools', function (state)
     local changed
-    changed, state.pos_picker, state.pos_filter = ui.core.filterable_enum_value_picker("Location", state.pos_picker, enums.AIKeyLocation, state.pos_filter)
+    changed, state.pos_picker, state.pos_filter = ui.core.filterable_enum_value_picker("Location", state.pos_picker, AIKeyLocation, state.pos_filter)
     if imgui.button('Teleport to AIKeyLocation') and state.pos_picker then
         warp_player(get_AIKeyLocation_uni_position(tonumber(state.pos_picker)))
     end
 
-    changed, state.item_picker, state.item_filter = ui.core.filterable_enum_value_picker("Item", state.item_picker, enums.ItemID, state.item_filter)
+    changed, state.item_picker, state.item_filter = ui.core.filterable_enum_value_picker("Item", state.item_picker, ItemID, state.item_filter)
     if imgui.button('Give player item') and state.item_picker then
         give_item(state.item_picker, 1)
     end
