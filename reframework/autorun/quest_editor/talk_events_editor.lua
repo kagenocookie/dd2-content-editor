@@ -90,69 +90,71 @@ local function hook_return(storage, value)
     return sdk.PreHookResult.SKIP_ORIGINAL
 end
 
-sdk.hook(
-    sdk.find_type_definition('app.actinter.cmd.TalkTo'):get_method('updateImpl'),
-    function (args)
-        local storage = thread.get_hook_storage()
-        -- full call chain:
-        -- app.ActionInterface:update()
-        -- app.actinter.Executor:update()
-        -- app.actinter.CommandExecutor:update()
-        -- app.actinter.cmd.TalkTo:updateImpl()
-        print('TalkTo updateImpl call')
-        local this = sdk.to_managed_object(args[2])--[[@as app.actinter.cmd.TalkTo]]
-        if this:get_Target() == nil then
-            return hook_return(storage, ReturnCommand.labelToValue.Break) end
-        local targetCharacter = this:get_Target():get_Character()
-        if targetCharacter == nil or not targetCharacter:get_Enabled() then
-            return hook_return(storage, ReturnCommand.labelToValue.Break) end
-        if this.CachedSpeechController == nil or not this.CachedSpeechController:get_Enabled() then
-            return hook_return(storage, ReturnCommand.labelToValue.Break) end
-        if this:get_Routine() ~= RoutineType.labelToValue.Interact then
-            if this:get_Routine() == RoutineType.labelToValue.End then
-                --- TODO what are they comparing this against?
-                -- *(_DWORD *)(qword_14F84E8D8 + 504)      qword_14F84E8D8 dq 5CD39470h
-                -- I'm assuming it's TalkEventDefine.ID.None
-                print('end routine')
-                return hook_return(storage, this.TalkingID == 0 and ReturnCommand.labelToValue.Next or ReturnCommand.labelToValue.Continue)
-            end
-            print('non interact')
-            return hook_return(storage, ReturnCommand.labelToValue.Break)
-        end
-        local agg = this:get_AIBBCtrl():get_BBAggregate()
-        local situation = agg and agg:get_Situation()
-        local paramString = situation:call('getValue(app.BBKeys.Situation.String)', 1) -- app.BBKeys.Situation.String.Param01
+-- TODO: this hook getting triggered kills the ui input. figure out why and fix please
+-- I think it's a 1:1 translation of the actual source aside from replacing the enum lookup, but I may have missed something or made a mistake with my lua return value overrides
+-- sdk.hook(
+--     sdk.find_type_definition('app.actinter.cmd.TalkTo'):get_method('updateImpl'),
+--     function (args)
+--         local storage = thread.get_hook_storage()
+--         -- full call chain:
+--         -- app.ActionInterface:update()
+--         -- app.actinter.Executor:update()
+--         -- app.actinter.CommandExecutor:update()
+--         -- app.actinter.cmd.TalkTo:updateImpl()
+--         print('TalkTo updateImpl call')
+--         local this = sdk.to_managed_object(args[2])--[[@as app.actinter.cmd.TalkTo]]
+--         if this:get_Target() == nil then
+--             return hook_return(storage, ReturnCommand.labelToValue.Break) end
+--         local targetCharacter = this:get_Target():get_Character()
+--         if targetCharacter == nil or not targetCharacter:get_Enabled() then
+--             return hook_return(storage, ReturnCommand.labelToValue.Break) end
+--         if this.CachedSpeechController == nil or not this.CachedSpeechController:get_Enabled() then
+--             return hook_return(storage, ReturnCommand.labelToValue.Break) end
+--         if this:get_Routine() ~= RoutineType.labelToValue.Interact then
+--             if this:get_Routine() == RoutineType.labelToValue.End then
+--                 --- TODO what are they comparing this against?
+--                 -- *(_DWORD *)(qword_14F84E8D8 + 504)      qword_14F84E8D8 dq 5CD39470h
+--                 -- I'm assuming it's TalkEventDefine.ID.None
+--                 print('end routine')
+--                 return hook_return(storage, this.TalkingID == 0 and ReturnCommand.labelToValue.Next or ReturnCommand.labelToValue.Continue)
+--             end
+--             print('non interact')
+--             return hook_return(storage, ReturnCommand.labelToValue.Break)
+--         end
+--         local agg = this:get_AIBBCtrl():get_BBAggregate()
+--         local situation = agg and agg:get_Situation()
+--         local paramString = situation:call('getValue(app.BBKeys.Situation.String)', 1) -- app.BBKeys.Situation.String.Param01
 
-        local talkEnum = enums.get_enum('app.TalkEventDefine.ID')
+--         local talkEnum = enums.get_enum('app.TalkEventDefine.ID')
 
-        -- replaced instead of Enum.TryParseInternal
-        local talkEventId = talkEnum.labelToValue[paramString]
-        if not talkEventId then talkEventId = tonumber(paramString, 10) end
+--         -- replaced instead of Enum.TryParseInternal
+--         local talkEventId = talkEnum.labelToValue[paramString]
+--         if not talkEventId then talkEventId = tonumber(paramString, 10) end
 
-        if not talkEventId then
-            this.TalkingID = 0
-            return hook_return(storage, ReturnCommand.labelToValue.Break)
-        end
-        this.TalkingID = talkEventId
-        if not NPCUtilcanStartTalk:call(nil, this:get_Character(), this.TalkingID, true) then
-            print('cannot start')
-            return hook_return(storage, ReturnCommand.labelToValue.Break)
-        end
+--         if not talkEventId then
+--             this.TalkingID = 0
+--             return hook_return(storage, ReturnCommand.labelToValue.Break)
+--         end
+--         this.TalkingID = talkEventId
+--         if not NPCUtilcanStartTalk:call(nil, this:get_Character(), this.TalkingID, true) then
+--             print('cannot start')
+--             return hook_return(storage, ReturnCommand.labelToValue.Break)
+--         end
 
-        if method_requestSpeech:call(this.CachedSpeechController, this.TalkingID, this:get_Character(), this:get_Target():get_Character(), nil, true) then
-            print('requested speech, end routine')
-            this:set_Routine(RoutineType.labelToValue.End)
-        end
+--         if method_requestSpeech:call(this.CachedSpeechController, this.TalkingID, this:get_Character(), this:get_Target():get_Character(), nil, true) then
+--             print('requested speech, end routine')
+--             this:set_Routine(RoutineType.labelToValue.End)
+--         end
 
-        OccupiedManager:unlock(pretalk_str, 11) -- 11 = app.OccupiedManager.LockType.PreTalk
-        print('continuing...')
-         -- continue means the command is "in progress"
-        return hook_return(storage, ReturnCommand.labelToValue.Continue)
-    end,
-    function ()
-        return sdk.to_ptr(thread.get_hook_storage().retval)
-    end
-)
+--         OccupiedManager:unlock(pretalk_str, 11) -- 11 = app.OccupiedManager.LockType.PreTalk
+--         print('continuing...')
+--          -- continue means the command is "in progress"
+--         return hook_return(storage, ReturnCommand.labelToValue.Continue)
+--     end,
+--     function ()
+--         return sdk.to_ptr(thread.get_hook_storage().retval)
+--     end
+-- )
 
 sdk.hook(
     sdk.find_type_definition('app.TalkEventManager'):get_method('isQuestNpcTalkEvent'),
