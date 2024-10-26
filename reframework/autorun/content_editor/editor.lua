@@ -21,6 +21,25 @@ local tabs = {}
 
 --- @alias WindowCallback fun(state: EditorState|table)
 
+--- Define and retrieve a persistent storage table that is not linked to a specific editor window
+--- @generic T : table
+--- @param key string
+--- @param defaultData nil|T
+--- @return T
+local function persistent_storage_get(key, defaultData)
+    config.data.editor.storage = config.data.editor.storage or {}
+    local data = config.data.editor.storage[key]
+    if not data then
+        data = defaultData and utils.clone_table(defaultData) or {}
+        config.data.editor.storage[key] = data
+    else
+        if defaultData then
+            utils.merge_into_table(defaultData, data)
+        end
+    end
+    return data
+end
+
 -- JP font borrowed from EMV engine
 local utf16_font = imgui.load_font('NotoSansSC-Bold.otf', imgui.get_default_font_size()+2, {
     0x0020, 0x00FF, -- Basic Latin + Latin Supplement
@@ -267,6 +286,11 @@ _userdata_DB.editor = {
     set_need_script_reset = set_need_script_reset,
 
     active_bundle = config.data.editor.active_bundle,
+
+    persistent_storage = {
+        get = persistent_storage_get,
+        save = function () config.save() end,
+    },
 }
 
 return _userdata_DB.editor

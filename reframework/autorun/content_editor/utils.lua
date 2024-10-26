@@ -180,30 +180,6 @@ local function is_assoc_table(tbl)
     return type(tbl) == 'table' and next(tbl) ~= 1
 end
 
----@param source table
----@param target table
----@return table
-local function merge_into_table(source, target)
-    target = target or {}
-    for key, targetVal in pairs(target) do
-        local newval = source[key]
-        if newval ~= nil then
-            if newval == 'null' then newval = nil end
-            if type(targetVal) == 'table' then
-                if type(newval) ~= 'table' then newval = {} end
-                if is_assoc_table(newval) then
-                    target[key] = merge_into_table(newval, targetVal or {})
-                else
-                    target[key] = newval
-                end
-            else
-                target[key] = newval
-            end
-        end
-    end
-    return target
-end
-
 ---@generic TSrc : table
 ---@generic TTarget : table
 ---@param target TTarget
@@ -221,7 +197,7 @@ local function table_assign(target, source)
     return target
 end
 
---- Remove all elements of a table while keeping the same instance
+--- Remove all elements of a table while maintaining the same instance reference
 local function clear_table(tbl)
     if tbl then
         for k, _ in pairs(tbl) do
@@ -240,6 +216,37 @@ local function clone_table(source)
             target[key] = clone_table(newval)
         else
             target[key] = newval
+        end
+    end
+    return target
+end
+
+---@param source table
+---@param target table
+---@return table
+local function merge_into_table(source, target)
+    target = target or {}
+    for key, targetVal in pairs(target) do
+        local newval = source[key]
+        if newval ~= nil then
+            if type(newval) == 'table' then
+                if type(targetVal) == 'table' then
+                    target[key] = merge_into_table(newval, targetVal)
+                else
+                    target[key] = clone_table(newval)
+                end
+            else
+                target[key] = newval
+            end
+        end
+    end
+    for key, sourceVal in pairs(source) do
+        if sourceVal ~= nil and target[key] == nil then
+            if type(sourceVal) == 'table' then
+                target[key] = clone_table(sourceVal)
+            else
+                target[key] = sourceVal
+            end
         end
     end
     return target
@@ -616,7 +623,15 @@ local function enumerator_to_table(enumerator)
     return list
 end
 
+--- @return string
+local function get_game_version()
+    -- alternative methods: getPrettyVersionString, getVersionString
+    return sdk.find_type_definition('via.version'):get_method('getMainRevisionString'):call(nil)
+end
+
 _shadowcookie_utils = {
+    get_game_version = get_game_version,
+
     log = log_all,
     string_join = string_join,
     get_irl_timestamp = get_irl_timestamp,
