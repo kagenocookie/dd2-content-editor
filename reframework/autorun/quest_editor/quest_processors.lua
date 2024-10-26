@@ -61,6 +61,97 @@ local function show_quest_processor(processor)
     end
 end
 
+--- @param folder via.Folder|via.Transform
+--- @param state table
+local function process_quest_folder(questId, folder, state)
+    local children = utils.folder_get_children(folder)
+    for _, child in ipairs(children) do
+        local go = child:get_GameObject()
+        local proc = utils.get_gameobject_component(go, 'app.QuestProcessor')
+            or utils.get_gameobject_component(go, 'app.QuestResourceObject')
+            or utils.get_gameobject_component(go, 'app.QuestProcessorRegister')
+            or utils.get_gameobject_component(go, 'app.QuestController')
+            or utils.get_gameobject_component(go, 'app.QuestResourceCollector')
+
+        local proctype = proc and proc:get_type_definition():get_full_name()
+        if not proc then
+            process_quest_folder(questId, go:get_Transform(), state)
+            return
+        end
+        local compStatus = 'default'
+        local label
+        if proctype == 'app.QuestProcessor' then
+            compStatus = ({
+                [0] = 'disabled', -- uninitialized
+                [1] = 'disabled', -- standby
+                [3] = 'default', -- waiting
+                [4] = 'finished', -- completed
+                [5] = 'disabled', -- cancelled
+            })[proc:get_CurrentPhase()] or 'default'
+            local dbProc = udb.get_entity('quest_processor', proc.ProcID)
+            label = (dbProc and (dbProc.label .. ' -- ' .. helpers.to_string(proc, proctype))) or nil
+        elseif proctype == 'app.QuestResourceObject' then
+            compStatus = proc._IsActive and 'default' or 'disabled'
+        end
+
+        imgui.push_style_color(0, editor.get_color(compStatus))
+
+        if (not state.active_processors_only or compStatus == 'default') and ui.core.treenode_suffix(go:get_Name(), label or helpers.to_string(proc, proctype), core.get_color('info')) then
+            imgui.pop_style_color(1)
+            if proctype == 'app.QuestProcessor' then
+                if imgui.button('Reset processor result') then
+                    local qc = proc:get_RefQuestController()
+                    if qc then
+                        qc:notifyProcessorResult(proc.ProcID, -1)
+                    end
+                end
+
+                if editor.active_bundle and not udb.get_entity('quest_processor', proc.ProcID) and imgui.button('Add to bundle for editing') then
+                    --- @type QuestProcessorData
+                    local entity = {
+                        id = proc.ProcID,
+                        raw_data = {
+                            questId = questId,
+                            QuestAction = import_handlers.export(proc.Process.QuestAction),
+                            PrevProcCondition = import_handlers.export(proc.PrevProcCondition),
+                        },
+                        disabled = false,
+                        type = 'quest_processor',
+                        label = nil, --- @as string
+                        runtime_instance = proc
+                    }
+                    udb.create_entity(entity, editor.active_bundle)
+                    ui.editor.set_selected_entity_picker_entity(state, 'quest_processor', entity)
+                end
+            end
+
+            if proc then
+                ui.handlers.show(proc, nil, nil, proctype)
+            else
+                imgui.text_colored('Unhandled quest resource transform type ' .. tostring(proctype), 0xff6666ff)
+                quest_debug_go = go
+            end
+
+            if proctype == 'app.QuestController' and imgui.tree_node('See proc folders') then
+                for fld_i, fld in ipairs(utils.enumerator_to_table(proc.ProcessorFolderControllerList:GetEnumerator())) do
+                    imgui.text(tostring(fld_i))
+                    imgui.same_line()
+                    object_explorer:handle_address(fld)
+                end
+                imgui.tree_pop()
+            end
+
+            if imgui.tree_node('Object explorer') then
+                object_explorer:handle_address(child)
+                imgui.tree_pop()
+            end
+            imgui.tree_pop()
+        else
+            imgui.pop_style_color(1)
+        end
+    end
+end
+
 editor.define_window('quest_processors', 'Quest processors', function (state)
     if imgui.tree_node('Data dump utils') then
         if imgui.button('Activate all quest processors') then
@@ -194,97 +285,7 @@ editor.define_window('quest_processors', 'Quest processors', function (state)
                             ui.core.tooltip('The residents folder contains the quest processors, it will try to re-trigger all of them on activation')
                         end
 
-                        local children = utils.folder_get_children(procFolder)
-                        for _, child in ipairs(children) do
-                            local go = child:get_GameObject()
-                            local proc = utils.get_gameobject_component(go, 'app.QuestProcessor')
-                                or utils.get_gameobject_component(go, 'app.QuestResourceObject')
-                                or utils.get_gameobject_component(go, 'app.QuestProcessorRegister')
-                                or utils.get_gameobject_component(go, 'app.QuestController')
-                                or utils.get_gameobject_component(go, 'app.QuestResourceCollector')
-
-                            local proctype = proc and proc:get_type_definition():get_full_name()
-                            local compStatus = 'default'
-                            local label
-                            if proctype == 'app.QuestProcessor' then
-                                compStatus = ({
-                                    [0] = 'disabled', -- uninitialized
-                                    [1] = 'disabled', -- standby
-                                    [3] = 'default', -- waiting
-                                    [4] = 'finished', -- completed
-                                    [5] = 'disabled', -- cancelled
-                                })[proc:get_CurrentPhase()] or 'default'
-                                local dbProc = udb.get_entity('quest_processor', proc.ProcID)
-                                label = (dbProc and (dbProc.label .. ' -- ' .. helpers.to_string(proc, proctype))) or nil
-                            elseif proctype == 'app.QuestResourceObject' then
-                                compStatus = proc._IsActive and 'default' or 'disabled'
-                            end
-
-                            imgui.push_style_color(0, editor.get_color(compStatus))
-
-                            if (not state.active_processors_only or compStatus == 'default') and ui.core.treenode_suffix(go:get_Name(), label or helpers.to_string(proc, proctype), core.get_color('info')) then
-                                imgui.pop_style_color(1)
-                                if proctype == 'app.QuestProcessor' then
-                                    if imgui.button('Reset processor result') then
-                                        local qc = proc:get_RefQuestController()
-                                        if qc then
-                                            qc:notifyProcessorResult(proc.ProcID, -1)
-                                        end
-                                    end
-
-                                    if editor.active_bundle and not udb.get_entity('quest_processor', proc.ProcID) and imgui.button('Add to bundle for editing') then
-                                        --- @type QuestProcessorData
-                                        local entity = {
-                                            id = proc.ProcID,
-                                            raw_data = {
-                                                questId = questId,
-                                                QuestAction = import_handlers.export(proc.Process.QuestAction),
-                                                PrevProcCondition = import_handlers.export(proc.PrevProcCondition),
-                                            },
-                                            disabled = false,
-                                            type = 'quest_processor',
-                                            label = nil, --- @as string
-                                            runtime_instance = proc
-                                        }
-                                        udb.create_entity(entity, editor.active_bundle)
-                                        ui.editor.set_selected_entity_picker_entity(state, 'quest_processor', entity)
-                                    end
-                                end
-
-                                if proc then
-                                    ui.handlers.show(proc, nil, nil, proctype)
-                                else
-                                    imgui.text_colored('Unhandled quest resource transform', 0xff6666ff)
-                                end
-
-                                if proctype == 'app.QuestController' and imgui.tree_node('See proc folders') then
-                                    for fld_i, fld in ipairs(utils.enumerator_to_table(proc.ProcessorFolderControllerList:GetEnumerator())) do
-                                        imgui.text(tostring(fld_i))
-                                        imgui.same_line()
-                                        object_explorer:handle_address(fld)
-                                    end
-                                    imgui.tree_pop()
-                                end
-
-                                if imgui.tree_node('Object explorer') then
-                                    object_explorer:handle_address(child)
-                                    imgui.tree_pop()
-                                end
-                                imgui.tree_pop()
-                            else
-                                imgui.pop_style_color(1)
-                            end
-                        end
-
-                        _, state.chara_id, state.chara_id_filter = ui.core.filterable_enum_value_picker("Follower NPC ID", state.chara_id, enums.NPCIDs, state.chara_id_filter or '')
-                        if imgui.button('Add new') then
-                            local ctrl = gamedb.get_quest_controller(questId)
-                            local processor = gamedb.create_processor(questId, math.random(100000, 9999999))
-                            if ctrl and processor then
-                                processor.Process.QuestAction._Param--[[@as any]]._NpcID = state.chara_id
-                                processor:set_CurrentPhase(1)
-                            end
-                        end
+                        process_quest_folder(questId, procFolder, state)
                     end
 
                     imgui.tree_pop()

@@ -582,7 +582,7 @@ local function is_in_title_screen()
     return CharacterManager:get_ManualPlayer() == nil
 end
 
---- @param folder REManagedObject via.Folder
+--- @param folder via.Folder|via.Transform
 --- @return via.Transform[] children
 local function folder_get_children(folder)
     local it = folder:call('get_Children') -- returns a: via.Folder.<get_Children>d__2

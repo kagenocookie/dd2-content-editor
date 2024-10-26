@@ -250,23 +250,27 @@ local function show_processor_dependents(processor)
         procFolder = procFolder and procFolder:find('Resident')
         if procFolder then
             local procList = utils.folder_get_children(procFolder)
-            for _, go in ipairs(procList) do
-                local proc = utils.get_gameobject_component(go, 'app.QuestProcessor')
-                --- @cast proc app.QuestProcessor|nil
-                if proc then
-                    local depIds = get_processor_dependency_ids(proc.PrevProcCondition._ElementArray)
-                    if utils.table_contains(depIds, processor.ProcID) then
-                        if ui.core.treenode_suffix('Processor ' .. proc.ProcID, helpers.to_string(proc)) then
-                            local ent = udb.get_entity('quest_processor', proc.ProcID)
-                            if ent then
-                                --- @cast ent QuestProcessorData
-                                draw_quest_processor(ent)
-                            else
-                                ui.handlers.show(proc, nil, nil, 'app.QuestProcessor')
+            for _, transform in ipairs(procList) do
+                if transform and transform:get_GameObject() then
+                    local proc = utils.get_gameobject_component(transform:get_GameObject(), 'app.QuestProcessor')
+                    --- @cast proc app.QuestProcessor|nil
+                    if proc then
+                        local depIds = get_processor_dependency_ids(proc.PrevProcCondition._ElementArray)
+                        if utils.table_contains(depIds, processor.ProcID) then
+                            if ui.core.treenode_suffix('Processor ' .. proc.ProcID, helpers.to_string(proc)) then
+                                local ent = udb.get_entity('quest_processor', proc.ProcID)
+                                if ent then
+                                    --- @cast ent QuestProcessorData
+                                    draw_quest_processor(ent)
+                                else
+                                    ui.handlers.show(proc, nil, nil, 'app.QuestProcessor')
+                                end
+                                imgui.tree_pop()
                             end
-                            imgui.tree_pop()
                         end
                     end
+                else
+                    imgui.text('NULL gameobject')
                 end
             end
         else

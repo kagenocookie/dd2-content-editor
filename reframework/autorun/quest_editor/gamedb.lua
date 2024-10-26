@@ -221,7 +221,10 @@ local function get_quest_processor(processorId, questId)
             local procFolder = get_quest_scene_folder(questId)
             procFolder = procFolder and procFolder:find('Resident')
             if procFolder then
-                local procChildren = utils.map(utils.folder_get_children(procFolder), function (go) return utils.get_gameobject_component(go, 'app.QuestProcessor') end)
+                -- we need to fetch the processor root transform and get the children from there instead
+                -- I'm assuming the processor root is the only quest folder child that has its own children
+                local processorRoot = utils.first_where(utils.folder_get_children(procFolder), function (child) return child:get_Child() ~= nil end)
+                local procChildren = processorRoot and utils.map(utils.folder_get_children(processorRoot), function (go) return utils.get_gameobject_component(go:get_GameObject(), 'app.QuestProcessor') end)
                 procCount = #procChildren
                 procChildren[0] = procChildren[procCount]
                 procContainer = procChildren
