@@ -15,7 +15,7 @@ Due to DD2 storing every single quest in a single catalog object, we can't reall
 ## DD2 editors current status
 - Fully functional: Create and edit events (escorts, monster culling requests, affinity escorts)
 - WIP: Can partially edit basegame quests (conditions, triggers, dialogues, ...)
-- WIP: Can create custom quests, though still missing many features (see [quests](quests-guide.md))
+- WIP: Can create custom quests, though still missing many features (see [quests](https://github.com/kagenocookie/dd2-content-editor/wiki/Quests))
 - WIP: Armor styles editor
 - WIP: Item data editor
 - WIP: Dialogue editor
