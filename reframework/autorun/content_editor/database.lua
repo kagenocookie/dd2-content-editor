@@ -438,6 +438,7 @@ local function save_bundle(bundleName)
         created_at = bundle.info.created_at,
         updated_at = bundle.info.updated_at,
         initial_insert_ids = bundle.initial_insert_ids,
+        game_version = utils.get_game_version(),
     }
     local hasErrors = false
     for _, entity in ipairs(bundle.entities) do
@@ -502,7 +503,8 @@ local function create_bundle(name)
         name = name,
         initial_insert_ids = bundle.initial_insert_ids,
         data = {},
-        enums = {}
+        enums = {},
+        game_version = utils.get_game_version(),
     }
     save_bundle(name)
     internal.config.data.bundle_order[#internal.config.data.bundle_order + 1] = name

@@ -90,6 +90,7 @@
 --- @field author string
 --- @field created_at string
 --- @field updated_at string
+--- @field game_version string
 --- @field data EntityImportData[]
 --- @field initial_insert_ids table<string, integer>
 

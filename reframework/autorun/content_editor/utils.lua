@@ -625,7 +625,6 @@ end
 
 --- @return string
 local function get_game_version()
-    -- alternative methods: getPrettyVersionString, getVersionString
     return sdk.find_type_definition('via.version'):get_method('getMainRevisionString'):call(nil)
 end
 

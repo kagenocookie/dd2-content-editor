@@ -94,7 +94,7 @@ local function exec_text(state, text)
     editorConfig.save()
 end
 
-editor.define_window('data_viewer', 'Data viewer', function (state)
+editor.define_window('data_viewer', 'Data console', function (state)
     local confirm = imgui.button('Run')
     imgui.same_line()
     if state.multiline then
