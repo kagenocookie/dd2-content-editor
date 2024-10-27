@@ -1,0 +1,29 @@
+{
+    "data": {
+        "1910070090": {
+            "_Gender": 1910070090,
+            "_HelmHideParts": 0,
+            "_JointOffset": 0.0,
+            "_MeshID": 612329451,
+            "_PartsEnable": 15363,
+            "_SkinID": 813903325,
+            "_TopsAmHideParts": 0,
+            "_TopsBdHideParts": 0,
+            "_UseChain": true,
+            "_UseGpuCloth": true
+        },
+        "2776536455": {
+            "_Gender": 2776536455,
+            "_HelmHideParts": 0,
+            "_JointOffset": 0.0,
+            "_MeshID": 813903325,
+            "_PartsEnable": 15363,
+            "_SkinID": 813903325,
+            "_TopsAmHideParts": 0,
+            "_TopsBdHideParts": 0,
+            "_UseChain": true,
+            "_UseGpuCloth": true
+        }
+    },
+    "type": "MantleStyle"
+}

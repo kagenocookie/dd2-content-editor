@@ -150,14 +150,14 @@ end
 --- @param type string
 --- @param storage_key string|nil The key under which to store the selected entity, will use the type as key if unset
 --- @param label string|nil
-local function preset_picker(state, type, storage_key, label)
+--- @param disallow_no_preset boolean|nil
+local function preset_picker(state, type, storage_key, label, disallow_no_preset)
     local options = presets.get_names(type)
     if not options or #options == 0 then
         imgui.text_colored('No presets defined for type: ' .. tostring(type), editor.get_color('disabled'))
         imgui.spacing()
         return nil
     end
-    table.insert(options, 1, '<default>')
 
     local stateFilters = filters[state]
     if not stateFilters then
@@ -169,6 +169,15 @@ local function preset_picker(state, type, storage_key, label)
 
     storage_key = storage_key or type
     local current_selected_preset = state._selected_preset[storage_key] or nil
+
+    if disallow_no_preset then
+        if not current_selected_preset then
+            current_selected_preset = select(2, next(options))
+        end
+    else
+        table.insert(options, 1, '<default>')
+    end
+
     local changed, newVal
     changed, newVal, stateFilters[storage_key] = ui.combo_filterable(label or 'Preset', current_selected_preset, options, stateFilters[storage_key] or '')
     if changed then
@@ -185,8 +194,9 @@ end
 ---@param headerLabel string|nil
 ---@param buttonLabel string|nil
 ---@param cloneSource DBEntity|nil
+---@param disallow_no_preset boolean|nil
 ---@return boolean create, table|nil preset
-local function create_button_with_preset(state, preset_type, storage_key, headerLabel, buttonLabel, cloneSource)
+local function create_button_with_preset(state, preset_type, storage_key, headerLabel, buttonLabel, cloneSource, disallow_no_preset)
     imgui.indent(12)
     imgui.begin_rect()
     imgui.text(headerLabel or ('New ' .. preset_type))
@@ -194,8 +204,8 @@ local function create_button_with_preset(state, preset_type, storage_key, header
     if imgui.calc_item_width() > 300 then
         imgui.set_next_item_width(300)
     end
-    local preset = preset_picker(state, preset_type, storage_key)
-    local btnPress = imgui.button(buttonLabel or 'Create')
+    local preset = preset_picker(state, preset_type, storage_key, nil, disallow_no_preset)
+    local btnPress = (preset or not disallow_no_preset) and imgui.button(buttonLabel or 'Create')
     if cloneSource then
         imgui.same_line()
         imgui.text('        ')

@@ -176,6 +176,12 @@ if core.editor_enabled then
         _, state.part_type, state.part_type_filter = ui.core.combo_filterable('Part type', state.part_type, recordTypes, state.part_type_filter or '')
         if state.part_type then
             local recordData = armorCatalogs[state.part_type]
+
+            if editor.active_bundle and imgui.button('Create new') then
+                local newEntity = udb.insert_new_entity(state.part_type, editor.active_bundle, {})
+                ui.editor.set_selected_entity_picker_entity(state, state.part_type, newEntity)
+            end
+
             local selectedItem = ui.editor.entity_picker(state.part_type, state)
 
             --- @cast selectedItem ArmorEntity|SkinEntity|nil

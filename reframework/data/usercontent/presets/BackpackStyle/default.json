@@ -1,0 +1,19 @@
+{
+    "data": {
+        "1910070090": {
+            "_Gender": 1910070090,
+            "_MeshID": 4245731197,
+            "_PartsEnable": 3,
+            "_SkinID": 3751693243,
+            "_UseChain": true
+        },
+        "2776536455": {
+            "_Gender": 2776536455,
+            "_MeshID": 3751693243,
+            "_PartsEnable": 3,
+            "_SkinID": 3751693243,
+            "_UseChain": true
+        }
+    },
+    "type": "BackpackStyle"
+}

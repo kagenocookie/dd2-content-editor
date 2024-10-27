@@ -1,0 +1,53 @@
+{
+    "data": {
+        "1910070090": {
+            "_FootPartsEnable": 0,
+            "_Gender": 1910070090,
+            "_LgMeshID": 1227627405,
+            "_LgPartsEnable": 4096,
+            "_LgSkinID": 2704637282,
+            "_LgSubMeshID": 860947578,
+            "_LgSubPartsEnable": 1,
+            "_LgSubSkinID": 4208326730,
+            "_LgSubUseChain": true,
+            "_LgSubUseGpuCloth": true,
+            "_LgUseChain": true,
+            "_LgUseGpuCloth": true,
+            "_WlMeshID": 2715674023,
+            "_WlPartsEnable": 2099200,
+            "_WlSkinID": 3018648232,
+            "_WlSubMeshID": 0,
+            "_WlSubPartsEnable": 3462145515300338689,
+            "_WlSubSkinID": 0,
+            "_WlSubUseChain": true,
+            "_WlSubUseGpuCloth": true,
+            "_WlUseChain": true,
+            "_WlUseGpuCloth": true
+        },
+        "2776536455": {
+            "_FootPartsEnable": 0,
+            "_Gender": 2776536455,
+            "_LgMeshID": 1108202366,
+            "_LgPartsEnable": 4096,
+            "_LgSkinID": 2704637282,
+            "_LgSubMeshID": 2339526046,
+            "_LgSubPartsEnable": 1,
+            "_LgSubSkinID": 4208326730,
+            "_LgSubUseChain": true,
+            "_LgSubUseGpuCloth": true,
+            "_LgUseChain": true,
+            "_LgUseGpuCloth": true,
+            "_WlMeshID": 3018648232,
+            "_WlPartsEnable": 2099200,
+            "_WlSkinID": 3018648232,
+            "_WlSubMeshID": 0,
+            "_WlSubPartsEnable": 3462145515300338689,
+            "_WlSubSkinID": 0,
+            "_WlSubUseChain": true,
+            "_WlSubUseGpuCloth": true,
+            "_WlUseChain": true,
+            "_WlUseGpuCloth": true
+        }
+    },
+    "type": "PantsStyle"
+}

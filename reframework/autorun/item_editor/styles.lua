@@ -45,7 +45,7 @@ local recordClasses = {
     HelmStyle = { styleDb = '_HelmDB', swap = 'app.HelmSwapItem', enum = 'app.HelmStyle', styleDict = 'HelmDict', slot = 2, styleField = '_HelmStyle' },
     MantleStyle = { styleDb = '_MantleDB', swap = 'app.MantleSwapItem', enum = 'app.MantleStyle', styleDict = 'MantleDict', slot = 5, styleField = '_MantleStyle' },
     BackpackStyle = { styleDb = '_BackpackDB', swap = 'app.BackpackSwapItem', enum = 'app.BackpackStyle', styleField = '_BackpackStyle' },
-    UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_UnderwearStyle' },
+    UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_Style' },
     -- _BodySkinDB = {'app.BodySkinSwapItem', 'app.SkinStyle'},
     -- _BodyMuscleDB = {'app.BodyMuscleSwapItem', 'app.MuscleStyle'},
     -- _BodyMeshDB = {'app.BodyMeshSwapItem', 'app.BodyMeshStyle'}, -- species +  gender
@@ -159,6 +159,16 @@ if core.editor_enabled then
         if state.style_type then
             local recordData = recordClasses[state.style_type]
             local entity_type = state.style_type
+
+            if editor.active_bundle then
+                local create, preset = ui.editor.create_button_with_preset(state, state.style_type, nil, nil, nil, nil, true)
+                if create then
+                    print('creating style from preset', state.style_type, json.dump_string(preset))
+                    local newEntity = udb.insert_new_entity(state.style_type, editor.active_bundle, preset)
+                    ui.editor.set_selected_entity_picker_entity(state, state.style_type, newEntity)
+                end
+            end
+
             if recordData and recordData.slot and imgui.button('Find currently equipped item') then
                 local playerId = enums.get_enum('app.CharacterID').labelToValue.ch000000_00
                 local equipData = ItemManager:getEquipData(playerId):get(recordData.slot)

@@ -1,0 +1,53 @@
+{
+    "data": {
+        "1910070090": {
+            "_BeardPartsEnable": 3306058423303,
+            "_EarDisp": 0,
+            "_FaceJointMask": 0,
+            "_FacewearHideParts": 0,
+            "_FullFace": false,
+            "_Gender": 1910070090,
+            "_HairDisp": 0,
+            "_HairStyleForcedDisplay": null,
+            "_HeadPartsEnable": 1,
+            "_MeshID": 1,
+            "_PartsEnable": 3301758204931,
+            "_SkinID": 1,
+            "_SubMeshID": 0,
+            "_SubPartsEnable": 3301758204931,
+            "_SubSkinID": 0,
+            "_SubUseChain": true,
+            "_SubUseGpuCloth": true,
+            "_SubVisorControl": 0,
+            "_TopsBdHideParts": 12,
+            "_UseChain": false,
+            "_UseGpuCloth": false,
+            "_VisorControl": 3
+        },
+        "2776536455": {
+            "_BeardPartsEnable": 3302830899201,
+            "_EarDisp": 1,
+            "_FaceJointMask": 32,
+            "_FacewearHideParts": 1072693248,
+            "_FullFace": false,
+            "_Gender": 2776536455,
+            "_HairDisp": 2,
+            "_HairStyleForcedDisplay": null,
+            "_HeadPartsEnable": 1,
+            "_MeshID": 1,
+            "_PartsEnable": 3301758204931,
+            "_SkinID": 1,
+            "_SubMeshID": 0,
+            "_SubPartsEnable": 3301758204931,
+            "_SubSkinID": 0,
+            "_SubUseChain": true,
+            "_SubUseGpuCloth": true,
+            "_SubVisorControl": 0,
+            "_TopsBdHideParts": 18014419984318476,
+            "_UseChain": true,
+            "_UseGpuCloth": false,
+            "_VisorControl": 3
+        }
+    },
+    "type": "HelmStyle"
+}
