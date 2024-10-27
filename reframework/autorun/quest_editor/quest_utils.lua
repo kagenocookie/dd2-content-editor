@@ -1,10 +1,9 @@
 if type(_quest_DB) == 'nil' then _quest_DB = {} end
 if _quest_DB.utils then return _quest_DB.utils end
 
+local core = require('content_editor.core')
 local gamedb = require('quest_editor.gamedb')
 local config = require('quest_editor.quests_config')
-local ui = require('content_editor.ui')
-local editor = require('content_editor.editor')
 
 local getNearPlayerPosition = sdk.find_type_definition('app.QuestUtil'):get_method('getNearPlayerPosition')
 local function get_near_player_safe_npc_position(distance, characterId)
@@ -86,36 +85,37 @@ _userdata_DB.__internal.on('_quests_loadconfig', function ()
     hook_suddenquest_ignore_scenario()
 end)
 
---#region IMGUI
+if core.editor_enabled then
+    local ui = require('content_editor.ui')
+    local editor = require('content_editor.editor')
 
-editor.define_window('quest_utils', 'Quest dev toolbox', function (state)
-    if ui.core.treenode_tooltip('event overrides', 'event - random culling request, NPC escort quests that you find in the wild') then
-        ui.core.setting_checkbox('Disable distance / time limit', sq_overrides, 'ignore_fail', config.save,
-            "Disable escort quest failure conditions for being too far from the NPC for too long\nThis does not apply to battle quests because otherwise if you leave that surprise drake there, he might just stay there forever, blocking other escort quests."
-        )
+    editor.define_window('quest_utils', 'Quest dev toolbox', function (state)
+        if ui.core.treenode_tooltip('event overrides', 'event - random culling request, NPC escort quests that you find in the wild') then
+            ui.core.setting_checkbox('Disable distance / time limit', sq_overrides, 'ignore_fail', config.save,
+                "Disable escort quest failure conditions for being too far from the NPC for too long\nThis does not apply to battle quests because otherwise if you leave that surprise drake there, he might just stay there forever, blocking other escort quests."
+            )
 
-        local changed
-        changed = ui.core.setting_checkbox('Ignore time of day for events', sq_overrides, 'ignore_time', config.save) or changed
-        changed = ui.core.setting_checkbox('Ignore player level for events', sq_overrides, 'ignore_level', config.save) or changed
-        changed = ui.core.setting_checkbox('Ignore scenario (quest pre-requisites) for events', sq_overrides, 'ignore_scenario', config.save,
-            'WARNING: Might break game behavior or be impossible to complete if the destination is inaccessible.'
-        ) or changed
-        changed = ui.core.setting_checkbox('Ignore NPC sentiment for event', sq_overrides, 'ignore_sentiment', config.save,
-            "Note that none of the basegame events actually use this condition, but it's here for completeness sake"
-        ) or changed
+            local changed
+            changed = ui.core.setting_checkbox('Ignore time of day for events', sq_overrides, 'ignore_time', config.save) or changed
+            changed = ui.core.setting_checkbox('Ignore player level for events', sq_overrides, 'ignore_level', config.save) or changed
+            changed = ui.core.setting_checkbox('Ignore scenario (quest pre-requisites) for events', sq_overrides, 'ignore_scenario', config.save,
+                'WARNING: Might break game behavior or be impossible to complete if the destination is inaccessible.'
+            ) or changed
+            changed = ui.core.setting_checkbox('Ignore NPC sentiment for event', sq_overrides, 'ignore_sentiment', config.save,
+                "Note that none of the basegame events actually use this condition, but it's here for completeness sake"
+            ) or changed
 
-        if changed then
-            hook_suddenquest_ignore_timeofday()
-            hook_suddenquest_ignore_level()
-            hook_suddenquest_ignore_scenario()
-            hook_suddenquest_ignore_sentiment()
+            if changed then
+                hook_suddenquest_ignore_timeofday()
+                hook_suddenquest_ignore_level()
+                hook_suddenquest_ignore_scenario()
+                hook_suddenquest_ignore_sentiment()
+            end
+
+            imgui.tree_pop()
         end
-
-        imgui.tree_pop()
-    end
-end)
-
---#endregion
+    end)
+end
 
 _quest_DB.utils = {
     get_near_player_safe_npc_position = get_near_player_safe_npc_position,

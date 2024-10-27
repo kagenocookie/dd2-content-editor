@@ -1,5 +1,5 @@
 require('quest_editor.database')
-require('quest_editor.talk_events_editor')
+require('quest_editor.talk_events')
 
 local core = require('content_editor.core')
 if core.editor_enabled then

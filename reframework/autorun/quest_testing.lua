@@ -1,3 +1,5 @@
+local core = require('content_editor.core')
+if not core.editor_enabled then return end
 
 local config = require('quest_editor.quests_config')
 local questdb = require('quest_editor.database')
@@ -9,7 +11,6 @@ local utils = require('content_editor.utils')
 local presets = require('content_editor.object_presets')
 local helpers = require('content_editor.helpers')
 local udb = require('content_editor.database')
--- local editor = require('content_editor.editor')
 
 local NPCManager = sdk.get_managed_singleton('app.NPCManager')
 
