@@ -49,6 +49,21 @@ local function setting_checkbox(label, container, key, saveFunc, tooltip)
     return changed
 end
 
+local function setting_text(label, container, key, saveFunc, lines, tooltip)
+    local changed
+    local val = container[key]
+    if lines and lines > 1 then
+        changed, val = imgui.input_text_multiline(label, val, lines)
+    else
+        changed, val = imgui.input_text(label, val)
+    end
+    if tooltip then
+        imgui_tooltip(tooltip)
+    end
+    if changed then container[key] = val saveFunc() end
+    return changed
+end
+
 --- @param text string
 --- @param tooltip string
 --- @return boolean
@@ -272,6 +287,7 @@ _userdata_DB._ui_wrappers = {
     tabs = imgui_tabs,
 
     setting_checkbox = setting_checkbox,
+    setting_text = setting_text,
 }
 
 return _userdata_DB._ui_wrappers

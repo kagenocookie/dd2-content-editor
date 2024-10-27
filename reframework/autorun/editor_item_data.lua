@@ -10,15 +10,29 @@ local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.I
 
 local helpers = require('content_editor.helpers')
 local scripts = require('content_editor.editors.custom_scripts')
+local utils = require('content_editor.utils')
+local prefabs = require('content_editor.prefabs')
 
 --- @class ItemDataEntity : DBEntity
 --- @field runtime_instance app.ItemDataParam|app.ItemArmorParam|app.ItemWeaponParam
 --- @field name string|nil
 --- @field description string|nil
+--- @field icon_path string|nil
+--- @field icon_rect ItemUVSettings|nil
+--- @field _texture via.render.TextureResourceHolder|nil
+--- @field _textureContainer via.GameObject|nil
+
+--- @class ItemUVSettings
+--- @field x integer
+--- @field y integer
+--- @field w integer width
+--- @field h integer height
 
 local ItemDataType = enums.get_enum('app.ItemDataType')
 local ItemAttrBits = enums.get_enum('app.ItemAttrBits')
 local ItemUseAttrBits = enums.get_enum('app.ItemUseAttrBits')
+
+local custom_item_id_min = 30000
 
 local function register_entity(id, type, runtime_instance)
     --- @type ItemDataEntity
@@ -68,6 +82,8 @@ udb.register_entity_type('item_data', {
         return {
             name = instance.name,
             description = instance.description,
+            icon_path = instance.icon_path,
+            icon_rect = instance.icon_rect,
             data = import_handlers.export(instance.runtime_instance, 'app.ItemCommonParam')
         }
     end,
@@ -77,6 +93,8 @@ udb.register_entity_type('item_data', {
         instance.runtime_instance = import_handlers.import('app.ItemCommonParam', data.data, instance.runtime_instance)
         instance.name = data.name or instance.name
         instance.description = data.description or instance.description
+        instance.icon_path = data.icon_path
+        instance.icon_rect = data.icon_rect
         if not instance.runtime_instance then
             print('Missing item runtime instance lol')
             log.info('Missing item runtime instance lol')
@@ -95,7 +113,7 @@ udb.register_entity_type('item_data', {
     generate_label = function (entity)
         return 'Item ' .. entity.id .. ' : ' .. enums.get_enum('app.ItemIDEnum').get_label(entity.id)
     end,
-    insert_id_range = {30000, 65000},
+    insert_id_range = {custom_item_id_min, 65000},
     -- basegame item IDs go up to 10512
     -- there seems to be a ushort conversion somewhere in the game, so assuming max id 65536 for now
     -- specifically app.ItemManager:isUseEnable(int), called from some native code, ID 140000 was sent as 8928
@@ -144,42 +162,92 @@ definitions.override('items', {
     },
 })
 
--- icon overrides
+--#region Icon overrides
+
+--- @param tex via.gui.Texture
+--- @param item ItemDataEntity
+local function apply_icon_rect(tex, item)
+    tex:setTexture(item._texture)
+    if item.icon_rect then
+        tex:set_RectL(item.icon_rect.x)
+        tex:set_RectT(item.icon_rect.y)
+        tex:set_RectW(item.icon_rect.w)
+        tex:set_RectH(item.icon_rect.h)
+    else
+        tex:set_RectL(0)
+        tex:set_RectT(0)
+        tex:set_RectW(160)
+        tex:set_RectH(156)
+    end
+end
+
 sdk.hook(
-    -- game calls getUVSequenceResourceHolder() and then applyUVSettings() when setting item icons
-    sdk.find_type_definition('app.UVSequenceResourceManager'):get_method('applyUVSettings'),
+    -- I think this is the earliest common method where the game fetches item icons
+    -- the game then calls getUVSequenceResourceHolder() and then applyUVSettings() when setting item icons, but we can override it right here already
+    sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUV'),
     function (args)
-        local iconNo = sdk.to_int64(args[4]) & 0xffffffff
-        if iconNo >= 30000 then -- minimum custom item id
-            local tex = sdk.to_managed_object(args[3]) --[[@as via.gui.Texture]]
-            print('Add a custom icon pls for item id', iconNo)
+        local iconNo = sdk.to_int64(args[3]) & 0xffffffff
+        if iconNo >= custom_item_id_min then
+            local item = udb.get_entity('item_data', iconNo) --[[@as ItemDataEntity|nil]]
+            if not item then return end
+            if not item._texture and (not item.icon_path or item.icon_path == '') then
+                -- no icon :(
+                return
+            end
+
+            local tex = sdk.to_managed_object(args[2]) --[[@as via.gui.Texture]]
+            if not item._texture then
+                if not item.icon_path or item.icon_path == '' then return end
+                prefabs.instantiate_shared(item.icon_path, function (gameObj)
+                    if not item._texture then
+                        local texHolder = utils.get_gameobject_component(gameObj, 'app.GUITextureHolder') --[[@as app.GUITextureHolder|nil]]
+                        item._texture = texHolder and (texHolder._Texture or texHolder._UVSequense)
+                    end
+
+                    if tex and sdk.is_managed_object(tex) and item._texture then
+                        apply_icon_rect(tex, item)
+                    end
+                end)
+                -- TODO apply a default transparent texture instead of having it flash white.png?
+                return
+            end
+
+            if item._texture then
+                apply_icon_rect(tex, item)
+                return sdk.PreHookResult.SKIP_ORIGINAL
+            end
         end
     end
 )
+--#endregion
 
--- name overrides
--- NOTE: potential other avenues of overriding names:
--- sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName') works fine for name
--- sdk.find_type_definition('app.GUIBase'):get_method('getElfItemDetail') works but isn't actually ever getting called (likely inlined)
--- sdk.find_type_definition('app.GUIBase'):get_method('getElfMsg') would work fine for both name and detail but receives a full string so we'd need to parse that which isn't nice
--- anything else mostly just ends up calling these methods anyway, so then the simplest solution is to hook to setups of relevant gui elements
--- need to see if it works fine for item pickups as well
+--#region Name overrides
+-- sdk.find_type_definition('app.GUIBase'):get_method('getItemName') is used for item pickup and drop notifications
+-- sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName') is used for name in inventory
+-- sdk.find_type_definition('app.GUIBase'):get_method('getElfItemDetail') works for description but isn't actually ever getting called (likely inlined)
+-- sdk.find_type_definition('app.GUIBase'):get_method('getElfMsg') seems like it would work fine for both name and detail but receives a string like item_detail_{id} so we'd need to parse that which isn't nice
+-- everything mostly ends up calling one of these methods
 
+local function hook_pre_getItemName(args)
+    local itemId = sdk.to_int64(args[2]) & 0xffffffff
+    if itemId >= custom_item_id_min then
+        local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
+        if item and item.name then
+            -- TODO cache the managed string pointer somewhere instead of making new ones each time?
+            thread.get_hook_storage().name = sdk.to_ptr(sdk.create_managed_string(item.name))
+        end
+    end
+end
 sdk.hook(
     sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName'),
-    function (args)
-        local itemId = sdk.to_int64(args[2]) & 0xffffffff
-        if itemId >= 30000 then -- minimum custom item id
-            local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
-            if item and item.name then
-                -- TODO cache the managed string pointer somewhere instead of making new ones each time?
-                thread.get_hook_storage().name = sdk.to_ptr(sdk.create_managed_string(item.name))
-            end
-        end
-    end,
-    function (ret)
-        return thread.get_hook_storage().name or ret
-    end
+    hook_pre_getItemName,
+    function (ret) return thread.get_hook_storage().name or ret end
+)
+
+sdk.hook(
+    sdk.find_type_definition('app.GUIBase'):get_method('getItemName'),
+    hook_pre_getItemName,
+    function (ret) return thread.get_hook_storage().name or ret end
 )
 
 sdk.hook(
@@ -187,14 +255,12 @@ sdk.hook(
     function (args)
         local data = sdk.to_managed_object(args[3]) --[[@as app.ItemCommonParam]]
         local id = data and data._Id
-        if id and id >= 30000 then -- minimum custom item id
+        if id and id >= custom_item_id_min then
             local item = udb.get_entity('item_data', id) --[[@as ItemDataEntity]]
             if item and item.name then
                 local s = thread.get_hook_storage()
                 s.this = sdk.to_managed_object(args[2])
-                -- s.name = item.name
                 s.description = item.description
-
             end
         end
     end,
@@ -203,12 +269,11 @@ sdk.hook(
         if s.this then
             local this = s.this --[[@as app.GUIBase.ItemWindowRef]]
             this._TxtInfo:set_Message(s.description)
-            -- this._TxtName:set_Message(s.name)
         end
         return ret
     end
 )
-
+--#endregion
 
 scripts.define_script_hook(
     'app.ItemManager',
@@ -320,13 +385,35 @@ if core.editor_enabled then
     local function show_item_editor(item)
         if not item.name then item.name = get_item_name:call(nil, item.id, false) end
         if not item.description then item.description = get_item_desc:call(nil, item.id, false) end
-        local changed
 
-        changed, item.name = imgui.input_text('Name', item.name or '')
-        if changed then udb.mark_entity_dirty(item) end
+        local function markdirty() udb.mark_entity_dirty(item) end
+        ui.core.setting_text('Name', item, 'name', markdirty)
+        ui.core.setting_text('Description', item, 'description', markdirty, 4)
+        ui.core.setting_text('Icon .pfb filepath', item, 'icon_path', markdirty)
+        if not item.icon_rect then
+            local enable_rect = imgui.checkbox('Use custom icon UV rect', false)
+            if enable_rect then
+                item.icon_rect = { x = 0, y = 0, w = 160, h = 156 }
+                markdirty()
+            end
+        else
+            local disable_rect = imgui.checkbox('Use custom icon UV rect', true)
+            if disable_rect then
+                item.icon_rect = nil
+                markdirty()
+            else
+                local vec4 = Vector4f.new(item.icon_rect.x, item.icon_rect.y, item.icon_rect.w, item.icon_rect.h)
+                local changed, newVec4 = imgui.drag_float4('Icon UV rect', vec4, 0.25, 0, nil, '%.0f')
+                if changed then
+                    item.icon_rect.x = math.floor(newVec4.x)
+                    item.icon_rect.y = math.floor(newVec4.y)
+                    item.icon_rect.w = math.floor(newVec4.z)
+                    item.icon_rect.h = math.floor(newVec4.w)
+                    markdirty()
+                end
+            end
+        end
 
-        changed, item.description = imgui.input_text_multiline('Description', item.description or '', 5)
-        if changed then udb.mark_entity_dirty(item) end
         imgui.spacing()
 
         ui.handlers.show_editable(item, 'runtime_instance', item)

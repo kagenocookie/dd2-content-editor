@@ -597,6 +597,9 @@ local function folder_get_children(folder)
 end
 
 local getComponent = sdk.find_type_definition('via.GameObject'):get_method('getComponent(System.Type)')
+--- @param gameObject via.GameObject
+--- @param componentType string
+--- @return via.Component|nil
 local function get_gameobject_component(gameObject, componentType)
     return getComponent:call(gameObject, sdk.typeof(componentType))
 end
