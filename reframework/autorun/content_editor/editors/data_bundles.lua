@@ -90,7 +90,51 @@ return function (state)
             config.save()
         end
 
-        imgui.text('Author: ' .. bundle.info.author)
+        if state.editing then
+            changed = false
+            _, state.authorRename = imgui.input_text('Author', state.authorRename or bundle.info.author)
+            if state.authorRename ~= config.data.editor.author_name and config.data.editor.author_name then
+                imgui.same_line()
+                if imgui.button('Set from user name') then state.authorRename = config.data.editor.author_name end
+            end
+            if (state.authorRename and state.authorRename ~= bundle.info.author) then
+                changed = true
+                if imgui.button('Confirm') then
+                    bundle.info.author = state.authorRename
+                    state.authorRename = nil
+                    state.editing = false
+                    udb.save_bundle(bundle.info.name)
+                end
+            end
+            changed, state.descRename = imgui.input_text_multiline('Description', state.descRename or bundle.info.description, 10)
+            if state.descRename ~= config.data.editor.author_description and config.data.editor.author_description then
+                imgui.same_line()
+                if imgui.button('Set from user description') then state.descRename = config.data.editor.author_description end
+            end
+            if (state.descRename and state.descRename ~= bundle.info.description) then
+                changed = true
+                if imgui.button('Confirm') then
+                    bundle.info.description = state.descRename
+                    state.descRename = nil
+                    state.editing = false
+                    udb.save_bundle(bundle.info.name)
+                end
+            end
+            if changed then imgui.same_line() end
+            if imgui.button('Cancel') then
+                state.authorRename = nil
+                state.descRename = nil
+                state.editing = false
+            end
+        else
+            imgui.text('Author: ' .. (bundle.info.author or '<unknown>'))
+            if bundle.info.description then
+                imgui.text('Description:\n' .. bundle.info.description)
+            end
+            if imgui.button('Edit') then
+                state.editing = true
+            end
+        end
         imgui.text('Created: ' .. bundle.info.created_at)
         imgui.text('Last update: ' .. bundle.info.updated_at)
         if imgui.button('Save') then

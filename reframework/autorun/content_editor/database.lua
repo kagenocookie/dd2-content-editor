@@ -291,6 +291,7 @@ local function load_single_bundle(bundle, bundleImports)
         info = {
             name = bundle.name,
             author = bundle.author,
+            description = bundle.description,
             created_at = bundle.created_at,
             updated_at = bundle.updated_at,
         },
@@ -432,6 +433,7 @@ local function save_bundle(bundleName)
     --- @type DataBundle
     local outBundle = {
         author = bundle.info.author,
+        description = bundle.info.description,
         name = bundle.info.name,
         enums = {},
         data = {},
@@ -481,6 +483,7 @@ local function create_bundle(name)
         info = {
             name = name,
             author = internal.config.data.editor.author_name,
+            description = internal.config.data.editor.author_description,
             is_revertable = false,
             created_at = utils.get_irl_timestamp(true),
             updated_at = utils.get_irl_timestamp(true),

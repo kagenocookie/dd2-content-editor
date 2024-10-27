@@ -73,6 +73,7 @@
 --- @class BundleInfo
 --- @field name string
 --- @field author string
+--- @field description string
 --- @field created_at string
 --- @field updated_at string
 
@@ -88,6 +89,7 @@
 --- @class DataBundle
 --- @field name string
 --- @field author string
+--- @field description string|nil
 --- @field created_at string
 --- @field updated_at string
 --- @field game_version string

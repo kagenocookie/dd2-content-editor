@@ -56,9 +56,14 @@ local editor_defs = {
     user = {
         title = 'User',
         draw = function ()
-            local changed, newAuthor = imgui.input_text('Author name', config.data.editor.author_name)
+            local changed, newValue = imgui.input_text('Author name', config.data.editor.author_name)
             if changed then
-                config.data.editor.author_name = newAuthor
+                config.data.editor.author_name = newValue
+                config.save()
+            end
+            changed, newValue = imgui.input_text_multiline('Author description', config.data.editor.author_description or '', 10)
+            if changed then
+                config.data.editor.author_description = newValue
                 config.save()
             end
             imgui_wrappers.tooltip('Name to save into the author field for new data bundles')
