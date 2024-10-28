@@ -34,17 +34,13 @@ function MakeModinfo {
     ((Get-Content $outpath) -join "`n") + "`n" | Set-Content -NoNewline $outpath
 }
 
-PrepareFiles -Folder "content_editor" -FileList (
+$Version = "v1.0.0"
+
+PrepareFiles -Folder "dd2_content_editor" -FileList (
     "reframework/autorun/content_editor",
     "reframework/autorun/content_editor.lua",
     "readme.md",
     "campfire.jpg",
-    "modinfo.ini"
-)
-
-$Version = "v1.0.0"
-
-PrepareFiles -Folder "dd2_content_editor" -FileList (
     "reframework/autorun/content_editor/definitions/dd2.lua",
     "reframework/data/usercontent"
 )
@@ -57,8 +53,7 @@ PrepareFiles -Folder "quest_editor" -FileList (
     "natives/stm/appdata/quest/qu8000/qu8000.scn.20",
     "natives/stm/appdata/quest/qu8000/resident.scn.20",
     "natives/stm/appsystem/scene/quest.scn.20",
-    "campfire.jpg",
-    "quests-guide.md"
+    "campfire.jpg"
 )
 Copy-Item -Path quest_editor.ini -Destination "_build/quest_editor/modinfo.ini"
 
@@ -70,8 +65,8 @@ PrepareFiles -Folder "param_editor" -FileList ("reframework/autorun/editor_human
 
 MakeModinfo "item_editor" "Item editor" $Version "DD2 item editor addon for Content database"
 PrepareFiles -Folder "item_editor" -FileList (
-    "reframework/autorun/editor_item_data.lua",
-    "reframework/autorun/editor_styles.lua"
+    "reframework/autorun/editor_items.lua",
+    "reframework/autorun/item_editor"
 )
 
 Set-Location _build
