@@ -61,11 +61,12 @@ local newGuidMethod = sdk.find_type_definition('System.Guid'):get_method('NewGui
 value_type_handler_defs['System.Guid'] = function (ctx)
     local value = ctx.get()
     if value == nil then
-        imgui.text('TODO properly handle null guids (curse you, GameObjectRef!!) ' .. ui_context.get_absolute_path(ctx))
+        imgui.text(ctx.label .. ' nil guid (may not be properly work if GameObjectRef) ' .. ui_context.get_absolute_path(ctx))
+        if imgui.button('Try creating empty') then
+            value = '00000000-0000-0000-0000-000000000000'
+            ctx.set(value)
+        end
         return false
-        -- print(json.dump_string(ctx))
-        -- value = '00000000-0000-0000-0000-000000000000'
-        -- ctx.set(value)
     end
     local isRaw = type(value) == 'nil' or type(value) == 'string'
 
