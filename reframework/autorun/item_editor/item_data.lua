@@ -198,7 +198,7 @@ sdk.hook(
             local tex = sdk.to_managed_object(args[2]) --[[@as via.gui.Texture]]
             if not item._texture then
                 if not item.icon_path or item.icon_path == '' then return end
-                prefabs.instantiate_shared(item.icon_path, function (gameObj)
+                local immediateInst = prefabs.instantiate_shared(item.icon_path, function (gameObj)
                     if not item._texture then
                         local texHolder = utils.get_gameobject_component(gameObj, 'app.GUITextureHolder') --[[@as app.GUITextureHolder|nil]]
                         item._texture = texHolder and (texHolder._Texture or texHolder._UVSequense)
@@ -208,8 +208,14 @@ sdk.hook(
                         apply_icon_rect(tex, item)
                     end
                 end)
-                -- TODO apply a default transparent texture instead of having it flash white.png?
-                return
+                -- apply a default transparent texture instead of having it flash white.png until the prefab loads
+                -- (iconNo = 8099 is empty for basegame icons, may need to change if devs add more content)
+                if not immediateInst then
+                    tex:set_UVSequence(ItemManager:get_UVSequenceResourceManager():getUVSequenceResourceHolder(8000, 10000000))
+                    tex:set_UVSequenceNo(8)
+                    tex:set_UVPatternNo(99)
+                end
+                return sdk.PreHookResult.SKIP_ORIGINAL
             end
 
             if item._texture then

@@ -60,6 +60,7 @@ local function load_prefab(path, onload)
             data = { pfb = pfb, loadCallbacks = {} }
         end
         prefabContainer[path] = data
+        waitingPrefabs[path] = true
         return pfb
     end
 
