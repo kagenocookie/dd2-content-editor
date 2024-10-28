@@ -164,9 +164,9 @@ sdk.hook(
         local talkEvent = udb.get_entity('talk_event', talkId)
         if talkEvent and talkEvent.questId ~= nil and udb.get_entity_bundle(talkEvent) then
             print('!!! isQuestNpcTalkEvent', talkEvent.id)
+            thread.get_hook_storage().result = true
+            return sdk.PreHookResult.SKIP_ORIGINAL
         end
-        thread.get_hook_storage().result = true
-        return sdk.PreHookResult.SKIP_ORIGINAL
     end,
     function (ret)
         local result = thread.get_hook_storage().result
@@ -217,12 +217,13 @@ sdk.hook(
         print('getQuestIdFromTalkEventId', talkEventId)
         if talkEvt and udb.get_entity_bundle(talkEvt) then
             print('Overriding getQuestIdFromTalkEventId', talkEventId)
+            thread.get_hook_storage().qid = talkEvt.questId
+            return sdk.PreHookResult.SKIP_ORIGINAL
         end
-        thread.get_hook_storage().qid = talkEvt and talkEvt.questId or 0
-        return sdk.PreHookResult.SKIP_ORIGINAL
     end,
-    function ()
-        return sdk.to_ptr(thread.get_hook_storage().qid)
+    function (ret)
+        local override = thread.get_hook_storage().qid
+        return override and sdk.to_ptr(override) or ret
     end
 )
 
