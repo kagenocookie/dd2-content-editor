@@ -148,7 +148,7 @@ definitions.override('items', {
         extensions = { { type = 'item_instance_type_fixer' } },
     },
     ['app.ItemArmorParam'] = {
-        fieldOrder = {'<DataType>k__BackingField', '_Category', '_EquipCategory', '_Special', '_StyleNo'},
+        fieldOrder = {'<DataType>k__BackingField', '_Category', '_EquipCategory', '_StyleNo', '_Special'},
         fields = {
             _StyleNo = {
                 extensions = { { type = 'space_after', count = 4 } }
@@ -338,6 +338,20 @@ if core.editor_enabled then
                     label = 'Attributes',
                     uiHandler = ui.handlers.common.enum_flags(ItemAttrBits, 6)
                 },
+                _StyleNo = {
+                    uiHandler = ui.handlers.common.enum_dynamic(function (context)
+                        if context.parent then
+                            local armordata = context.parent.get() ---@type app.ItemArmorParam
+                            if armordata._EquipCategory == 2 then return enums.get_enum('app.HelmStyle') end
+                            if armordata._EquipCategory == 3 then return enums.get_enum('app.TopsStyle') end
+                            if armordata._EquipCategory == 4 then return enums.get_enum('app.PantsStyle') end
+                            if armordata._EquipCategory == 5 then return enums.get_enum('app.MantleStyle') end
+                            return nil
+                        else
+                            return nil
+                        end
+                    end)
+                },
                 _UseAttr = { ui_ignore = true },
             },
         },
@@ -449,6 +463,4 @@ if core.editor_enabled then
             imgui.spacing()
         end
     end)
-
-    editor.add_editor_tab('item_data')
 end

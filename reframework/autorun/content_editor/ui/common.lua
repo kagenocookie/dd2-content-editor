@@ -183,7 +183,7 @@ local function create_flags_enum(enum, items_per_row_count)
     end
 end
 
---- @param enumProvider fun(context: UIContainer): EnumSummary
+--- @param enumProvider fun(context: UIContainer): EnumSummary|nil
 --- @return UIHandler
 local function create_dynamic_enum_filterable(enumProvider)
     --- @type UIHandler

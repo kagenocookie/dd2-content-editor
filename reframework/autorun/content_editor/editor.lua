@@ -153,6 +153,23 @@ local function open_editor_window(window_type_id, initial_state)
     return state.id
 end
 
+--- @param window_type_id string
+--- @param id integer
+--- @param state table
+local function embed_window(window_type_id, id, state)
+    local handler = editor_defs[window_type_id]
+    if handler then
+        imgui.push_id('window_' .. id)
+        local success, error = pcall(handler.draw, state)
+        if not success then
+            print('ERROR: content editor window ' .. (state.name or window_type_id) .. '#' .. id .. ' caused error:\n' .. tostring(error))
+        end
+        imgui.pop_id()
+    else
+        imgui.text_colored('Unknown window type ' .. (state.name or window_type_id), core.get_color('error'))
+    end
+end
+
 define_window('bundles', 'Data bundles', require('content_editor.editors.data_bundles'))
 
 add_editor_tab('load_order')
@@ -258,17 +275,7 @@ re.on_frame(function ()
                         config.save()
                         i = i - 1
                     else
-                        local handler = editor_defs[windowState.name]
-                        if handler then
-                            imgui.push_id('window_' .. windowState.id)
-                            local success, error = pcall(handler.draw, windowState)
-                            if not success then
-                                print('ERROR: content editor window ' .. windowState.name .. '#' .. windowState.id .. ' caused error:\n' .. tostring(error))
-                            end
-                            imgui.pop_id()
-                        else
-                            imgui.text_colored('Unknown window type ' .. windowState.name, core.get_color('error'))
-                        end
+                        embed_window(windowState.name, windowState.id, windowState)
                         imgui.end_window()
                     end
                 end
@@ -284,6 +291,8 @@ _userdata_DB.editor = {
     define_window = define_window,
     add_editor_tab = add_editor_tab,
     open_editor_window = open_editor_window,
+
+    embed_window = embed_window,
 
     get_color = core.get_color,
 

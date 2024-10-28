@@ -125,7 +125,7 @@ for _, name in ipairs(recordTypes) do
             return name .. ' ' .. (enum and enum[entity.id] or entity.id)
         end,
         replaced_enum = record.enum,
-        insert_id_range = {10000, 999900},
+        insert_id_range = {3000, 32700}, -- _StyleNo on the armor data is a signed short so we need to limit to that range
         root_types = {class},
     })
 end
@@ -226,6 +226,4 @@ if core.editor_enabled then
             end
         end
     end)
-
-    editor.add_editor_tab('styles')
 end

@@ -221,6 +221,4 @@ if core.editor_enabled then
             end
         end
     end)
-
-    editor.add_editor_tab('armor_catalogs')
 end
