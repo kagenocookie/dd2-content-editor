@@ -90,12 +90,13 @@ end
 
 --- @param state EditorState
 --- @param storage_key string The key under which to store the new selection ID
---- @param entity DBEntity|nil
+--- @param entity DBEntity|integer|nil The entity or its ID to select, or nil to deselect
 local function set_selected_entity_picker_entity(state, storage_key, entity)
+    local entityId = type(entity) == 'nil' and -1 or type(entity) == 'table' and entity.id or entity
     if state._selected_entity == nil then
-        state._selected_entity = { [storage_key] = entity and entity.id or -1 }
+        state._selected_entity = { [storage_key] = entityId }
     else
-        state._selected_entity[storage_key] = entity and entity.id or -1
+        state._selected_entity[storage_key] = entityId
     end
     config.save()
 end

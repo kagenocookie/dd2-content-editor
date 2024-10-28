@@ -203,29 +203,18 @@ if core.editor_enabled then
                 local equipData = ItemManager:getEquipData(playerId):get(recordData.slot)
                 local styleNo = equipData and equipData._ItemData and equipData._ItemData--[[@as app.ItemCommonParam|app.ItemArmorParam]]._StyleNo
                 if styleNo then
-                    local styleHash = recordData.styleDict and ItemManager[recordData.styleDict][styleNo]
-                    if not styleHash then
-                        -- fallback in case something's missing, may not be useful with the styleDict lookup
-                        local styleEnumSuffix = string.format('_%03d[ $]', styleNo)
-                        local matches = udb.get_entities_where(entity_type, function (entity)
-                            --- @cast entity StyleEntity
-                            return entity.label and entity.label:find(styleEnumSuffix) ~= nil or false
-                        end)
-                        if #matches == 1 then
-                            styleHash = matches[1]
-                        else
-                            equipped_style_result = styleNo
-                        end
-                    end
-                    if styleHash then
-                        ui.editor.set_selected_entity_picker_entity(state, entity_type, styleHash)
+                    local styleEntity = udb.get_entity(entity_type, styleNo)
+                    if styleEntity then
+                        ui.editor.set_selected_entity_picker_entity(state, entity_type, styleEntity)
+                    else
+                        equipped_style_result = styleNo
                     end
                 else
                     equipped_style_result = nil
                 end
             end
             if equipped_style_result then
-                imgui.text('Could not match an exact style object for style number: ' .. equipped_style_result)
+                imgui.text('Could not find a style for style number: ' .. equipped_style_result)
                 imgui.text('Try and find it manually somehow please')
             end
             local selectedItem = ui.editor.entity_picker(entity_type, state)
