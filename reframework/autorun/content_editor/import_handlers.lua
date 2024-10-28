@@ -490,6 +490,7 @@ local function import(classname, importData, targetInstance)
     return handler.import(importData, targetInstance)
 end
 
+--- Export a single managed object to lua table data
 --- @param object any The object to export
 --- @param classname string|nil Will be inferred from the given object if not specified
 --- @return any
@@ -502,9 +503,22 @@ local function get_exported(object, classname)
     return handler.export(object)
 end
 
+--- Export a lua list of items, each of the items will be exported individually and returned in a new lua list.
+--- @param table any[] The object to export
+--- @param classname string|nil Will be inferred from the given object if not specified
+--- @return any[]
+local function get_exported_array(table, classname)
+    local list = {}
+    for _, item in ipairs(table) do
+        list[#list+1] = get_exported(item, classname)
+    end
+    return list
+end
+
 _userdata_DB.import_handlers = {
     get_handler = get_handler,
     export = get_exported,
+    export_lua_list = get_exported_array,
     import = import,
 
     create_conditional = conditional,

@@ -231,6 +231,9 @@ local function imgui_enum_value_picker(label, currentValue, enum)
     return false, currentValue
 end
 
+--- @param tabs string[]
+--- @param selectedTabIndex integer 1-based tab index
+--- @return boolean changed, integer newSelectedIndex
 local function imgui_tabs(tabs, selectedTabIndex)
     local changed = false
     imgui.spacing()
