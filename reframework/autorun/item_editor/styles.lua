@@ -12,9 +12,11 @@ local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.I
 
 --- @class StyleEntity : DBEntity
 --- @field variants table<string,app.TopsSwapItem|app.PantsSwapItem|app.MantleSwapItem|app.HelmSwapItem|app.UnderwearSwapItem|app.BackpackSwapItem|app.BackpackStyle>
+--- @field styleHash integer
 
 --- @class StyleData : EntityImportData
 --- @field data table<integer, table>
+--- @field styleHash integer
 
 local variantLabels = {
     ['2776536455'] = '2776536455 Male',
@@ -37,13 +39,14 @@ local variantLabels = {
 --- @field styleDict string|nil Name of style lookup dictionary in app.ItemManager
 --- @field slot integer|nil app.EquipData.SlotEnum value
 --- @field styleField string
+--- @field styleNoEnum EnumSummary|nil
 
 --- @type table<string, StyleRecordType>
 local recordClasses = {
-    PantsStyle = { styleDb = '_PantsDB', swap = 'app.PantsSwapItem', enum = 'app.PantsStyle', styleDict = 'PantsDict', slot = 4, styleField = '_PantsStyle'},
-    TopsStyle = { styleDb = '_TopsDB', swap = 'app.TopsSwapItem', enum = 'app.TopsStyle', styleDict = 'TopsDict', slot = 3, styleField = '_TopsStyle'},
-    HelmStyle = { styleDb = '_HelmDB', swap = 'app.HelmSwapItem', enum = 'app.HelmStyle', styleDict = 'HelmDict', slot = 2, styleField = '_HelmStyle' },
-    MantleStyle = { styleDb = '_MantleDB', swap = 'app.MantleSwapItem', enum = 'app.MantleStyle', styleDict = 'MantleDict', slot = 5, styleField = '_MantleStyle' },
+    PantsStyle = { styleDb = '_PantsDB', swap = 'app.PantsSwapItem', enum = 'app.PantsStyle', styleDict = 'PantsDict', slot = 4, styleField = '_PantsStyle', styleNoEnum = enums.get_virtual_enum('PantsStyleNo', {}) },
+    TopsStyle = { styleDb = '_TopsDB', swap = 'app.TopsSwapItem', enum = 'app.TopsStyle', styleDict = 'TopsDict', slot = 3, styleField = '_TopsStyle', styleNoEnum = enums.get_virtual_enum('TopsStyleNo', {}) },
+    HelmStyle = { styleDb = '_HelmDB', swap = 'app.HelmSwapItem', enum = 'app.HelmStyle', styleDict = 'HelmDict', slot = 2, styleField = '_HelmStyle', styleNoEnum = enums.get_virtual_enum('HelmStyleNo', {}) },
+    MantleStyle = { styleDb = '_MantleDB', swap = 'app.MantleSwapItem', enum = 'app.MantleStyle', styleDict = 'MantleDict', slot = 5, styleField = '_MantleStyle', styleNoEnum = enums.get_virtual_enum('MantleStyleNo', {}) },
     BackpackStyle = { styleDb = '_BackpackDB', swap = 'app.BackpackSwapItem', enum = 'app.BackpackStyle', styleField = '_BackpackStyle' },
     UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_Style' },
     -- _BodySkinDB = {'app.BodySkinSwapItem', 'app.SkinStyle'},
@@ -55,7 +58,7 @@ local recordClasses = {
 }
 local recordTypes = utils.get_sorted_table_keys(recordClasses)
 
-local function register_style_entity(id, entityType, variant_id, runtime_instance)
+local function add_style_entity(id, entityType, variant_id, styleHash, runtime_instance)
     local entity = udb.get_entity(entityType, id)
     --- @cast entity StyleEntity|nil
     if entity then
@@ -64,8 +67,10 @@ local function register_style_entity(id, entityType, variant_id, runtime_instanc
         entity = {
             id = id,
             type = entityType,
+            styleHash = styleHash,
             variants = {[tostring(variant_id)] = runtime_instance },
         }
+
         udb.register_pristine_entity(entity)
     end
     return entity
@@ -73,28 +78,49 @@ end
 
 udb.events.on('get_existing_data', function ()
     for name, type in pairs(recordClasses) do
-        local db = CharacterEditManager[type.styleDb]
-        local root_dict = db:GetEnumerator()
-        while root_dict:MoveNext() do
-            local root_item = root_dict._current
-            local enumerator = root_item.value:GetEnumerator()
-            while enumerator:MoveNext() do
-                local item = enumerator._current
-                register_style_entity(item.key, name, root_item.key, item.value)
+        if type.styleDict then
+            local root_enumerator = ItemManager[type.styleDict]:GetEnumerator()
+            while root_enumerator:MoveNext() do
+                local styleId = root_enumerator._current.key
+                local styleHash = root_enumerator._current.value
+                local variants = CharacterEditManager[type.styleDb]:GetEnumerator()
+                while variants:MoveNext() do
+                    local variant = variants._current.key
+                    local swapData = variants._current.value[styleHash]
+                    if swapData then
+                        add_style_entity(styleId, name, variant, styleHash, swapData)
+                    else
+                        -- non-playable style, idk, for npcs or enemies maybe?
+                        -- ignore all of these for now
+                        -- print('missing style swap', styleId, styleHash, variant)
+                    end
+                end
+            end
+        else
+            -- underwears and backpacks don't have distinct style numbers, use hash == nr here
+            local root_dict = CharacterEditManager[type.styleDb]:GetEnumerator()
+            while root_dict:MoveNext() do
+                local root_item = root_dict._current
+                local enumerator = root_item.value:GetEnumerator()
+                while enumerator:MoveNext() do
+                    local item = enumerator._current
+                    local styleHash = item.key
+                    add_style_entity(styleHash, name, root_item.key, styleHash, item.value)
+                end
             end
         end
-        udb.get_entity_enum(name).orderByValue = false
     end
 end)
 
 for _, name in ipairs(recordTypes) do
     local record = recordClasses[name]
     local class = record.swap
-    local enum = record.enum and utils.clone_table(enums.get_enum(record.enum).valueToLabel)
+    local styleHashEnum = utils.clone_table(enums.get_enum(record.enum).valueToLabel)
     udb.register_entity_type(name, {
         export = function (instance)
             --- @cast instance StyleEntity
             return {
+                styleHash = instance.styleHash,
                 data = utils.map_assoc(instance.variants, function (variant)
                     return import_handlers.export(variant, class)
                 end),
@@ -105,27 +131,30 @@ for _, name in ipairs(recordTypes) do
             --- @cast data StyleData
             instance = instance or {}
             instance.variants = instance.variants or {}
+            instance.styleHash = data.styleHash or data.id
             for variantKey, variantImport in pairs(data.data) do
                 local variant = import_handlers.import(class, variantImport, instance.variants[variantKey])
                 instance.variants[variantKey] = variant
                 variant[record.styleField] = data.id
                 CharacterEditManager[record.styleDb][tonumber(variantKey)][data.id] = variant
-
-                if record.styleDict then
-                    -- update the game's style no -> style hash lookup table
-                    -- to make things simpler, just store the hash of everything as also the key
-                    -- this will re-add any basegame items but it's just way easier to do that compared to dealing with hash + id conversion all the time
-                    -- and since it's a dictionary, it'll only take a tiny bit more memory with little effect on perf
-                    ItemManager[record.styleDict][data.id] = data.id
-                end
             end
+
+            if record.styleDict then
+                ItemManager[record.styleDict][data.id] = instance.styleHash
+            end
+
             return instance
         end,
         generate_label = function (entity)
-            return name .. ' ' .. (enum and enum[entity.id] or entity.id)
+            --- @cast entity StyleEntity
+            if entity.styleHash then
+                return (styleHashEnum[entity.styleHash] or (name .. ' ' .. entity.id)) .. ' #' .. tostring(entity.styleHash)
+            else
+                return name .. ' ' .. entity.id
+            end
         end,
-        replaced_enum = record.enum,
-        insert_id_range = {3000, 32700}, -- _StyleNo on the armor data is a signed short so we need to limit to that range
+        replaced_enum = record.styleNoEnum and record.styleNoEnum.enumName or nil,
+        insert_id_range = {10000, 32700}, -- _StyleNo on the armor data is a signed short so we need to limit to that range
         root_types = {class},
     })
 end
@@ -207,6 +236,7 @@ if core.editor_enabled then
                 imgui.begin_rect()
                 ui.editor.show_entity_metadata(selectedItem)
                 imgui.text('Style ID: ' .. selectedItem.id)
+                imgui.text('Style hash: ' .. tostring(selectedItem.styleHash))
                 local variantIds = utils.get_sorted_table_keys(selectedItem.variants)
                 local variantIdLabels = utils.map(variantIds, function (value) return variantLabels[value] or value end)
                 state.variant_id = select(2, imgui.combo('Variant', state.variant_id, variantIdLabels))

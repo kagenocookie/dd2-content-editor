@@ -342,10 +342,10 @@ if core.editor_enabled then
                     uiHandler = ui.handlers.common.enum_dynamic(function (context)
                         if context.parent then
                             local armordata = context.parent.get() ---@type app.ItemArmorParam
-                            if armordata._EquipCategory == 2 then return enums.get_enum('app.HelmStyle') end
-                            if armordata._EquipCategory == 3 then return enums.get_enum('app.TopsStyle') end
-                            if armordata._EquipCategory == 4 then return enums.get_enum('app.PantsStyle') end
-                            if armordata._EquipCategory == 5 then return enums.get_enum('app.MantleStyle') end
+                            if armordata._EquipCategory == 2 then return enums.get_enum('HelmStyleNo') end
+                            if armordata._EquipCategory == 3 then return enums.get_enum('TopsStyleNo') end
+                            if armordata._EquipCategory == 4 then return enums.get_enum('PantsStyleNo') end
+                            if armordata._EquipCategory == 5 then return enums.get_enum('MantleStyleNo') end
                             return nil
                         else
                             return nil
