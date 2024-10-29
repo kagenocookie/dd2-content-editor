@@ -90,6 +90,9 @@ udb.register_entity_type('item_data', {
     import = function (data, instance)
         --- @cast instance ItemDataEntity
         instance = instance or {}
+        if data.data and data.data._IconNo == 0 then
+            data.data._IconNo = data.id
+        end
         instance.runtime_instance = import_handlers.import('app.ItemCommonParam', data.data, instance.runtime_instance)
         instance.name = data.name or instance.name
         instance.description = data.description or instance.description
