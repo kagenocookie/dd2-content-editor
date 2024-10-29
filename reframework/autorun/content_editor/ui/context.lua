@@ -24,8 +24,9 @@ local root_containers = {}
 --- @param value any Not null
 --- @param owner DBEntity|nil
 --- @param label string
+--- @param editorId any
 --- @return UIContainer
-local function create(value, owner, label)
+local function create(value, owner, label, editorId)
     --- @type UIContainer
     local ctx
     ctx = {
@@ -42,6 +43,8 @@ local function create(value, owner, label)
     root_containers[value] = ctx
     if owner ~= nil and not root_containers[owner] then
         root_containers[owner] = ctx
+    elseif owner == nil and editorId ~= nil then
+        root_containers[editorId] = ctx
     end
     return ctx
 end

@@ -628,7 +628,7 @@ local root_uis = {}
 --- @param owner DBEntity|nil
 --- @param label string|nil
 --- @param classname string|nil
---- @param editorId string|number|nil
+--- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
 --- @param accessors ObjectFieldAccessors
 --- @param uiSettingOverrides UISettings|nil
 local function show_entity_ui_internal(target, owner, label, classname, editorId, accessors, uiSettingOverrides)
@@ -641,14 +641,18 @@ local function show_entity_ui_internal(target, owner, label, classname, editorId
             return nil
         end
     end
-    if not editorId then editorId = target:get_address() end
+    if not editorId then
+        editorId = target:get_address()
+    elseif type(editorId) == 'table' then
+        editorId['_id' .. label] = editorId['_id' .. label] or math.random(1, 1000000)
+        editorId = editorId['_id' .. label]
+    end
 
     imgui.push_id(editorId)
     --- @type UIContainer|nil
-    local rootContext = root_uis[editorId] or ui_context.get_root(target)
+    local rootContext = root_uis[editorId] or ui_context.get_root(editorId)
     if not rootContext then
-        -- print('Creating new ui handler', classname, target, target.get_type_definition and target:get_type_definition():get_full_name())
-        rootContext = ui_context.create(target, owner, label or '')
+        rootContext = ui_context.create(target, owner, label or '', editorId)
         --- @type UISettings
         rootContext.data.ui_settings = utils.table_assign({
             is_raw_data = type(target) == 'table',
@@ -688,7 +692,7 @@ end
 --- @param owner DBEntity|nil
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
---- @param editorId string|number|nil
+--- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
 local function show_entity_ui(target, owner, label, classname, editorId)
     if not target then error('OI! ui needs a target and a parent!') return end
 
@@ -702,9 +706,9 @@ end
 --- @param owner DBEntity|nil
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
---- @param editorId string|number|nil
+--- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
 local function show_entity_ui_readonly(target, owner, label, classname, editorId)
-    if not target then error('OI! ui needs a target and a parent!') return end
+    if not target then error('OI! ui needs a target!') return end
 
     show_entity_ui_internal(target, owner, label, classname, editorId, {
         set = function() error('Root editor setter unsupported') end,
@@ -721,7 +725,7 @@ end
 --- @param owner DBEntity|nil
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
---- @param editorId string|number|nil
+--- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
 --- @return boolean instanceChanged Whether the root field instance was changed
 local function show_entity_ui_editable(targetContainer, field, owner, label, classname, editorId)
     if not targetContainer then error('OI! ui needs a target and a parent!') return false end

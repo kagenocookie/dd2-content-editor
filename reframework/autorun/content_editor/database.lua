@@ -81,9 +81,9 @@ local databundle_dir = core.get_path('bundles/')
 local function create_entity(entity, bundleName, _skipResortEnum)
     local trackedEntity = entity_tracker[entity]
     if trackedEntity then
-        -- TODO the better solution would probably be to fully replace the existing instance
         if bundleName then
-            print('Entity already tracked, updating its primary bundle ', entity.type, entity.id)
+            -- during import, the new entity should have already overwritten the existing one
+            -- all that's left here is to update the entity's primary bundle
             trackedEntity.bundle = bundleName
             trackedEntity.entity.label = entity.label
             local bundle = get_active_bundle_by_name(bundleName)
