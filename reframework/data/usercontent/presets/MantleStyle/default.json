@@ -4,25 +4,25 @@
             "_Gender": 1910070090,
             "_HelmHideParts": 0,
             "_JointOffset": 0.0,
-            "_MeshID": 612329451,
+            "_MeshID": 0,
             "_PartsEnable": 15363,
-            "_SkinID": 813903325,
+            "_SkinID": 0,
             "_TopsAmHideParts": 0,
             "_TopsBdHideParts": 0,
-            "_UseChain": true,
-            "_UseGpuCloth": true
+            "_UseChain": false,
+            "_UseGpuCloth": false
         },
         "2776536455": {
             "_Gender": 2776536455,
             "_HelmHideParts": 0,
             "_JointOffset": 0.0,
-            "_MeshID": 813903325,
+            "_MeshID": 0,
             "_PartsEnable": 15363,
-            "_SkinID": 813903325,
+            "_SkinID": 0,
             "_TopsAmHideParts": 0,
             "_TopsBdHideParts": 0,
-            "_UseChain": true,
-            "_UseGpuCloth": true
+            "_UseChain": false,
+            "_UseGpuCloth": false
         }
     },
     "type": "MantleStyle"
