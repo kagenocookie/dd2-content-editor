@@ -150,6 +150,10 @@ local function create_flags_enum(enum, items_per_row_count)
         local isMultiline = false
         local changed, changed2 = false, false
         if not enum then enum = enums.get_enum(context.data.classname) end
+        imgui.indent(4)
+        imgui.begin_rect()
+        imgui.spacing()
+        imgui.indent(4)
         for i, flagValue in ipairs(enum.values) do
             local checked = (flagValue & value) ~= 0
             if i ~= 1 then
@@ -179,6 +183,9 @@ local function create_flags_enum(enum, items_per_row_count)
             imgui.same_line()
             imgui.text('  |  ' .. context.label)
         end
+        imgui.unindent(4)
+        imgui.end_rect(1)
+        imgui.unindent(4)
         return changed
     end
 end
