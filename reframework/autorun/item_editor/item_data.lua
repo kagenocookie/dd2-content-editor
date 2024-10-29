@@ -298,6 +298,18 @@ if core.editor_enabled then
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
 
+    local ItemJobFlags = enums.get_virtual_enum('ItemJobFlags', {
+        Job01Fighter = 2,
+        Job02Archer = 4,
+        Job03Mage = 8,
+        Job04Thief = 16,
+        Job05Warrior = 32,
+        Job06Sorcerer = 64,
+        Job07MystickSpearman = 128,
+        Job08MagickArcher = 256,
+        Job09Trickster = 512,
+    })
+
     scripts.define_script_hook_editor_override(
         'app.ItemDataParam',
         function (target)
@@ -332,6 +344,7 @@ if core.editor_enabled then
                     label = 'Attributes',
                     uiHandler = ui.handlers.common.enum_flags(ItemAttrBits, 6)
                 },
+                _Job = { uiHandler = ui.handlers.common.enum_flags(ItemJobFlags, 5) },
                 _UseAttr = { ui_ignore = true },
             },
         },
@@ -355,6 +368,7 @@ if core.editor_enabled then
                         end
                     end)
                 },
+                _Job = { uiHandler = ui.handlers.common.enum_flags(ItemJobFlags, 5) },
                 _UseAttr = { ui_ignore = true },
             },
         },
