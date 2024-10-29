@@ -78,10 +78,7 @@ local function firstLine(text)
     return text
 end
 
-local editorConfig = _userdata_DB.__internal.config
-
-editorConfig.data.editor--[[@as any]].console = editorConfig.data.editor.console or {}
-local globalSettings = editorConfig.data.editor.console
+local globalSettings = editor.persistent_storage.get('console', {})
 local maxlines = 12
 
 local function exec_text(state, text)
@@ -91,7 +88,7 @@ local function exec_text(state, text)
     while #state.history > max_history do
         table.remove(state.history, max_history)
     end
-    editorConfig.save()
+    editor.persistent_storage.save()
 end
 
 editor.define_window('data_viewer', 'Data console', function (state)
@@ -155,6 +152,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
                     label = firstLine(historyEntry),
                     time = utils.get_irl_timestamp()
                 }
+                editor.persistent_storage.save()
             end
         end
         imgui.tree_pop()
@@ -181,7 +179,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
                 end
                 if remove then
                     table.remove(globalSettings.bookmarks, idx)
-                    editorConfig.save()
+                    editor.persistent_storage.save()
                     imgui.pop_id()
                     break
                 end
@@ -194,7 +192,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
                     if imgui.button('Confirm') then
                         bookmark.label = state.renaming.label
                         state.renaming = nil
-                        editorConfig.save()
+                        editor.persistent_storage.save()
                     end
                     imgui.same_line()
                     if imgui.button('Cancel') then
