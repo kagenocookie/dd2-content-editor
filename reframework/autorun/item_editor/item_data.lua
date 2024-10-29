@@ -305,7 +305,7 @@ if core.editor_enabled then
         Job04Thief = 16,
         Job05Warrior = 32,
         Job06Sorcerer = 64,
-        Job07MystickSpearman = 128,
+        Job07MysticSpearhand = 128,
         Job08MagickArcher = 256,
         Job09Trickster = 512,
     })
