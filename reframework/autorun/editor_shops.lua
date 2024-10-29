@@ -53,7 +53,7 @@ udb.register_entity_type('shop', {
     import = function (data, instance)
         --- @cast instance ItemShopData
         instance = instance or {}
-        instance.runtime_instance = import_handlers.import('app.ItemShopParam', data.data, instance)
+        instance.runtime_instance = import_handlers.import('app.ItemShopParam', data.data, instance.runtime_instance)
         return instance
     end,
     delete = function (instance)
