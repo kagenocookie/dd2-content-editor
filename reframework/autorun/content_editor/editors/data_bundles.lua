@@ -203,9 +203,9 @@ return function (state)
             imgui.tree_pop()
             if imgui.button('Delete please') then
                 udb.delete_bundle(state.selectedBundle)
-                state.selectedBundle = ''
-                config.data.editor.active_bundle = ''
-                _userdata_DB.editor.active_bundle = ''
+                state.selectedBundle = nil
+                config.data.editor.active_bundle = nil
+                _userdata_DB.editor.active_bundle = nil
                 config.save()
             end
         end

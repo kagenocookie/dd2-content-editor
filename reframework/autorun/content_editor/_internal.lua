@@ -16,7 +16,7 @@ local utils = require('content_editor.utils')
 --- @field selected_editor_tab_index number
 --- @field author_name string
 --- @field author_description string|nil
---- @field active_bundle string
+--- @field active_bundle string|nil
 --- @field next_editor_id integer
 --- @field tabs table<string, EditorState>
 --- @field windows EditorState[]
@@ -39,7 +39,7 @@ local config = {
         show_window = false,
         selected_editor_tab_index = 1,
         author_name = 'Unknown user',
-        active_bundle = '',
+        active_bundle = nil,
         tabs = {},
         windows = {},
         storage = {},

@@ -215,7 +215,7 @@ local function draw_editor()
     local newbundle
     changed, newbundle = imgui_wrappers.enum_picker('Active bundle', config.data.editor.active_bundle, udb.bundles_enum)
     if changed then
-        if newbundle == udb.bundles_enum.valueToLabel[0] then newbundle = '' end
+        if newbundle == '' or newbundle == udb.bundles_enum.valueToLabel[0] then newbundle = nil end
         config.data.editor.active_bundle = newbundle
         _userdata_DB.editor.active_bundle = newbundle
         config.save()

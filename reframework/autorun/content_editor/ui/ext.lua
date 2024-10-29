@@ -205,13 +205,14 @@ local function create_button_with_preset(state, preset_type, storage_key, header
     if imgui.calc_item_width() > 300 then
         imgui.set_next_item_width(300)
     end
+    local canCreate = editor.active_bundle ~= nil
     local preset = preset_picker(state, preset_type, storage_key, nil, disallow_no_preset)
-    local btnPress = (preset or not disallow_no_preset) and imgui.button(buttonLabel or 'Create')
+    local btnPress = canCreate and (preset or not disallow_no_preset) and imgui.button(buttonLabel or 'Create')
     if cloneSource then
         imgui.same_line()
         imgui.text('        ')
         imgui.same_line()
-        local clonePress = imgui.button('Clone current')
+        local clonePress = canCreate and imgui.button('Clone current')
         if clonePress then
             preset = udb.export_entity(cloneSource)
             preset.id = nil
