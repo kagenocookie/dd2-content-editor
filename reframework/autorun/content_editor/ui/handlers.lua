@@ -641,11 +641,16 @@ local function show_entity_ui_internal(target, owner, label, classname, editorId
             return nil
         end
     end
-    if not editorId then
+    if not editorId and target ~= nil then
         editorId = target:get_address()
-    elseif type(editorId) == 'table' then
+    end
+    if type(editorId) == 'table' then
         editorId['_id' .. label] = editorId['_id' .. label] or math.random(1, 1000000)
         editorId = editorId['_id' .. label]
+    end
+    if not editorId and target == nil then
+        print('Could not determine editor id', owner, label, classname)
+        return
     end
 
     imgui.push_id(editorId)
@@ -664,10 +669,10 @@ local function show_entity_ui_internal(target, owner, label, classname, editorId
     end
 
     if rootContext.object ~= target then
-        print('root context instance changed', target, rootContext.object)
+        print('root context instance changed', target, rootContext.object, editorId)
         root_uis[editorId] = nil
-        -- ui_context.delete(rootContext)
-        show_entity_ui_internal(target, owner, label, classname, editorId, accessors)
+        ui_context.delete(rootContext, editorId)
+        -- show_entity_ui_internal(target, owner, label, classname, editorId, accessors)
         imgui.pop_id()
         return
     end

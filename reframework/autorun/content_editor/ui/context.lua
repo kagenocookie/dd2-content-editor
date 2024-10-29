@@ -125,13 +125,16 @@ local function delete_child_by_context(parentCtx, childContext)
 end
 
 --- @param ctx UIContainer
-local function delete(ctx)
+local function delete(ctx, editorId)
     delete_children(ctx)
     if ctx.parent then
         delete_child_by_context(ctx.parent, ctx)
     end
     if ctx.object and ctx.object == ctx.owner then
         root_containers[ctx.object] = nil
+    end
+    if editorId then
+        root_containers[editorId] = nil
     end
 end
 
