@@ -172,6 +172,22 @@ end
 
 define_window('bundles', 'Data bundles', require('content_editor.editors.data_bundles'))
 
+define_window('save_button', 'Save button', function ()
+    if _userdata_DB.editor.active_bundle then
+        if imgui.button('Save') then
+            _userdata_DB.database.save_bundle(_userdata_DB.editor.active_bundle)
+        end
+        if _userdata_DB.database.bundle_has_unsaved_changes(_userdata_DB.editor.active_bundle) then
+            imgui.same_line()
+            imgui.text_colored('*', core.get_color('danger'))
+        end
+        imgui.same_line()
+        imgui.text('Bundle: ' .. _userdata_DB.editor.active_bundle)
+    else
+        imgui.text('No active bundle')
+    end
+end)
+
 add_editor_tab('load_order')
 add_editor_tab('user')
 add_editor_tab('bundles')
