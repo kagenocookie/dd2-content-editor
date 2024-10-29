@@ -15,7 +15,7 @@ local entity_tracker = {}
 --- @class EntityTypeConfig
 --- @field import fun(import_data: EntityImportData, instance: nil|DBEntity): DBEntity Method to import this type of entity into the game.
 --- @field export fun(instance: DBEntity): EntityImportData Export the data into a serializable object; The core fields can be omitted (id, label, type) as they will be automatically before saving.
---- @field delete nil|fun(instance: DBEntity): status: nil|'ok'|'error'|'not_deletable'|'forget' Delete / disable the entity from the game's data; forget: entity is not fully deletable, but we should still remove the entity record for it
+--- @field delete nil|fun(instance: DBEntity): status: nil|'ok'|'error'|'not_deletable'|'forget' Delete / disable the entity from the game's data; forget: entity may not be fully deleted or reverted to default state, we can remove the entity record for it but will show a prompt to restart the game
 --- @field generate_label nil|fun(entity: DBEntity): string
 --- @field root_types string[] Types to automatically generate type data for
 --- @field replaced_enum string|nil

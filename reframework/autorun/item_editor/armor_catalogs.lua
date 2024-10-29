@@ -15,10 +15,6 @@ local CharacterEditManager = sdk.get_managed_singleton("app.CharacterEditManager
 --- @class SkinEntity : DBEntity
 --- @field Skin app.PrefabController|nil
 
---- @class WeaponEntity : DBEntity
---- @field Mesh app.PrefabController
---- @field Data app.Weapon must be raw lua table data because the app.Weapon instances are stored within prefabs, so we need to hook into Weapon.start() and update our values there
-
 -- There are 2 distinct IDs per part
 -- mesh ID: shared between mesh, chain, clsp and gpuc; there is always a mesh, the rest are optional
 -- skin ID: standalone by itself

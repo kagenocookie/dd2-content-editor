@@ -46,34 +46,19 @@ local function register_entity(id, type, runtime_instance)
     return entity
 end
 
-local type_weaponparam = sdk.find_type_definition('app.ItemWeaponParam')
 local get_item_name = sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName(System.Int32, System.Boolean)')
 local get_item_desc = sdk.find_type_definition('app.GUIBase'):get_method('getElfItemDetail(System.Int32, System.Boolean)')
 
 udb.events.on('get_existing_data', function ()
     local enumerator = ItemManager._ItemDataDict:GetEnumerator()
-    local weaponIdLabels = {}
-    local weaponIdEnum = enums.get_enum('app.WeaponID')
-    local itemsEnum = enums.get_enum('app.ItemID')
     while enumerator:MoveNext() do
         local item = enumerator._current
         if item.value._Id then
             register_entity(item.value._Id, 'item_data', item.value)
-            if item.value:get_type_definition():is_a(type_weaponparam) then
-                local weaponId = item.value._WeaponId
-                local weaponLabel = weaponIdEnum.valueToLabel[weaponId]
-                if weaponLabel then
-                    weaponIdLabels[#weaponIdLabels+1] = {weaponId, weaponLabel .. ' - ' .. itemsEnum.get_label(item.value._Id)}
-                else
-                    weaponIdLabels[#weaponIdLabels+1] = {weaponId, 'Weapon - ' .. itemsEnum.get_label(item.value._Id)}
-                end
-            end
         else
             print('Missing id', item, item.value, item:get_type_definition():get_full_name())
         end
     end
-
-    weaponIdEnum.set_display_labels(weaponIdLabels)
 end)
 
 udb.register_entity_type('item_data', {
@@ -115,6 +100,17 @@ udb.register_entity_type('item_data', {
     end,
     generate_label = function (entity)
         return 'Item ' .. entity.id .. ' : ' .. enums.get_enum('app.ItemIDEnum').get_label(entity.id)
+    end,
+    delete = function (instance)
+        --- @cast instance ItemDataEntity
+        if instance.id < custom_item_id_min then
+            return 'not_deletable'
+        end
+
+        if instance.runtime_instance then
+            ItemManager._ItemDataDict:Remove(instance.id)
+        end
+        return 'forget'
     end,
     insert_id_range = {custom_item_id_min, 65000},
     -- basegame item IDs go up to 10512
