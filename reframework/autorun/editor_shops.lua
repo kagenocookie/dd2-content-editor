@@ -188,9 +188,6 @@ if core.editor_enabled then
                 end
                 if subtype and subtype.parent_id == selectedShop.id then
                     ui.editor.show_entity_metadata(subtype)
-                    if imgui.button('Refresh game data') then
-                        udb.reimport_entity(subtype)
-                    end
                     for idx, item in ipairs(subtype.items) do
                         imgui.push_id(idx)
                         if imgui.button('X') then
@@ -206,7 +203,8 @@ if core.editor_enabled then
                         ui.handlers.show(item, subtype, tostring(idx), nil)
                     end
                     if imgui.button('Add') then
-                        subtype.items[#subtype.items+1] = import_handlers.import('app.ItemShopBuyParam', { _ReleaseSentimentRankBit = 1 })
+                        subtype.items[#subtype.items+1] = sdk.create_instance('app.ItemShopBuyParam')
+                        udb.reimport_entity(subtype)
                         udb.mark_entity_dirty(subtype)
                     end
                 end
@@ -218,9 +216,6 @@ if core.editor_enabled then
                 end
                 if subtype and subtype.parent_id == selectedShop.id then
                     ui.editor.show_entity_metadata(subtype)
-                    if imgui.button('Refresh game data') then
-                        udb.reimport_entity(subtype)
-                    end
                     for idx, item in ipairs(subtype.items) do
                         imgui.push_id(idx)
                         if imgui.button('X') then
@@ -236,7 +231,7 @@ if core.editor_enabled then
                         ui.handlers.show(item, subtype, tostring(idx), nil)
                     end
                     if imgui.button('Add') then
-                        subtype.items[#subtype.items+1] = import_handlers.import('app.ItemShopSellParam', {})
+                        subtype.items[#subtype.items+1] = sdk.create_instance('app.ItemShopSellParam')
                         udb.reimport_entity(subtype)
                         udb.mark_entity_dirty(subtype)
                     end
