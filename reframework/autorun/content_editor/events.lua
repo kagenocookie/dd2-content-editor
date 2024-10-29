@@ -35,8 +35,10 @@ local function emit_event(name, ...)
     local store = events[name]
     if not store then return end
 
+    -- print('Emitting event', name, #store .. ' listeners', ...)
+    -- log.info('Emitting event ' .. name .. ' with ' .. #store .. ' listeners...')
     for i, cb in ipairs(store) do
-        print('Emitting event ', name, ...)
+        -- log.info('Invoking event listener ' .. tostring(i))
         local success, ret = pcall(cb, ...)
         if not success then
             print('ERROR in event ' .. name .. ' callback ' .. tostring(i) .. ': ' .. tostring(ret))

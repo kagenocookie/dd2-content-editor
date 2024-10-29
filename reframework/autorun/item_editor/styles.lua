@@ -95,13 +95,14 @@ udb.events.on('get_existing_data', function ()
                 local variants = CharacterEditManager[type.styleDb]:GetEnumerator()
                 while variants:MoveNext() do
                     local variant = variants._current.key
-                    local swapData = variants._current.value[styleHash]
-                    local furmask
-                    if type.furmaskIndex then
-                        furmask = CharacterEditManager._FurMaskMapGenderCatalog[type.furmaskIndex][variant]
-                        furmask = furmask and furmask[styleHash]
-                    end
-                    if swapData then
+                    if variants._current.value:ContainsKey(styleHash) then
+                        local swapData = variants._current.value[styleHash]
+                        local furmask
+                        if type.furmaskIndex then
+                            local furmaskContainer = CharacterEditManager._FurMaskMapGenderCatalog[type.furmaskIndex]
+                            furmask = furmaskContainer and furmaskContainer:ContainsKey(variant) and furmaskContainer[variant]
+                            furmask = furmask and furmask:ContainsKey(styleHash) and furmask[styleHash] or nil
+                        end
                         add_style_entity(styleId, name, variant, styleHash, swapData, furmask)
                     else
                         -- non-playable style, idk, for npcs or enemies maybe?
