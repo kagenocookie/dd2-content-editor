@@ -193,24 +193,22 @@ if core.editor_enabled then
                 imgui.text('ID: ' .. tostring(selectedItem.id))
                 for _, field in ipairs(recordData) do
                     local pfbCtrl = selectedItem[field.name] --- @type app.PrefabController|nil
-                    local path = pfbCtrl and pfbCtrl.get_ResourcePath and pfbCtrl:get_ResourcePath()
+                    local path = pfbCtrl and pfbCtrl.get_ResourcePath and pfbCtrl:get_ResourcePath()--[[@as string|nil]]
                     local changed, newpath = imgui.input_text(field.name, path or '')
                     if changed then
-                        if pfbCtrl then
-                            if not newpath or newpath == '' then
-                                if newpath ~= path then
-                                    pfbCtrl._Item:set_Path(newpath)
-                                    udb.mark_entity_dirty(selectedItem)
-                                end
-                            else
-                                selectedItem[field.name] = nil
-                                CharacterEditManager[field.dict][selectedItem.id] = nil
+                        if newpath and newpath ~= '' then
+                            if not pfbCtrl then
+                                pfbCtrl = import_handlers.import('app.PrefabController', newpath)
+                                selectedItem[field.name] = pfbCtrl
+                                CharacterEditManager[field.dict][selectedItem.id] = pfbCtrl
+                                udb.mark_entity_dirty(selectedItem)
+                            elseif newpath ~= path then
+                                pfbCtrl._Item:set_Path(newpath)
                                 udb.mark_entity_dirty(selectedItem)
                             end
-                        elseif newpath and newpath ~= '' then
-                            pfbCtrl = import_handlers.import('app.PrefabController', newpath)
-                            selectedItem[field.name] = pfbCtrl
-                            CharacterEditManager[field.dict][selectedItem.id] = pfbCtrl
+                        else
+                            selectedItem[field.name] = nil
+                            CharacterEditManager[field.dict][selectedItem.id] = nil
                             udb.mark_entity_dirty(selectedItem)
                         end
                     end
