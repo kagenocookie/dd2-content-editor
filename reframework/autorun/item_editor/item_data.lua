@@ -336,6 +336,7 @@ if core.editor_enabled then
                     label = 'Use attributes',
                     uiHandler = ui.handlers.common.enum_flags(ItemUseAttrBits, 6)
                 },
+                _IconNo = { extensions = { { type = 'tooltip', text = 'For custom items, icon number should be equal to the item ID' } } },
             },
         },
         ['app.ItemWeaponParam'] = {
@@ -345,6 +346,7 @@ if core.editor_enabled then
                     uiHandler = ui.handlers.common.enum_flags(ItemAttrBits, 6)
                 },
                 _Job = { uiHandler = ui.handlers.common.enum_flags(ItemJobFlags, 5) },
+                _IconNo = { extensions = { { type = 'tooltip', text = 'For custom items, icon number should be equal to the item ID' } } },
                 _UseAttr = { ui_ignore = true },
             },
         },
@@ -368,6 +370,7 @@ if core.editor_enabled then
                         end
                     end)
                 },
+                _IconNo = { extensions = { { type = 'tooltip', text = 'For custom items, icon number should be equal to the item ID' } } },
                 _Job = { uiHandler = ui.handlers.common.enum_flags(ItemJobFlags, 5) },
                 _UseAttr = { ui_ignore = true },
             },

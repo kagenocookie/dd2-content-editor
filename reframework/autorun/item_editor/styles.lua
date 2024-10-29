@@ -12,10 +12,12 @@ local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.I
 
 --- @class StyleEntity : DBEntity
 --- @field variants table<string,app.TopsSwapItem|app.PantsSwapItem|app.MantleSwapItem|app.HelmSwapItem|app.UnderwearSwapItem|app.BackpackSwapItem|app.BackpackStyle>
+--- @field furmasks table<string,app.PrefabController>|nil
 --- @field styleHash integer
 
 --- @class StyleData : EntityImportData
 --- @field data table<integer, table>
+--- @field furmasks table<string,string>|nil
 --- @field styleHash integer
 
 local variantLabels = {
@@ -40,12 +42,13 @@ local variantLabels = {
 --- @field slot integer|nil app.EquipData.SlotEnum value
 --- @field styleField string
 --- @field styleNoEnum EnumSummary|nil
+--- @field furmaskIndex integer|nil
 
 --- @type table<string, StyleRecordType>
 local recordClasses = {
-    PantsStyle = { styleDb = '_PantsDB', swap = 'app.PantsSwapItem', enum = 'app.PantsStyle', styleDict = 'PantsDict', slot = 4, styleField = '_PantsStyle', styleNoEnum = enums.get_virtual_enum('PantsStyleNo', {}) },
-    TopsStyle = { styleDb = '_TopsDB', swap = 'app.TopsSwapItem', enum = 'app.TopsStyle', styleDict = 'TopsDict', slot = 3, styleField = '_TopsStyle', styleNoEnum = enums.get_virtual_enum('TopsStyleNo', {}) },
-    HelmStyle = { styleDb = '_HelmDB', swap = 'app.HelmSwapItem', enum = 'app.HelmStyle', styleDict = 'HelmDict', slot = 2, styleField = '_HelmStyle', styleNoEnum = enums.get_virtual_enum('HelmStyleNo', {}) },
+    PantsStyle = { styleDb = '_PantsDB', swap = 'app.PantsSwapItem', enum = 'app.PantsStyle', styleDict = 'PantsDict', slot = 4, styleField = '_PantsStyle', styleNoEnum = enums.get_virtual_enum('PantsStyleNo', {}), furmaskIndex = 4 },
+    TopsStyle = { styleDb = '_TopsDB', swap = 'app.TopsSwapItem', enum = 'app.TopsStyle', styleDict = 'TopsDict', slot = 3, styleField = '_TopsStyle', styleNoEnum = enums.get_virtual_enum('TopsStyleNo', {}), furmaskIndex = 3 },
+    HelmStyle = { styleDb = '_HelmDB', swap = 'app.HelmSwapItem', enum = 'app.HelmStyle', styleDict = 'HelmDict', slot = 2, styleField = '_HelmStyle', styleNoEnum = enums.get_virtual_enum('HelmStyleNo', {}), furmaskIndex = 5 },
     MantleStyle = { styleDb = '_MantleDB', swap = 'app.MantleSwapItem', enum = 'app.MantleStyle', styleDict = 'MantleDict', slot = 5, styleField = '_MantleStyle', styleNoEnum = enums.get_virtual_enum('MantleStyleNo', {}) },
     BackpackStyle = { styleDb = '_BackpackDB', swap = 'app.BackpackSwapItem', enum = 'app.BackpackStyle', styleField = '_BackpackStyle' },
     UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_Style' },
@@ -58,18 +61,24 @@ local recordClasses = {
 }
 local recordTypes = utils.get_sorted_table_keys(recordClasses)
 
-local function add_style_entity(id, entityType, variant_id, styleHash, runtime_instance)
+local function add_style_entity(id, entityType, variant_id, styleHash, runtime_instance, furmask)
     local entity = udb.get_entity(entityType, id)
     --- @cast entity StyleEntity|nil
     if entity then
         entity.variants[tostring(variant_id)] = runtime_instance
+        if furmask then
+            entity.furmasks = entity.furmasks or {}
+            entity.furmasks[tostring(variant_id)] = furmask
+        end
     else
+        --- @type StyleEntity
         entity = {
             id = id,
             type = entityType,
             styleHash = styleHash,
             variants = {[tostring(variant_id)] = runtime_instance },
         }
+        if furmask then entity.furmasks = {[tostring(variant_id)] = furmask} end
 
         udb.register_pristine_entity(entity)
     end
@@ -87,8 +96,13 @@ udb.events.on('get_existing_data', function ()
                 while variants:MoveNext() do
                     local variant = variants._current.key
                     local swapData = variants._current.value[styleHash]
+                    local furmask
+                    if type.furmaskIndex then
+                        furmask = CharacterEditManager._FurMaskMapGenderCatalog[type.furmaskIndex][variant]
+                        furmask = furmask and furmask[styleHash]
+                    end
                     if swapData then
-                        add_style_entity(styleId, name, variant, styleHash, swapData)
+                        add_style_entity(styleId, name, variant, styleHash, swapData, furmask)
                     else
                         -- non-playable style, idk, for npcs or enemies maybe?
                         -- ignore all of these for now
@@ -137,6 +151,15 @@ for _, name in ipairs(recordTypes) do
                 instance.variants[variantKey] = variant
                 variant[record.styleField] = data.id
                 CharacterEditManager[record.styleDb][tonumber(variantKey)][data.id] = variant
+            end
+            if data.furmasks then
+                instance.furmasks = instance.furmasks or {}
+                for k, v in pairs(data.furmasks) do
+                    instance.furmasks[k] = import_handlers.import('app.PrefabController', v, instance.furmasks[k])
+                    if instance.furmasks[k] then
+                        CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)][data.id] = instance.furmasks[k]
+                    end
+                end
             end
 
             if record.styleDict then
@@ -230,11 +253,39 @@ if core.editor_enabled then
                 local variantIdLabels = utils.map(variantIds, function (value) return variantLabels[value] or value end)
                 state.variant_id = select(2, imgui.combo('Variant', state.variant_id, variantIdLabels))
                 if state.variant_id and variantIds[state.variant_id] then
+                    local variantKey = variantIds[state.variant_id]
                     imgui.spacing()
                     imgui.indent(8)
                     imgui.begin_rect()
                     imgui.text('Selected variant')
-                    ui.handlers.show_editable(selectedItem.variants, variantIds[state.variant_id], selectedItem)
+                    if recordData.furmaskIndex then
+                        local furmask = selectedItem.furmasks and selectedItem.furmasks[variantKey]
+                        local path = furmask and furmask:get_ResourcePath()
+                        local changed, newpath = imgui.input_text('Furmask .pfb', path or '')
+                        if changed then
+                            if furmask then
+                                if newpath and newpath ~= '' then
+                                    if newpath ~= path then
+                                        furmask._Item:set_Path(newpath)
+                                        udb.mark_entity_dirty(selectedItem)
+                                    end
+                                else
+                                    if selectedItem.furmasks then
+                                        selectedItem.furmasks[variantKey] = nil
+                                    end
+                                    CharacterEditManager._FurMaskMapGenderCatalog[recordData.furmaskIndex][tonumber(variantKey)]:Remove(selectedItem.styleHash)
+                                    udb.mark_entity_dirty(selectedItem)
+                                end
+                            elseif newpath and newpath ~= '' then
+                                local pfbCtrl = import_handlers.import('app.PrefabController', newpath)
+                                selectedItem.furmasks = selectedItem.furmasks or {}
+                                selectedItem.furmasks[variantKey] = pfbCtrl
+                                CharacterEditManager._FurMaskMapGenderCatalog[recordData.furmaskIndex][tonumber(variantKey)][selectedItem.styleHash] = pfbCtrl
+                                udb.mark_entity_dirty(selectedItem)
+                            end
+                        end
+                    end
+                    ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem)
                     imgui.end_rect(4)
                     imgui.unindent(8)
                     imgui.spacing()
