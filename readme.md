@@ -13,14 +13,12 @@ The mod is basically an "Any game data" JSON-serialization based editor. As long
 Due to DD2 storing every single quest in a single catalog object, we can't really use any existing desktop tools for editing userfiles because conflicts in the quest catalog are pretty much unresolvable. So we need some sort of "patching" support. This mod does that, ingame (meaning the actual files are left clean in the game folder) and in realtime (meaning that we can dynamically alter them while the game is running, like changing NPC behaviors etc).
 
 ## DD2 editors current status
-- Fully functional: Create and edit events (escorts, monster culling requests, affinity escorts)
-- WIP: Can partially edit basegame quests (conditions, triggers, dialogues, ...)
-- WIP: Can create custom quests, though still missing many features (see [quests](https://github.com/kagenocookie/dd2-content-editor/wiki/Quests))
-- WIP: Armor styles editor
-- WIP: Item data editor
-- WIP: Dialogue editor
-- PoC: Human params
-- PoC: Shops
+- ✔️Fully functional: Create and edit events (escorts, monster culling requests, affinity escorts) [Info](https://github.com/kagenocookie/dd2-content-editor/wiki/Events)
+- ✔️Fully functional: Create and edit items (custom consumables, armor, weapons) [Info](https://github.com/kagenocookie/dd2-content-editor/wiki/Items)
+- ✔️Fully functional: Shops editor
+- PoC: Human parameters, job parameters
+- On hold, partial support: Quest editor (see [Info](https://github.com/kagenocookie/dd2-content-editor/wiki/Quests))
+- On hold, partial support: Dialogue editor
 
 ## Gameplay setup
 A proper release will be made once I feel the mod is stable and meaningful enough. For now:
@@ -48,68 +46,6 @@ When first launching (and whenever the game version or content addons change), t
 
 ## Is this safe to use?
 Probably. Depends on the mods running. Custom events are fine, custom items may not be. I'd still recommend making a save backup because there might be issues I just haven't encountered yet.
-
-### Code snippets
-Extend the content database with a new entity type
-```lua
-local udb = require('content_editor.database')
-udb.register_entity_type('event_context', {
-    import = function (data, instance)
-        --- @cast instance EventContext|nil
-        local instance = instance or {}
-        instance.data = import_handlers.import('app.SuddenQuestSelectData', data.data, instance.data)
-        sdk.get_managed_singleton('app.SomeManager').MyDataList[instance.id] = instance.data
-        return instance
-    end,
-    export = function (entity)
-      return {
-        data = import_handlers.export(entity.data, 'app.SuddenQuestSelectData')
-      }
-    end,
-    delete = delete_event_context,
-    root_types = {'app.SuddenQuestSelectData'},
-    insert_id_range = {100000, 999000},
-})
-```
-
-Add a new editor tab:
-```lua
-local udb = require('content_editor.database')
-local editor = require('content_editor.editor')
-local ui = require('content_editor.ui') -- this import provides some common editor features to simplify editor code
-
-editor.define_window('my_custom_editor', 'Nice title', function (state)
-  -- write any imgui code you want here
-  imgui.text('Hello, world!')
-
-  -- easy-to-use entity picker
-  local selectedEntity = ui.editor.entity_picker('quest', state)
-
-  -- simple way to offer customizable presets when creating new entities
-  if editor.active_bundle then
-    local create, preset = ui.editor.create_button_with_preset(state, 'event_context', 'new_ctx', 'New event')
-    if create then
-      -- create a new entity with some initial values, can be taken from a preset or defined manually
-      local newEntity = udb.insert_new_entity('quest', editor.active_bundle, preset or {})
-    end
-  end
-
-end)
-editor.add_tab('my_custom_editor')
-```
-
-Create a custom escort quest:
-```lua
-local my_fixed_quest_id = 1234 -- use the same id when adding the quest between runs in order to guarantee that they'll persist properly between reloads
-local sqEntity = quests.db.sudden_quests.create({
-    key = my_fixed_quest_id,
-    label = 'NPC Followers escort',
-    startLocation = 2220, -- qu012020_084, right outside vernworth NE gate
-    endLocation = 86, -- Gimmick_Camp_032, hill near the vernworth east-west river (why do the rivers not even have names, Capcom?)
-    npcIDs = {"ch310002"},
-    type = 2, -- NpcGuard
-})
-```
 
 ## Credits
 - praydog for creating the amazing REFramework
