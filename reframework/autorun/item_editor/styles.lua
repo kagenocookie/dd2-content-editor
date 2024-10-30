@@ -91,7 +91,7 @@ sdk.hook(
         local style = partSwapper._Meta._HelmStyle
         if visorIds[style] then
             local chara = sdk.to_managed_object(args[3]) --[[@as app.Character]]
-            local visorUp = sdk.to_int64(args[4]) & 1
+            local visorUp = (sdk.to_int64(args[4]) & 1) ~= 0
             local changeMenuFace = (sdk.to_int64(args[5]) & 1) ~= 0
             -- in case we'd need to override the other overload without the visorUp param as well:
             -- local newVisorFlag = (partSwapper._VisorSwitch ~= 2 and 2 or 1)
