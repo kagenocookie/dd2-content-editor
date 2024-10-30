@@ -7,6 +7,8 @@ local enums = require('content_editor.enums')
 
 local definitions = require('content_editor.definitions')
 
+local CharacterManager = sdk.get_managed_singleton('app.CharacterManager') --- @type app.CharacterManager
+local PawnManager = sdk.get_managed_singleton('app.PawnManager') --- @type app.PawnManager
 local CharacterEditManager = sdk.get_managed_singleton('app.CharacterEditManager') --- @type app.CharacterEditManager
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.ItemManager
 
@@ -186,6 +188,12 @@ if core.editor_enabled then
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
 
+    --- @param character app.Character
+    local function forceUpdateCharaFurmask(character)
+        local partSwapper = character:get_HumanPartSwapper()
+        if partSwapper then partSwapper:swapFurMaskMap() end
+    end
+
     definitions.override('styles', {
         ['app.TopsAmPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.TopsBdPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
@@ -283,6 +291,12 @@ if core.editor_enabled then
                                 CharacterEditManager._FurMaskMapGenderCatalog[recordData.furmaskIndex][tonumber(variantKey)][selectedItem.styleHash] = pfbCtrl
                                 udb.mark_entity_dirty(selectedItem)
                             end
+                        end
+                        if imgui.button('Force update furmasks') then
+                            local player = CharacterManager:get_ManualPlayer()
+                            if player then forceUpdateCharaFurmask(player) end
+                            local it = PawnManager._PawnCharacterList:GetEnumerator()
+                            while it:MoveNext() do forceUpdateCharaFurmask(it._current) end
                         end
                     end
                     ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem)
