@@ -85,7 +85,7 @@ local function register_partial_entity_array(parent_entity, partial_type_name, e
                 _is_partial = true,
                 parent_type = parent_entity,
                 parent_id = instance.parent_id,
-                data = import_handlers.export_lua_list(instance.items, element_classname)
+                data = import_handlers.export_table(instance.items, element_classname)
             }
         end,
         import = function (data, instance)

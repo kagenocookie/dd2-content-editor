@@ -22,6 +22,7 @@ local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.I
 --- @field furmasks table<string,string>|nil
 --- @field styleHash integer
 
+local variantKeys = {'2776536455', '1910070090'}
 local variantLabels = {
     ['2776536455'] = '2776536455 Male',
     ['1910070090'] = '1910070090 Female',
@@ -136,10 +137,13 @@ for _, name in ipairs(recordTypes) do
     udb.register_entity_type(name, {
         export = function (instance)
             --- @cast instance StyleEntity
+            local furmasks = import_handlers.export_table(instance.furmasks or {}, 'app.PrefabController') or {}
+            furmasks[variantKeys[1]] = furmasks[variantKeys[1]] or 'null'
+            furmasks[variantKeys[2]] = furmasks[variantKeys[2]] or 'null'
             return {
                 styleHash = instance.styleHash,
-                data = import_handlers.export_lua_list(instance.variants, class),
-                furmasks = import_handlers.export_lua_list(instance.furmasks or {}, 'app.PrefabController'),
+                data = import_handlers.export_table(instance.variants, class),
+                furmasks = furmasks,
             }
         end,
         import = function (data, instance)
@@ -152,7 +156,11 @@ for _, name in ipairs(recordTypes) do
                 local variant = import_handlers.import(class, variantImport, instance.variants[variantKey])
                 instance.variants[variantKey] = variant
                 variant[record.styleField] = data.id
-                CharacterEditManager[record.styleDb][tonumber(variantKey)][data.id] = variant
+                if variant then
+                    CharacterEditManager[record.styleDb][tonumber(variantKey)][data.id] = variant
+                else
+                    CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(data.id)
+                end
             end
             if data.furmasks then
                 instance.furmasks = instance.furmasks or {}

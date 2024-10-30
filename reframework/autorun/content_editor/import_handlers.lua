@@ -503,10 +503,10 @@ local function get_exported(object, classname)
     return handler.export(object)
 end
 
---- Export a lua list of items, each of the items will be exported individually and returned in a new lua list.
---- @param table any[] The object to export
+--- Export a lua table of items, each of the items will be exported individually and returned in a new table.
+--- @param table table The object to export
 --- @param classname string|nil Will be inferred from the given object if not specified
---- @return any[]
+--- @return table
 local function get_exported_array(table, classname)
     local list = {}
     for i, item in pairs(table) do
@@ -518,7 +518,7 @@ end
 _userdata_DB.import_handlers = {
     get_handler = get_handler,
     export = get_exported,
-    export_lua_list = get_exported_array,
+    export_table = get_exported_array,
     import = import,
 
     create_conditional = conditional,
