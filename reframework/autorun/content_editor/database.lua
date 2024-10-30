@@ -601,19 +601,19 @@ local function delete_entity(obj, bundleName)
                 entity_tracker[obj] = nil
                 entity_enums[entity.type].resort()
             elseif deleteStatus == 'error' then
-                print("ERROR: entity " .. obj.id .. " of type " .. entity.type .. " failed to delete ")
+                print("ERROR: entity " .. entity.type .. ': ' .. obj.label .. " failed to delete ")
                 internal.need_restart_for_clean_data = true
                 entity.bundle = nil
-                re.msg('Failed to cleanly delete entity ' .. entity.type .. ' ID ' .. obj.id .. '. Restart the game to revert any changes to the basegame data.')
+                re.msg('Failed to cleanly delete entity ' .. entity.type .. ':  ' .. obj.label .. '. Restart the game to revert any changes to the basegame data.')
             elseif deleteStatus == 'not_deletable' then
-                print("Entity " .. obj.id .. " of type " .. entity.type .. " is not deletable")
+                print("Entity " .. entity.type .. ': ' .. obj.label .. " is not deletable")
                 internal.need_restart_for_clean_data = true
                 entity.bundle = nil
             end
         else
             entity.bundle = nil
             internal.need_restart_for_clean_data = true
-            re.msg('Entity is not dynamically deletable. Restart the game to revert any changes to the basegame data.')
+            re.msg('Entity ' .. entity.type .. ': ' .. obj.label .. ' is not dynamically deletable. Restart the game to revert any changes to the basegame data.')
         end
     elseif previousActiveBundle == bundleToRemoveFrom then
         -- TODO re-import entity from nextBundle's data (if we had the previous data stored somewhere separate, or well from disk)

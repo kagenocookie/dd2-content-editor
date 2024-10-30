@@ -165,9 +165,14 @@ for _, name in ipairs(recordTypes) do
             if data.furmasks then
                 instance.furmasks = instance.furmasks or {}
                 for k, v in pairs(data.furmasks) do
-                    instance.furmasks[k] = import_handlers.import('app.PrefabController', v, instance.furmasks[k])
-                    if instance.furmasks[k] then
-                        CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)][data.id] = instance.furmasks[k]
+                    local importedFurmask = import_handlers.import('app.PrefabController', v, instance.furmasks[k])
+                    instance.furmasks[k] = importedFurmask
+                    if CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)] then
+                        if importedFurmask then
+                            CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)][data.styleHash] = importedFurmask
+                        else
+                            CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)]:Remove(data.styleHash)
+                        end
                     end
                 end
             end
@@ -185,6 +190,26 @@ for _, name in ipairs(recordTypes) do
             else
                 return name .. ' ' .. entity.id
             end
+        end,
+        delete = function (instance)
+            --- @cast instance StyleEntity
+            if instance.id < 10000 then return 'forget' end
+
+            if instance.furmasks then
+                for k, v in pairs(instance.furmasks) do
+                    CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)]:Remove(instance.styleHash)
+                end
+            end
+
+            if record.styleDict then
+                ItemManager[record.styleDict]:Remove(instance.id)
+            end
+
+            for variantKey, _ in pairs(instance.variants or {}) do
+                CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(instance.id)
+            end
+
+            return 'ok'
         end,
         replaced_enum = record.styleNoEnum and record.styleNoEnum.enumName or nil,
         insert_id_range = {10000, 32700}, -- _StyleNo on the armor data is a signed short so we need to limit to that range

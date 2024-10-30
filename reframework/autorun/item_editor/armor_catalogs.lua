@@ -105,7 +105,7 @@ local recordTypes = utils.get_sorted_table_keys(armorCatalogs)
 for armorMeshType, fieldData in pairs(armorCatalogs) do
     local sourceEnum = enums.get_enum(fieldData[1].enum).valueToLabel
     udb.register_entity_type(armorMeshType, {
-        insert_id_range = {1000, 6942069},
+        insert_id_range = {1000, 360000},
         import = function (import_data, instance)
             instance = instance or {}
             for i, entry in ipairs(fieldData) do
@@ -124,6 +124,13 @@ for armorMeshType, fieldData in pairs(armorCatalogs) do
             end
 
             return data
+        end,
+        delete = function (instance)
+            if instance.id > 360000 then return 'forget' end
+            for _, entry in ipairs(fieldData) do
+                CharacterEditManager[entry.dict]:Remove(instance.id)
+            end
+            return 'ok'
         end,
         replaced_enum = fieldData[1].enum,
         root_types = {},
