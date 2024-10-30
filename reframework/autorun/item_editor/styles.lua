@@ -298,6 +298,7 @@ if core.editor_enabled then
                             local it = PawnManager._PawnCharacterList:GetEnumerator()
                             while it:MoveNext() do forceUpdateCharaFurmask(it._current) end
                         end
+                        if imgui.is_item_hovered() then imgui.set_tooltip('Will force regenerate furmasks of the player and pawns based on the currently defined paths') end
                     end
                     ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem)
                     imgui.end_rect(4)
