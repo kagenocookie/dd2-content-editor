@@ -11,6 +11,7 @@ local CharacterManager = sdk.get_managed_singleton('app.CharacterManager') --- @
 local PawnManager = sdk.get_managed_singleton('app.PawnManager') --- @type app.PawnManager
 local CharacterEditManager = sdk.get_managed_singleton('app.CharacterEditManager') --- @type app.CharacterEditManager
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.ItemManager
+local GuiManager = sdk.get_managed_singleton('app.GuiManager') --- @type app.GuiManager
 
 --- @class StyleEntity : DBEntity
 --- @field variants table<string,app.TopsSwapItem|app.PantsSwapItem|app.MantleSwapItem|app.HelmSwapItem|app.UnderwearSwapItem|app.BackpackSwapItem|app.BackpackStyle>
@@ -75,6 +76,40 @@ sdk.hook(
         local style = mockup.CompBuilder._RefPartSwapper._Meta._HelmStyle
         if visorIds[style] then
             thread.get_hook_storage().rv = ptr_true
+            return sdk.PreHookResult.SKIP_ORIGINAL
+        end
+    end,
+    function (ret) return thread.get_hook_storage().rv or ret end
+)
+
+sdk.hook(
+    -- sdk.find_type_definition('app.MockupCtrl'):get_method('changeVisor(app.Character, System.Boolean)'),
+    sdk.find_type_definition('app.MockupCtrl'):get_method('changeVisor(app.Character, System.Boolean, System.Boolean)'),
+    function (args)
+        local mockup = sdk.to_managed_object(args[2]) --[[@as app.MockupCtrl]]
+        local partSwapper = mockup.CompBuilder._RefPartSwapper
+        local style = partSwapper._Meta._HelmStyle
+        if visorIds[style] then
+            local chara = sdk.to_managed_object(args[3]) --[[@as app.Character]]
+            local visorUp = sdk.to_int64(args[4]) & 1
+            local changeMenuFace = (sdk.to_int64(args[5]) & 1) ~= 0
+            -- in case we'd need to override the other overload without the visorUp param as well:
+            -- local newVisorFlag = (partSwapper._VisorSwitch ~= 2 and 2 or 1)
+            local newVisorFlag = visorUp and 1 or 2
+            if partSwapper._VisorSwitch ~= newVisorFlag then
+                partSwapper._UpdateStatusOfSwapObjects = true
+            end
+            partSwapper._VisorSwitch = newVisorFlag
+            if partSwapper._HumanContext ~= nil then
+                partSwapper._HumanContext._VisorSwitch = newVisorFlag
+            end
+            if chara and chara:get_Enabled() then
+                local hps = chara:get_HumanPartSwapper()
+                if hps then hps._VisorSwitch = newVisorFlag end
+                if changeMenuFace then
+                    GuiManager:updateMenuFace(chara)
+                end
+            end
             return sdk.PreHookResult.SKIP_ORIGINAL
         end
     end,

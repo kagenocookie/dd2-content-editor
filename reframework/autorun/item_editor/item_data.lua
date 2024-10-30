@@ -369,6 +369,7 @@ if core.editor_enabled then
                 _IconNo = { extensions = { { type = 'tooltip', text = 'For custom items, icon number should be equal to the item ID' } } },
                 _Job = { uiHandler = ui.handlers.common.enum_flags(ItemJobFlags, 5) },
                 _UseAttr = { ui_ignore = true },
+                _BlowResistRate = { label = 'BlowResistRate (Knockdown)' }
             },
         },
     })
