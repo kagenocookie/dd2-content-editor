@@ -64,6 +64,23 @@ local recordClasses = {
 }
 local recordTypes = utils.get_sorted_table_keys(recordClasses)
 
+local visorIds = {}
+
+-- the real implementation does an Array.Contains() on app.CharacterEditDefine.VisorControlEnable but we can't modify that
+local ptr_true = sdk.to_ptr(true)
+sdk.hook(
+    sdk.find_type_definition('app.MockupCtrl'):get_method('isControlVisor'),
+    function (args)
+        local mockup = sdk.to_managed_object(args[2]) --[[@as app.MockupCtrl]]
+        local style = mockup.CompBuilder._RefPartSwapper._Meta._HelmStyle
+        if visorIds[style] then
+            thread.get_hook_storage().rv = ptr_true
+            return sdk.PreHookResult.SKIP_ORIGINAL
+        end
+    end,
+    function (ret) return thread.get_hook_storage().rv or ret end
+)
+
 local function add_style_entity(id, entityType, variant_id, styleHash, runtime_instance, furmask)
     local entity = udb.get_entity(entityType, id)
     --- @cast entity StyleEntity|nil
@@ -152,15 +169,22 @@ for _, name in ipairs(recordTypes) do
             instance = instance or {}
             instance.variants = instance.variants or {}
             instance.styleHash = data.styleHash or data.id
+            local hasVisor = false
             for variantKey, variantImport in pairs(data.data) do
                 local variant = import_handlers.import(class, variantImport, instance.variants[variantKey])
                 instance.variants[variantKey] = variant
                 variant[record.styleField] = data.id
                 if variant then
                     CharacterEditManager[record.styleDb][tonumber(variantKey)][data.id] = variant
+                    hasVisor = hasVisor
+                        or variant._VisorControl and variant._VisorControl ~= 0
+                        or variant._SubVisorControl and variant._SubVisorControl ~= 0
                 else
                     CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(data.id)
                 end
+            end
+            if name == 'HelmStyle' then
+                visorIds[data.id] = hasVisor or nil
             end
             if data.furmasks then
                 instance.furmasks = instance.furmasks or {}
@@ -238,12 +262,15 @@ if core.editor_enabled then
         ['app.FootPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.PantsWlPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.BackpackPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
+        ['app.FacewearPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
+        ['app.BeardPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.HelmSwapItem'] = { fields = { _HelmStyle = { ui_ignore = true, import_ignore = true } } },
         ['app.TopsSwapItem'] = { fields = { _TopsStyle = { ui_ignore = true, import_ignore = true } } },
         ['app.PantsSwapItem'] = { fields = { _PantsStyle = { ui_ignore = true, import_ignore = true } } },
         ['app.MantleSwapItem'] = { fields = { _MantleStyle = { ui_ignore = true, import_ignore = true } } },
         ['app.BackpackSwapItem'] = { fields = { _BackpackStyle = { ui_ignore = true, import_ignore = true } } },
         ['app.UnderwearSwapItem'] = { fields = { _UnderwearStyle = { ui_ignore = true, import_ignore = true } } },
+        ['app.CharacterEditDefine.VisorControlFlag'] = { uiHandler = ui.handlers.common.enum_flags(enums.get_enum('app.CharacterEditDefine.VisorControlFlag')) },
     })
 
     local equipped_style_result
