@@ -449,7 +449,8 @@ importer_factories = {
                         return uri
                     end
                 end
-                return fullExport(src, target)
+                -- TODO need to test whether propagating options is fine for all cases, or do we want to only propagate for whitelisted fields?
+                return fullExport(src, target, options)
             end
         end
 
@@ -493,14 +494,15 @@ end
 --- Export a single managed object to lua table data
 --- @param object any The object to export
 --- @param classname string|nil Will be inferred from the given object if not specified
+--- @param options ExportOptions|nil
 --- @return any
-local function get_exported(object, classname)
+local function get_exported(object, classname, options)
     classname = classname or helpers.get_type(object)
     if classname == nil then return {} end
 
     local handler = get_handler(classname)
     if not handler then return {} end
-    return handler.export(object)
+    return handler.export(object, nil, options)
 end
 
 --- Export a lua table of items, each of the items will be exported individually and returned in a new table.

@@ -645,6 +645,7 @@ local function show_entity_ui_internal(target, owner, label, classname, editorId
         editorId = target:get_address()
     end
     if type(editorId) == 'table' then
+        if not label then label = classname end
         editorId['_id' .. label] = editorId['_id' .. label] or math.random(1, 1000000)
         editorId = editorId['_id' .. label]
     end
