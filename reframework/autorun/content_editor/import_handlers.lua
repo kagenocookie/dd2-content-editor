@@ -509,8 +509,8 @@ end
 --- @return any[]
 local function get_exported_array(table, classname)
     local list = {}
-    for _, item in ipairs(table) do
-        list[#list+1] = get_exported(item, classname)
+    for i, item in pairs(table) do
+        list[i] = get_exported(item, classname)
     end
     return list
 end

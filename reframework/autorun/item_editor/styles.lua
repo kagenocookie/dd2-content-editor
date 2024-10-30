@@ -136,9 +136,8 @@ for _, name in ipairs(recordTypes) do
             --- @cast instance StyleEntity
             return {
                 styleHash = instance.styleHash,
-                data = utils.map_assoc(instance.variants, function (variant)
-                    return import_handlers.export(variant, class)
-                end),
+                data = import_handlers.export_lua_list(instance.variants, class),
+                furmasks = import_handlers.export_lua_list(instance.furmasks or {}, 'app.PrefabController'),
             }
         end,
         import = function (data, instance)
