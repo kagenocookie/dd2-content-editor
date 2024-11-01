@@ -211,6 +211,11 @@ local function draw_editor()
         set_need_script_reset()
     end
     imgui.same_line()
+    if imgui.button('Save type cache') then
+        typecache.save()
+    end
+    if imgui.is_item_hovered() then imgui.set_tooltip('Force save the current type cache') end
+    imgui.same_line()
     local idx
     imgui.set_next_item_width(200)
     changed, idx = imgui.combo('##Open new window', 1, editor_labels)

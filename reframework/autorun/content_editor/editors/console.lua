@@ -17,6 +17,8 @@ local function display_managed(obj, state)
     ui.handlers.show(obj, nil, nil, nil, 'dv_' .. state.id .. '_' .. obj:get_address())
 end
 
+local result_cache = {}
+
 local display_table
 
 ---@param tbl table
@@ -81,7 +83,97 @@ end
 local globalSettings = editor.persistent_storage.get('console', {})
 local maxlines = 12
 
-local function exec_text(state, text)
+local rootScene
+local function find_root_scene()
+    if rootScene then return rootScene end
+    local success, scene = pcall(sdk.call_native_func, sdk.get_native_singleton("via.SceneManager"), sdk.find_type_definition("via.SceneManager"), "get_CurrentScene()")
+    if success then
+        rootScene = scene
+        return scene
+    end
+end
+
+local sceneFindComponents = sdk.find_type_definition('via.Scene'):get_method('findComponents(System.Type)')
+local compGetGO = sdk.find_type_definition('via.Component'):get_method('get_GameObject')
+local goGetName = sdk.find_type_definition('via.GameObject'):get_method('get_Name')
+--- @param typedef System.Type
+--- @param name_prefix string|nil
+--- @param remap nil|fun(item: any): any
+local function find_gameobjects(typedef, name_prefix, remap)
+    local scene = find_root_scene()
+    if not scene then return nil end
+    if not typedef then return nil end
+
+    local list = sceneFindComponents:call(scene, typedef)
+    list = list and list:get_elements() or {}
+    if name_prefix then
+        local filtered = {}
+        for _, item in ipairs(list) do
+            local s, go = pcall(compGetGO.call, compGetGO, item)
+            if s and go then
+                local name = goGetName:call(go)
+                if name:find(name_prefix) then
+                    if remap then
+                        filtered[#filtered+1] = remap(item)
+                    else
+                        filtered[#filtered+1] = item
+                    end
+                end
+            end
+        end
+        list = filtered
+    end
+    if #list == 1 then return list[1] end
+    return list
+end
+
+--- @param text string
+--- @return boolean success, any result
+local function prepare_exec_func(text)
+    if text:sub(1, 1) == '/' then
+        local filter = text ~= '/' and text:sub(2) or nil
+        local typedef
+        if not filter then
+            typedef = sdk.typeof('via.Transform')
+        else
+            local colon = filter:find(':')
+            if colon then
+                local colon2 = filter:find('::', colon + 1)
+                if colon2 then
+                    local t = filter:sub(1, colon - 1)
+                    typedef = sdk.typeof(t)
+                    if not typedef then
+                        return false, 'Invalid type "' .. t .. '"'
+                    end
+                    print('colon2', 'function(item) return ' .. filter:sub(colon2 + 2) .. ' end')
+                    local success, remapper = pcall(load, 'return function(item) return ' .. filter:sub(colon2 + 2) .. ' end', nil, 't')
+                    if not success or not remapper then return false, 'load error' .. tostring(remapper) end
+
+                    filter = filter:sub(colon + 1, colon2 - 1)
+                    return true, find_gameobjects(typedef, filter, remapper())
+                else
+                    local t = filter:sub(1, colon - 1)
+                    typedef = sdk.typeof(t)
+                    filter = filter:sub(colon + 1)
+                    if not typedef then
+                        return false, 'Invalid type "' .. t .. '"'
+                    end
+                end
+            end
+        end
+        return true, find_gameobjects(typedef, filter)
+    elseif text:sub(1, 1) == '!' then
+        local code = isMultiline(text) and text:sub(2) or 'return ' .. text:sub(2)
+        local success, errOrFunc = pcall(load, code, nil, 't')
+        if not success or not errOrFunc then print('errored out', errOrFunc) return false, errOrFunc end
+        return pcall(errOrFunc)
+    else
+        local code = isMultiline(text) and text or 'return ' .. text
+        return pcall(load, code, nil, 't')
+    end
+end
+
+local function add_to_exec_list(state, text)
     table.insert(state.open_entries, 1, {text = text, id = math.random(1, 99999999)})
     state.history = state.history or {}
     table.insert(state.history, 1, text)
@@ -93,6 +185,8 @@ end
 
 editor.define_window('data_viewer', 'Data console', function (state)
     local confirm = imgui.button('Run')
+    imgui.same_line()
+    if imgui.button('?') then state.toggleInfo = not state.toggleInfo end
     imgui.same_line()
     if state.multiline then
         local w = imgui.calc_item_width()
@@ -113,13 +207,24 @@ editor.define_window('data_viewer', 'Data console', function (state)
     if changed then _userdata_DB.__internal.config.save() end
 
     if state.input and state.input ~= '' and confirm then
-        exec_text(state, state.input)
+        add_to_exec_list(state, state.input)
         state.input = ''
+    end
+
+    if state.toggleInfo then
+        imgui.text('Can write any valid lua code')
+        imgui.text('Entering a / prefix does a search for game objects')
+        imgui.text('/Player will search for any transforms that contain the text "Player"')
+        imgui.text('/app.Character:Player will search for any app.Character components that contain the text "Player"')
+        imgui.text('/app.Character:Player::item:get_GameObject() will evaluate the function after :: on each matching item and return that value instead')
+        imgui.text('Entering a ! prefix evaluates the result once and retrieves the cached result instead of evaluating every frame')
     end
 
     if imgui.tree_node('History') then
         --- @type string[]
         state.history = state.history or {}
+        if imgui.button('Clear history') then state.history = {} editor.persistent_storage.save() end
+
         for idx, historyEntry in ipairs(state.history) do
             imgui.push_id(idx..historyEntry)
             local use = imgui.button('Use')
@@ -171,7 +276,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
                 imgui.same_line()
                 imgui.text(bookmark.label)
                 if use then
-                    exec_text(state, bookmark.text)
+                    add_to_exec_list(state, bookmark.text)
                 end
                 if copy then
                     state.input = bookmark.text
@@ -219,18 +324,36 @@ editor.define_window('data_viewer', 'Data console', function (state)
         end
         imgui.same_line()
         if imgui.tree_node(entry.text) then
-            local success
-            if isMultiline(entry.text) then
-                success, func = pcall(load, entry.text, nil, 't')
-            else
-                success, func = pcall(load, 'return ' .. entry.text, nil, 't')
+            local cache = result_cache[entry]
+            if cache then
+                imgui.same_line()
+                if imgui.button('Re-evaluate') then
+                    cache._eval = nil
+                    cache._success = nil
+                end
             end
+            local success
+            if not cache or cache._eval == nil then
+                cache = cache or {}
+                result_cache[entry] = cache
+                cache._success, cache._eval = prepare_exec_func(entry.text)
+                success = cache._success
+            else
+                success = cache._success
+            end
+            func = cache._eval
             if not success then
-                imgui.text_colored('Syntax error:' .. tostring(func), core.get_color('error'))
+                imgui.text_colored('Error: ' .. tostring(func), core.get_color('error'))
             elseif func == nil then
                 imgui.text_colored('Nil func oi:' .. tostring(func), core.get_color('error'))
+            elseif type(func) == 'string' then
+                imgui.text(func)
             else
-                success, data = pcall(func)
+                if type(cache._eval) == 'function' then
+                    success, data = pcall(func)
+                else
+                    success, data = true, cache._eval
+                end
                 if not success then
                     imgui.text_colored('Error:' .. tostring(data), core.get_color('error'))
                 else

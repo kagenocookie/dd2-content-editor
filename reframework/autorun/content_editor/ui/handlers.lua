@@ -116,6 +116,29 @@ value_type_handler_defs['System.Guid'] = function (ctx)
     return changed or randomized
 end
 
+object_handlers['via.GameObject'] = function (context)
+    local go = context.get() ---@type via.GameObject
+    if not go then
+        imgui.text('GameObject is null')
+        return false
+    end
+
+    imgui.text('GameObject: ' .. go:get_Name())
+    imgui.same_line()
+    if imgui.button('Refresh components') then context.data.components = nil end
+    if not context.data.components then context.data.components = go:get_Components():get_elements() end
+
+    local comps = context.data.components
+    if ui.treenode_suffix('Components', '(' .. tostring(#comps) .. ')') then
+        context.data.compdata = context.data.compdata or {}
+        for i, comp in ipairs(comps) do
+            context.data.compdata[i] = context.data.compdata[i] or {}
+            _userdata_DB._ui_handlers.show_readonly(comp, nil, nil, nil, context.data.compdata[i])
+        end
+    end
+    return false
+end
+
 -- --- @type ObjectFieldAccessors
 local default_accessor = {
     get = function (object, fieldname)
