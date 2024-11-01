@@ -522,18 +522,6 @@ local function translate_message(messageGuid, args)
     return translate_message_guid(parse_guid(messageGuid), args)
 end
 
-local getCharaName = sdk.find_type_definition("app.GUIBase"):get_method("getName(app.CharacterID)")
-local function translate_character_name(characterId)
-    return getCharaName:call(nil, characterId)
-end
-
-local ItemManager = sdk.get_managed_singleton('app.ItemManager')
-local getItemData = sdk.find_type_definition('app.ItemManager'):get_method('getItemData(System.Int32)')
-local function translate_item_name(itemId)
-    local id = getItemData:call(ItemManager, itemId)
-    return id and id:call('get_Name')
-end
-
 --- Better toJson function that returns an actual value instead of nil for empty tables
 ---@param obj table
 ---@param tableIsArray boolean|nil
@@ -692,8 +680,6 @@ _shadowcookie_utils = {
     translate = translate_message,
     guid_try_parse = try_parse_guid,
     guid_parse = parse_guid,
-    translate_character_name = translate_character_name,
-    translate_item_name = translate_item_name,
     get_gameobject_component = get_gameobject_component,
     folder_get_children = folder_get_children,
 }

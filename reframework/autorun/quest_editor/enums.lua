@@ -3,17 +3,18 @@ if _quest_DB.enums then return _quest_DB.enums end
 
 local usEnums = require('content_editor.enums')
 local utils = require('content_editor.utils')
+local utils_dd2 = require('content_editor.dd2.utils')
 
 ---@diagnostic disable: inject-field
 
 local CharacterID = usEnums.get_enum('app.CharacterID')
-CharacterID.set_display_labels(utils.map(CharacterID.values, function (val) return {val, CharacterID.valueToLabel[val] .. ' : ' .. utils.translate_character_name(val)} end))
+CharacterID.set_display_labels(utils.map(CharacterID.values, function (val) return {val, CharacterID.valueToLabel[val] .. ' : ' .. utils_dd2.translate_character_name(val)} end))
 
 --- List of CharacterID enum values, filtered only to NPCs (ch3*)
 local NPCIDs = usEnums.create_subset(CharacterID, 'CharacterID_NPC', function (label) return label == 'Invalid' or label:sub(1,3) == 'ch3' and label:len() > 5 end)
 
 local ItemID = usEnums.get_enum('app.ItemIDEnum')
-ItemID.set_display_labels(utils.map(ItemID.values, function (val) return { val, ItemID.valueToLabel[val] .. ' : ' .. tostring(utils.translate_item_name(val)) } end))
+ItemID.set_display_labels(utils.map(ItemID.values, function (val) return { val, ItemID.valueToLabel[val] .. ' : ' .. tostring(utils_dd2.translate_item_name(val)) } end))
 
 local TalkEventDefineID = usEnums.get_enum('app.TalkEventDefine.ID')
 local AIKeyLocation = usEnums.get_enum('app.AIKeyLocation')

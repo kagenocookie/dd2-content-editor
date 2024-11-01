@@ -20,6 +20,8 @@ local helpers = require('content_editor.helpers')
 local import_handlers = require('content_editor.import_handlers')
 local scripts = require('content_editor.editors.custom_scripts')
 
+local utils_dd2 = require('content_editor.dd2.utils')
+
 require('quest_editor.quest_type_overrides')
 
 local invalidQuests = {} --- @type QuestDataSummary[] Invalid app.SuddenQuestEntity instances with -1 IDs, most of the data is missing since we can't link them properly
@@ -507,7 +509,7 @@ local function event_get_possible_character_ids(id)
 end
 local function event_get_possible_character_names(id)
     local npcIds = event_get_possible_character_ids(id)
-    return utils.map(npcIds, function (npcId) return enums.CharacterID.valueToLabel[npcId] .. ': ' .. tostring(utils.translate_character_name(npcId)) end)
+    return utils.map(npcIds, function (npcId) return enums.CharacterID.valueToLabel[npcId] .. ': ' .. tostring(utils_dd2.translate_character_name(npcId)) end)
 end
 
 local function event_get_first_context(id)

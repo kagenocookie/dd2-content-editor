@@ -10,6 +10,7 @@ local udb = require('content_editor.database')
 local editor = require('content_editor.editor')
 local helpers = require('content_editor.helpers')
 local import_handlers = require('content_editor.import_handlers')
+local utils_dd2 = require('content_editor.dd2.utils')
 
 local TalkEventManager = sdk.get_managed_singleton('app.TalkEventManager')
 --#region Quests
@@ -133,7 +134,7 @@ local function imgui_show_event_context(ctx, entity)
     imgui.begin_rect()
 
     local npcIdStr = enums.NPCIDs.valueToLabel[ctx.context._NpcID]
-    local name = utils.translate_character_name(ctx.context._NpcID)
+    local name = utils_dd2.translate_character_name(ctx.context._NpcID)
     if ui.treenode_suffix(tostring(ctx.id), tostring(npcIdStr) .. ' : ' .. name .. '  ' .. (ctx.label or '')) then
         ui.editor.show_entity_metadata(ctx)
 

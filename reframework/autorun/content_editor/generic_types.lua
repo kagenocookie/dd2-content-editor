@@ -8,10 +8,11 @@ if _userdata_DB.generics then return _userdata_DB.generics end
 --- @return string
 local function clean_generic_type_definition_name(typename)
     typename = typename:gsub('%[%[', '<['):gsub('%]%]', ']>') -- turn all [[ and ]] into <[ and ]>
-    typename = typename:gsub(', [%a%d]+, [%a%d, =.]+%]', ']') -- remove all namespace+version+culture+token segments
-    typename = typename:gsub('%[([%a%d,`<>\\.]+)%]', '%1') -- remove single [...] brackets around types
-    typename = typename:gsub('%[([%a%d,`<>\\.]+)%]', '%1') -- repeat above to also handle nested generics
-    typename = typename:gsub('%[([%a%d,`<>\\.]+)%[%]%]', '%1[]') -- a few types also have an array value for the last generic, handle that too
+    typename = typename:gsub(', [%a%d_\\.]+, [%a%d, =.]+%]', ']') -- remove all namespace+version+culture+token segments
+    typename = typename:gsub('%[([%a%d_,`<>\\.]+)%]', '%1') -- remove single [...] brackets around types
+    typename = typename:gsub('%[([%a%d_,`<>\\.]+)%]', '%1') -- repeat above to also handle nested generics
+    typename = typename:gsub('%[([%a%d_,`<>\\.]+)%]', '%1') -- repeat above to also handle nested generics
+    typename = typename:gsub('%[([%a%d_,`<>\\.]+)%[%]%]', '%1[]') -- a few types also have an array value for the last generic, handle that too
     return typename
 end
 

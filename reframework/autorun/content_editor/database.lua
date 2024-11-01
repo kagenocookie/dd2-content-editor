@@ -1,8 +1,9 @@
 if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB.database then return _userdata_DB.database end
 
-local utils = require('content_editor.utils')
 local core = require('content_editor.core')
+local ctrl = require('content_editor.game_controller')
+local utils = require('content_editor.utils')
 local internal = require('content_editor._internal')
 local events = require('content_editor.events')
 local typecache = require('content_editor.typecache')
@@ -977,15 +978,8 @@ local function finish_database_init()
     events.emit('ready')
 end
 
--- fallback case for the few people whose REF loads up way too early for whatever reason
--- in theory, if one of these dynamic dictionaries are set, they should probably all be
-local QuestManager = sdk.get_managed_singleton('app.QuestManager')
-local function game_data_is_ready()
-    return QuestManager.QuestCatalogDict and QuestManager.QuestCatalogDict:getCount() > 0
-end
-
 re.on_application_entry('UpdateBehavior', function ()
-    if not db_ready and not db_failed and next(entity_types) and game_data_is_ready() then
+    if not db_ready and not db_failed and next(entity_types) and ctrl.game_data_is_ready() then
         -- db_failed = true finish_database_init() if true then return end
         -- if we have at least one entity type registered, we should be confident that they're all there and ready
         -- if we wanted to allow a provider to delay, we can add a flag to the entity type later
