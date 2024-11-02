@@ -614,14 +614,7 @@ local function enumerator_to_table(enumerator)
     return list
 end
 
---- @return string
-local function get_game_version()
-    return sdk.find_type_definition('via.version'):get_method('getMainRevisionString'):call(nil)
-end
-
 _shadowcookie_utils = {
-    get_game_version = get_game_version,
-
     log = log_all,
     string_join = string_join,
     get_irl_timestamp = get_irl_timestamp,

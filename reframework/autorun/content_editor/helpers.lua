@@ -298,9 +298,9 @@ local function _object_to_string_internal(item, classname, context)
             classname = realClassname
         end
         if realClassname and realClassname ~= classname then
-            typesettings = type_settings.type_settings[realClassname]
-            if typesettings and typesettings.toString then
-                return typesettings.toString(item, context)
+            local realSettings = type_settings.type_settings[realClassname]
+            if realSettings and realSettings.toString then
+                return realSettings.toString(item, context)
             end
         end
     end

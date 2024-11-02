@@ -18,35 +18,23 @@ if _userdata_DB._ui_contexts then return _userdata_DB._ui_contexts end
 --- @field set fun(value: any|nil)
 --- @field children table<string|integer, UIContainer>
 
---- @type table<string, UIContainer>
-local root_containers = {}
+local setter_error = function() error('Setter unsupported in current UI context') end
 
---- @param value any Not null
---- @param owner DBEntity|nil
---- @param label string
---- @param editorId any
---- @return UIContainer
-local function create(value, owner, label, editorId)
-    --- @type UIContainer
-    local ctx
-    ctx = {
-        parent = nil,
-        object = value,
-        data = { classname = type(value) == 'userdata' and value.get_type_definition and value:get_type_definition():get_full_name() or 'unknown: ' .. tostring(value) },
-        children = {},
-        field = '',
-        owner = owner,
-        label = label,
-        set = function() error('Setter unsupported in current UI context') end,
-        get = function () return ctx.object end,
-    }
-    root_containers[value] = ctx
-    if owner ~= nil and not root_containers[owner] then
-        root_containers[owner] = ctx
-    elseif owner == nil and editorId ~= nil then
-        root_containers[editorId] = ctx
-    end
-    return ctx
+--- @type UIContainer
+local root_context = {
+    children = {},
+    field = '',
+    data = { classname = '/' },
+    get = function () end,
+    set = setter_error,
+    label = '',
+}
+
+--- @param parent UIContainer
+--- @param fieldName string|integer
+--- @return UIContainer|nil
+local function get_child(parent, fieldName)
+    return parent.children[fieldName]
 end
 
 --- @param parent UIContainer
@@ -74,10 +62,53 @@ local function create_child(parent, childname, objectValue, label, accessors, cl
     return ctx
 end
 
---- @param root_owner DBEntity|table|REManagedObject
+--- @param value any Not null
+--- @param owner DBEntity|nil
+--- @param label string
+--- @param editorId any
+--- @return UIContainer
+local function create_root(value, owner, label, editorId)
+    local classname = type(value) == 'userdata' and value.get_type_definition and value:get_type_definition():get_full_name() or 'unknown: ' .. tostring(value)
+    local newctx
+    newctx = create_child(root_context, editorId, value, label, {}--[[@as any]], classname)
+    newctx.owner = owner
+    newctx.parent = nil
+    newctx.set = setter_error
+    newctx.get = function () return newctx.object end
+
+    if owner ~= nil then root_context.children[owner] = newctx end
+    if editorId ~= nil then root_context.children[editorId] = newctx end
+    root_context.children[value] = newctx
+
+    return newctx
+end
+
+--- @param parent UIContainer|nil
+--- @param childname string|integer
+--- @param objectValue any
+--- @param label string
+--- @param accessors ObjectFieldAccessors|nil
+--- @param classname string
+--- @return UIContainer context, boolean newContext
+local function get_or_create_child(parent, childname, objectValue, label, accessors, classname)
+    parent = parent or root_context
+    local ctx = get_child(parent, childname)
+    if ctx then return ctx, false end
+    if accessors then
+        return create_child(parent, childname, objectValue, label, accessors, classname), true
+    else
+---@diagnostic disable-next-line: param-type-mismatch
+        ctx = create_child(parent, childname, objectValue, label, nil, classname)
+        ctx.get = function () return ctx.object end
+        ctx.set = setter_error
+        return ctx, true
+    end
+end
+
+--- @param root_owner any
 --- @return UIContainer|nil
 local function get_root_from_owner(root_owner)
-    return root_containers[root_owner]
+    return root_context.children[root_owner]
 end
 
 --- @param context UIContainer
@@ -87,13 +118,6 @@ local function get_context_root(context)
         parent = parent.parent
     end
     return parent
-end
-
---- @param parent UIContainer
---- @param fieldName string|integer
---- @return UIContainer|nil
-local function get_child(parent, fieldName)
-    return parent.children[fieldName]
 end
 
 --- @param ctx UIContainer
@@ -131,10 +155,10 @@ local function delete(ctx, editorId)
         delete_child_by_context(ctx.parent, ctx)
     end
     if ctx.object and ctx.object == ctx.owner then
-        root_containers[ctx.object] = nil
+        root_context.children[ctx.object] = nil
     end
     if editorId then
-        root_containers[editorId] = nil
+        root_context.children[editorId] = nil
     end
 end
 
@@ -191,7 +215,7 @@ local function debug_view_ctx(prefix, ctx)
 end
 
 local function debug_view(root_owner)
-    local ctx = root_containers[root_owner]
+    local ctx = root_context.children[root_owner]
     if not ctx then
         imgui.text('[DEBUG] UI CONTEXT: null')
         return
@@ -200,8 +224,9 @@ local function debug_view(root_owner)
 end
 
 _userdata_DB._ui_contexts = {
-    create = create,
+    create_root = create_root,
     create_child = create_child,
+    get_or_create_child = get_or_create_child,
     delete = delete,
     delete_child = delete_child,
     delete_children = delete_children,

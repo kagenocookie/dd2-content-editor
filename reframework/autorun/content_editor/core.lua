@@ -1,6 +1,8 @@
 if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB.__core then return _userdata_DB.__core end
 
+local ctrl = require('content_editor.game_controller')
+
 local color_statuses = {
     default = 0,
     disabled = 1,
@@ -67,6 +69,8 @@ end
 _userdata_DB.__core = {
     --- Active mod version
     VERSION = {0, 3, 0},
+    --- Basic game specific metadata
+    game = ctrl,
     --- Base content db path
     _basepath = data_basepath,
     --- Get a color preset

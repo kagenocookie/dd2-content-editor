@@ -123,23 +123,76 @@ object_handlers['via.GameObject'] = function (context)
         return false
     end
 
-    imgui.text('GameObject: ' .. go:get_Name())
-    imgui.same_line()
-    if imgui.button('Refresh components') then context.data.components = nil end
-    if not context.data.components then context.data.components = go:get_Components():get_elements() end
+    imgui.text('GameObject ' .. go:get_Name())
 
     local comps = context.data.components
-    if ui.treenode_suffix('Components', '(' .. tostring(#comps) .. ')') then
+    if ui.treenode_suffix('Components', comps and '(' .. tostring(#comps) .. ')' or '') then
+        imgui.same_line()
+        if imgui.button('Refresh components') then context.data.components = nil end
+        if not context.data.components then
+            comps = go:get_Components():get_elements()
+            context.data.components = comps
+        end
         context.data.compdata = context.data.compdata or {}
         for i, comp in ipairs(comps) do
             context.data.compdata[i] = context.data.compdata[i] or {}
-            _userdata_DB._ui_handlers.show_readonly(comp, nil, nil, nil, context.data.compdata[i])
+            local compType = comp:get_type_definition()
+            _userdata_DB._ui_handlers.show_nested(comp, context, compType:get_name(), compType:get_full_name(), true)
         end
+        imgui.tree_pop()
     end
     return false
 end
 
--- --- @type ObjectFieldAccessors
+object_handlers['via.Transform'] = function (context)
+    local transform = context.get() ---@type via.Transform
+    if not transform then
+        imgui.text('Transform is null')
+        return false
+    end
+
+    if imgui.tree_node('GameObject') then
+        local go = transform:get_GameObject()
+        if go then
+            _userdata_DB._ui_handlers.show_nested(go, context, 'gameObject', 'via.GameObject')
+        else
+            imgui.text('GameObject is null')
+        end
+        imgui.tree_pop()
+    end
+
+    local parent = transform:get_Parent()
+    if parent then
+        if ui.treenode_suffix('Parent', parent:ToString()--[[@as string]]) then
+            _userdata_DB._ui_handlers.show_nested(parent, context, 'parent', 'via.Transform')
+            imgui.tree_pop()
+        end
+    end
+
+    local children = context.data.children
+    if ui.treenode_suffix('Children', (children and '(' .. tostring(#children) .. ')') or '') then
+        imgui.same_line()
+        if imgui.button('Refresh children') then context.data.children = nil end
+        if not context.data.children then
+            context.data.children = {}
+            local c = transform:get_Child()
+            while c do
+                context.data.children[#context.data.children + 1] = c
+                c = c:get_Next()
+            end
+        end
+        children = context.data.children
+
+        for i, child in ipairs(children) do
+            _userdata_DB._ui_handlers.show_nested(child, context, i, 'via.Transform', true)
+        end
+        imgui.tree_pop()
+    end
+
+    return false
+end
+
+--- @type ObjectFieldAccessors
 local default_accessor = {
     get = function (object, fieldname)
         if object ~= nil then return object[fieldname]
@@ -229,12 +282,15 @@ register_extension('expandable', expandable_ui)
 local create_field_editor
 
 --- @param handler UIHandler
---- @param containerClass string
+--- @param containerClassOrSettings string|UserdataEditorSettings
 --- @param field string|integer
 --- @param fieldClass string
 --- @return UIHandler
-local function apply_ui_handler_overrides(handler, containerClass, field, fieldClass)
-    local typesettings = type_settings.type_settings[containerClass]
+local function apply_ui_handler_overrides(handler, containerClassOrSettings, field, fieldClass)
+    local typesettings = type(containerClassOrSettings) == 'string' and type_settings.type_settings[containerClassOrSettings] or containerClassOrSettings
+    if type(typesettings) == 'boolean' then
+        print('bool lol', typesettings, containerClassOrSettings)
+    end
     local fieldOverrides = typesettings and typesettings.fields and typesettings.fields[field] or {}
     local fieldTypeOverrides = field ~= '__element' and type_settings.type_settings[fieldClass]
 
@@ -342,7 +398,7 @@ local function create_arraylike_ui(meta, classname, label, array_access, setting
                     childCtx.ui = apply_ui_handler_overrides(childCtx.ui, classname, "__element", meta.elementType)
                 end
 
-                local childChanged = childCtx.ui(childCtx)
+                local childChanged = childCtx:ui()
                 changed = childChanged or changed
 
                 imgui.pop_id()
@@ -414,7 +470,7 @@ field_editor_factories = {
 
                 local isReadonly = (flags & typecache.fieldFlags.ImportEnable) == 0
 
-                local childChanged = childCtx.ui(childCtx)
+                local childChanged = childCtx:ui()
 
                 if not isReadonly and childChanged then
                     changed = true
@@ -534,7 +590,7 @@ field_editor_factories = {
                         imgui.same_line()
                         imgui.push_style_color(0, 0xffdddddd)
                     end
-                    local childChanged = childCtx.ui(childCtx)
+                    local childChanged = childCtx:ui()
                     imgui.pop_id()
 
                     if nonSerialized then
@@ -561,7 +617,7 @@ field_editor_factories = {
         --- @type UIHandler
         local handler = function (context)
             local childCtx = create_field_editor(context, classname, '_Value', meta.elementType, 'Value', default_accessor, settings)
-            return childCtx.ui(childCtx)
+            return childCtx:ui()
         end
         return common.nullable_valuetype(meta.elementType, handler)
     end,
@@ -572,6 +628,49 @@ field_editor_factories = {
         end
     end,
 }
+
+--- @param ctx UIContainer
+--- @param classname string
+--- @param label string
+--- @param expander boolean
+--- @param settings UISettings
+--- @param field string|integer|nil
+--- @param containerClassOrSettings UserdataEditorSettings|string|nil
+local function setup_context_ui(ctx, classname, label, settings, expander, field, containerClassOrSettings)
+    local meta = typecache.get(classname)
+    local handler = field_editor_factories[meta.type](meta, classname, label, settings)
+    if field and containerClassOrSettings then
+        handler = apply_ui_handler_overrides(handler, containerClassOrSettings, field, classname)
+    end
+    ctx.data.ui_settings = settings
+
+    if expander then
+        ctx.data._has_extra_expander = true
+        ctx.ui = expandable_ui(handler)
+    else
+        ctx.ui = handler
+    end
+end
+
+--- @param parentContext UIContainer|nil
+--- @param classname string
+--- @param childKey string|integer
+--- @param label string
+--- @param doExpander boolean|nil
+--- @param settings UISettings|nil
+--- @return UIContainer ctx, boolean isNew
+local create_editor = function(parentContext, childKey, currentValue, classname, label, doExpander, settings)
+    local ctx, newCtx = ui_context.get_or_create_child(parentContext, childKey, currentValue, label, nil, classname)
+    if newCtx then
+        settings = utils.table_assign({
+            is_raw_data = type(currentValue) == 'table',
+            hide_nonserialized = type(currentValue) == 'table',
+        }, settings or {})
+        setup_context_ui(ctx, classname, label, settings, doExpander or false)
+        -- print('Created new editor context', ui_context.get_absolute_path(ctx), tostring(currentValue))
+    end
+    return ctx, newCtx
+end
 
 --- @param parentContext UIContainer
 --- @param containerClass string
@@ -584,9 +683,7 @@ field_editor_factories = {
 --- @return UIContainer
 create_field_editor = function(parentContext, containerClass, field, fieldClass, label, accessors, settings, no_expander)
     local ctx = ui_context.get_child(parentContext, field)
-    if ctx then
-        return ctx
-    end
+    if ctx then return ctx end
 
     -- print('Creating new field editor', parentContext, containerClass, field, fieldClass, label, accessors)
 
@@ -619,136 +716,113 @@ create_field_editor = function(parentContext, containerClass, field, fieldClass,
         label = parentContext.label .. '.' .. label
     end
 
-    local handler = field_editor_factories[submeta.type](submeta, fieldClass, label, settings)
-    handler = apply_ui_handler_overrides(handler, containerClass, field, fieldClass)
-
     ctx = ui_context.create_child(parentContext, field, accessors.get(parentContext.object, field), label, accessors, fieldClass)
-
-    if doExpander then
-        ctx.data._has_extra_expander = true
-        handler = expandable_ui(handler)
-    end
-    ctx.ui = handler
+    setup_context_ui(ctx, fieldClass, label, settings, doExpander == nil and true or doExpander, field, typesettings)
     return ctx
 end
 
--- --- @param obj any
--- --- @param label string
--- --- @param classname string
--- --- @return UIContainer
--- local function create_editor(obj, label, classname)
---     local ctx = ui_context.get_root(obj) or ui_context.create(obj, obj, label, default_accessor)
---     return get_or_create_field_editor_and_context(ctx, classname, '__', classname, label, {
---         get = function(object) return object end,
---         set = function() error('Root editor setter unsupported') end,
---     })
--- end
+--- @param editorId any
+--- @param target any
+--- @param label string|nil
+--- @param owner DBEntity|nil
+--- @param fallback any
+--- @return string|integer
+local function get_editor_id(editorId, target, label, owner, fallback)
+    if editorId then
+        if type(editorId) == 'string' or type(editorId) == 'number' then return editorId end
+        if type(editorId) == 'table' then
+            local idKey = '_id' .. label
+            editorId[idKey] = editorId[idKey] or math.random(1, 1000000)
+            return editorId[idKey]
+        end
+        print('Could not determine editor id', editorId, owner, label)
+        return tostring(editorId)
+    else
+        if target ~= nil and type(target) == 'userdata' then return target:get_address() end
+        -- print('Could not determine editor id', owner, label)
+        return tostring(fallback or 0) .. label
+    end
+end
 
---- @type table<string, UIContainer>
-local root_uis = {}
+--- @param target any
+--- @param context UIContainer
+--- @param key string|integer
+--- @param classname string|nil
+--- @param label boolean|string|nil
+--- @return boolean objectChanged
+local function show_object_nested_ui(target, context, key, classname, label)
+    classname = classname or helpers.get_type(target) or error('Missing classname')
+    if type(label) == 'string' then
+        return create_editor(context, key, target, classname, label, true):ui()
+    else
+        return create_editor(context, key, target, classname, tostring(label and key or ''), label or false):ui()
+    end
+end
 
 --- @param target any
 --- @param owner DBEntity|nil
 --- @param label string|nil
 --- @param classname string|nil
 --- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
---- @param accessors ObjectFieldAccessors
+--- @param setter nil|fun(oldValue: any, newValue: any)
 --- @param uiSettingOverrides UISettings|nil
-local function show_entity_ui_internal(target, owner, label, classname, editorId, accessors, uiSettingOverrides)
+local function show_root_entity(target, owner, label, classname, editorId, setter, uiSettingOverrides)
     if not target then error('OI! ui needs a target and a parent!') end
+    classname = classname or helpers.get_type(target)
     if not classname then
-        if target.get_type_definition then
-            classname = target:get_type_definition():get_full_name()
-        else
-            imgui.text_colored('Invalid entity for display: ' .. tostring(target), core.get_color('error'))
-            return nil
-        end
+        imgui.text_colored('Invalid entity for display: ' .. tostring(target), core.get_color('error'))
+        return false
     end
-    if not editorId and target ~= nil then
-        editorId = target:get_address()
-    end
-    if type(editorId) == 'table' then
-        if not label then label = classname end
-        editorId['_id' .. label] = editorId['_id' .. label] or math.random(1, 1000000)
-        editorId = editorId['_id' .. label]
-    end
-    if not editorId and target == nil then
-        print('Could not determine editor id', owner, label, classname)
-        return
-    end
+    editorId = get_editor_id(editorId, target, label or classname, owner)
 
-    imgui.push_id(editorId)
-    --- @type UIContainer|nil
-    local rootContext = root_uis[editorId] or ui_context.get_root(editorId)
-    if not rootContext then
-        rootContext = ui_context.create(target, owner, label or '', editorId)
-        --- @type UISettings
-        rootContext.data.ui_settings = utils.table_assign({
-            is_raw_data = type(target) == 'table',
-            hide_nonserialized = type(target) == 'table',
-        }, uiSettingOverrides or {})
-        rootContext.data._has_extra_expander = true
-        rootContext.object = target
-        root_uis[editorId] = rootContext
-    end
+    local rootContext, isNew = create_editor(nil, editorId, target, classname, label or '', label and label ~= '' or false, uiSettingOverrides)
 
-    if rootContext.object ~= target then
+    if isNew then
+        if setter then rootContext.set = setter end
+    elseif rootContext.object ~= target then
         print('root context instance changed', target, rootContext.object, editorId)
-        root_uis[editorId] = nil
         ui_context.delete(rootContext, editorId)
         -- show_entity_ui_internal(target, owner, label, classname, editorId, accessors)
         imgui.pop_id()
-        return
+        return true
     end
 
-    local previousChild = ui_context.get_child(rootContext, '__')
-
-    local meta = typecache.get(classname)
-    local childContext = create_field_editor(rootContext, classname, '__', classname, rootContext.label, accessors, rootContext.data.ui_settings, true)
-    if not previousChild then
-        childContext.data._has_extra_expander = true
-        if meta.type ~= typecache.handlerTypes.array and meta.type ~= typecache.handlerTypes.genericList and label ~= nil then
-            childContext.ui = expandable_ui(childContext.ui)
-        end
-    end
+    imgui.push_id(editorId)
     -- ui_context.debug_view(target)
-    local changed = childContext.ui(childContext)
+    local changed = rootContext:ui()
     imgui.pop_id()
     if changed and owner then udb.mark_entity_dirty(owner, true) end
+    return changed
 end
 
 --- @param target any Edited object
 --- @param owner DBEntity|nil
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
---- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
+--- @param editorId any A key by which to identify this editor or a table. If unspecified, the label or target object's address will be used as a key.
 local function show_entity_ui(target, owner, label, classname, editorId)
-    if not target then error('OI! ui needs a target and a parent!') return end
+    if not target then imgui.text_colored((label or 'Target') .. ' is null', core.get_color('error')) return end
 
-    show_entity_ui_internal(target, owner, label, classname, editorId, {
-        set = function() error('Root editor setter unsupported') end,
-        get = function(object) return object end,
-    })
+    show_root_entity(target, owner, label, classname, editorId)
 end
 
---- @param target any Edited object
+--- Show an entity in a read-only state (read only not yet fully implemented)
+--- @param target REManagedObject|ValueType Edited object
 --- @param owner DBEntity|nil
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
---- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
+--- @param editorId any A key by which to identify this editor or a table. If unspecified, the label or target object's address will be used as a key.
 local function show_entity_ui_readonly(target, owner, label, classname, editorId)
-    if not target then error('OI! ui needs a target!') return end
+    if not target then imgui.text_colored((label or 'Target') .. ' is null', core.get_color('error')) return end
 
-    show_entity_ui_internal(target, owner, label, classname, editorId, {
-        set = function() error('Root editor setter unsupported') end,
-        get = function(object) return object end,
-    }, {
+    show_root_entity(target, owner, label, classname, editorId, nil, {
         is_readonly = true,
         hide_nonserialized = false,
         is_raw_data = false,
     })
 end
 
+--- Show object whose instance can be modified (e.g. abstract or nullable fields)
 --- @param targetContainer any An object that contains the target object we actually want to edit
 --- @param field string|integer Field of the target object that we actually want to edit
 --- @param owner DBEntity|nil
@@ -759,11 +833,12 @@ end
 local function show_entity_ui_editable(targetContainer, field, owner, label, classname, editorId)
     if not targetContainer then error('OI! ui needs a target and a parent!') return false end
 
-    if targetContainer[field] == nil then
+    local target = targetContainer[field]
+    if target == nil then
         imgui.text((label or field) .. ': null')
         if classname then
             imgui.same_line()
-            imgui.push_id(editorId or tostring(targetContainer))
+            imgui.push_id(get_editor_id(editorId, targetContainer, label or classname, owner, targetContainer))
             if imgui.button('Create') then
                 targetContainer[field] = helpers.create_instance(classname)
                 imgui.pop_id()
@@ -774,21 +849,19 @@ local function show_entity_ui_editable(targetContainer, field, owner, label, cla
         return false
     end
 
-    show_entity_ui_internal(targetContainer[field], owner, label, classname, editorId, {
-        get = function(object) return object end,
-        set = function(oldInstance, newInstance)
-            print('updating root entity', oldInstance, newInstance)
-            if type(oldInstance) == 'table' then
-                print('concrete types:', oldInstance['$type'], newInstance['$type'])
-            else
-                print('concrete types:', oldInstance:get_type_definition():get_full_name(), newInstance:get_type_definition():get_full_name())
-            end
-            targetContainer[field] = newInstance
-        end,
-    })
-    return false
+    local changed = show_root_entity(target, owner, label, classname, editorId, function(oldInstance, newInstance)
+        print('updating root entity', oldInstance, newInstance)
+        if type(oldInstance) == 'table' then
+            print('concrete types:', oldInstance['$type'], newInstance['$type'])
+        else
+            print('concrete types:', oldInstance:get_type_definition():get_full_name(), newInstance:get_type_definition():get_full_name())
+        end
+        targetContainer[field] = newInstance
+    end)
+    return changed
 end
 
+--- Show an object for the way too specific case where two nullable fields are present before the main instance type. Will likely be removed at some point.
 --- @param owner DBEntity
 --- @param containerField string Field of the target object that we actually want to edit
 --- @param label string|nil
@@ -818,26 +891,19 @@ local function show_entity_ui_nullable(owner, containerField, field, label, cont
         return false
     end
 
-    show_entity_ui_internal(container[field], owner, label, classname, editorId, {
-        get = function(object) return object end,
-        set = function(oldInstance, newInstance)
-            print('updating root entity', oldInstance, newInstance)
-            print('concrete types:', oldInstance.get_type_definition and oldInstance:get_type_definition():get_full_name(), '->', newInstance.get_type_definition and newInstance:get_type_definition():get_full_name())
-            container[field] = newInstance
-        end,
-    })
+    show_root_entity(container[field], owner, label, classname, editorId, function(oldInstance, newInstance)
+        print('updating root entity', oldInstance, newInstance)
+        print('concrete types:', oldInstance.get_type_definition and oldInstance:get_type_definition():get_full_name(), '->', newInstance.get_type_definition and newInstance:get_type_definition():get_full_name())
+        container[field] = newInstance
+    end)
     return false
-end
-
-local function embed_editor()
-
 end
 
 _userdata_DB._ui_handlers = {
     value_handlers = value_type_handler_defs,
 
-    -- get_or_create_editor = create_editor,
     show = show_entity_ui,
+    show_nested = show_object_nested_ui,
     show_readonly = show_entity_ui_readonly,
     show_editable = show_entity_ui_editable,
     show_nullable = show_entity_ui_nullable,

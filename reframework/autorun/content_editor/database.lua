@@ -2,7 +2,6 @@ if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB.database then return _userdata_DB.database end
 
 local core = require('content_editor.core')
-local ctrl = require('content_editor.game_controller')
 local utils = require('content_editor.utils')
 local internal = require('content_editor._internal')
 local events = require('content_editor.events')
@@ -441,7 +440,7 @@ local function save_bundle(bundleName)
         created_at = bundle.info.created_at,
         updated_at = bundle.info.updated_at,
         initial_insert_ids = bundle.initial_insert_ids,
-        game_version = utils.get_game_version(),
+        game_version = core.game.version,
     }
     local hasErrors = false
     for _, entity in ipairs(bundle.entities) do
@@ -508,7 +507,7 @@ local function create_bundle(name)
         initial_insert_ids = bundle.initial_insert_ids,
         data = {},
         enums = {},
-        game_version = utils.get_game_version(),
+        game_version = core.game.version,
     }
     save_bundle(name)
     internal.config.data.bundle_order[#internal.config.data.bundle_order + 1] = name
@@ -979,7 +978,7 @@ local function finish_database_init()
 end
 
 re.on_application_entry('UpdateBehavior', function ()
-    if not db_ready and not db_failed and next(entity_types) and ctrl.game_data_is_ready() then
+    if not db_ready and not db_failed and next(entity_types) and core.game.game_data_is_ready() then
         -- db_failed = true finish_database_init() if true then return end
         -- if we have at least one entity type registered, we should be confident that they're all there and ready
         -- if we wanted to allow a provider to delay, we can add a flag to the entity type later

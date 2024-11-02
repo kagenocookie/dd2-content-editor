@@ -12,17 +12,17 @@ local ui = require('content_editor.ui')
 
 local max_history = 50
 
+local console_ctx = ui.context.create_root({}, nil, 'console', '__console')
+
 ---@param obj REManagedObject|ValueType
 local function display_managed(obj, state)
-    ui.handlers.show(obj, nil, nil, nil, 'dv_' .. state.id .. '_' .. obj:get_address())
+    ui.handlers.show(obj, nil, nil, nil, state)
 end
 
 local result_cache = {}
 
-local display_table
-
 ---@param tbl table
-display_table = function(tbl, state)
+local function display_table(tbl, state)
 
     local len = #tbl
     if len == 0 then len = utils.assoc_table_count(tbl) end
@@ -137,7 +137,9 @@ local function prepare_exec_func(text)
             typedef = sdk.typeof('via.Transform')
         else
             local colon = filter:find(':')
-            if colon then
+            if not colon then
+                typedef = sdk.typeof('via.Transform')
+            else
                 local colon2 = filter:find('::', colon + 1)
                 if colon2 then
                     local t = filter:sub(1, colon - 1)
@@ -171,6 +173,11 @@ local function prepare_exec_func(text)
         local code = isMultiline(text) and text or 'return ' .. text
         return pcall(load, code, nil, 't')
     end
+end
+
+_G.ce_find = function (text)
+    local s, e = prepare_exec_func(text)
+    return e
 end
 
 local function add_to_exec_list(state, text)
@@ -223,7 +230,11 @@ editor.define_window('data_viewer', 'Data console', function (state)
     if imgui.tree_node('History') then
         --- @type string[]
         state.history = state.history or {}
-        if imgui.button('Clear history') then state.history = {} editor.persistent_storage.save() end
+        if imgui.button('Clear history') then
+            state.history = {}
+            ui.context.delete_children(console_ctx)
+            editor.persistent_storage.save()
+        end
 
         for idx, historyEntry in ipairs(state.history) do
             imgui.push_id(idx..historyEntry)
@@ -345,7 +356,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
             if not success then
                 imgui.text_colored('Error: ' .. tostring(func), core.get_color('error'))
             elseif func == nil then
-                imgui.text_colored('Nil func oi:' .. tostring(func), core.get_color('error'))
+                imgui.text_colored('No results', core.get_color('error'))
             elseif type(func) == 'string' then
                 imgui.text(func)
             else
@@ -357,10 +368,11 @@ editor.define_window('data_viewer', 'Data console', function (state)
                 if not success then
                     imgui.text_colored('Error:' .. tostring(data), core.get_color('error'))
                 else
+                    console_ctx.data.children = console_ctx.data.children or {}
                     if type(data) == 'userdata' then
-                        display_managed(data--[[@as any]], state)
+                        display_managed(data--[[@as any]], console_ctx.data.children)
                     elseif type(data) == 'table' then
-                        display_table(data, state)
+                        display_table(data, console_ctx.data.children)
                     elseif data == nil then
                         imgui.text('nil')
                     else

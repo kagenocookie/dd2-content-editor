@@ -8,7 +8,7 @@ if not success then
 end
 
 if ctrl.game_data_is_ready == nil then ctrl.game_data_is_ready = function () return true end end
-if ctrl.version == nil then ctrl.version = -1 end
+if ctrl.version == nil then ctrl.version = '-1' end
 
 _userdata_DB._game_controller = ctrl
 return _userdata_DB._game_controller

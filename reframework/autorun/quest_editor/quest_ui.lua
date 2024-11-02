@@ -135,7 +135,7 @@ local function imgui_show_event_context(ctx, entity)
 
     local npcIdStr = enums.NPCIDs.valueToLabel[ctx.context._NpcID]
     local name = utils_dd2.translate_character_name(ctx.context._NpcID)
-    if ui.treenode_suffix(tostring(ctx.id), tostring(npcIdStr) .. ' : ' .. name .. '  ' .. (ctx.label or '')) then
+    if ui.core.treenode_suffix(tostring(ctx.id), tostring(npcIdStr) .. ' : ' .. name .. '  ' .. (ctx.label or '')) then
         ui.editor.show_entity_metadata(ctx)
 
         if entity then
@@ -225,7 +225,7 @@ local function imgui_show_event(event, contextData, uiState)
         local eventIntervalSeconds = entity:get_IntervalHour() * 3600
 
         local timeUntilExecutable = timestampLastExecuted + eventIntervalSeconds - gamedb.get_ingame_timestamp()
-        if timeUntilExecutable > 0 then
+        if timestampLastExecuted > 0 and timeUntilExecutable > 0 then
             imgui.text_colored('Event on cooldown interval', editor.get_color('warning'))
             imgui.same_line()
             imgui.text('Can execute again in ' .. gamedb.format_timestamp(timeUntilExecutable))
