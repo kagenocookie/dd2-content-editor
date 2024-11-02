@@ -2,7 +2,8 @@ if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB._definitions then return _userdata_DB._definitions end
 
 --- @type table<string, UserdataEditorSettings>
-local type_settings = require('content_editor.definitions.' .. reframework.get_game_name())
+local type_settings = require('content_editor.definitions.default')
+local hasSpecific, type_settings_specific = pcall(require, 'content_editor.definitions.' .. reframework.get_game_name())
 
 local function merge_table(target, src)
     for key, val in pairs(src) do
@@ -88,6 +89,10 @@ end
 --- @return UserdataEditorSettings
 local function get_type_overrides(type)
     return type_settings[type] or {}
+end
+
+if hasSpecific then
+    add_type_overrides('', type_settings_specific)
 end
 
 _userdata_DB._definitions = {

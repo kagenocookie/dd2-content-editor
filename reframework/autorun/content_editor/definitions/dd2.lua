@@ -1,5 +1,3 @@
-local common = require('content_editor.ui.common')
-
 local offset_QuestActionParamBase_Param = sdk.find_type_definition('app.quest.action.QuestActionBase'):get_field('_Param'):get_offset_from_base()
 
 local quest_action_Param_parent_accessors = {
@@ -36,19 +34,6 @@ local quest_action_Param_parent_accessors = {
 
 --- @type table<string, UserdataEditorSettings>
 return {
-    -- this one seems to have some magic that auto converts the via.GameObjectRef to a `nil|via.GameObject`
-    -- not sure how we can edit this but it's probably a runtime entity that gets set automatically anyway
-    ['via.GameObjectRef'] = {
-        handler = common.readonly_label(),
-    },
-    ['via.UserData'] = {
-        toString = function (value, context)
-            return (context and context.data.classname or value:get_type_definition():get_full_name()) .. ': ' .. (value.get_Path and value:get_Path() or tostring(value))
-        end
-    },
-    ['via.Quaternion'] = {
-        force_expander = false,
-    },
     ['app.PrefabController'] = {
         import_handler = {
             export = function (src)
