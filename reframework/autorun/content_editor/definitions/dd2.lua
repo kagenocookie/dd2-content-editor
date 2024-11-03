@@ -60,7 +60,12 @@ return {
             'app.quest.condition.SuddenQuestCondition.CheckQuestElapsedTimeParam',
         }
     },
-
+    ['app.QuestOracleConditionBase'] = {
+        abstract = {
+            'app.QuestOracleCompositeCondition',
+            'app.QuestOracleVariableCondition',
+        }
+    },
     ['app.quest.condition.NpcOverrideCondition.ConditionBase'] = {
         abstract = {
             'app.quest.condition.NpcOverrideCondition.CheckVariable',

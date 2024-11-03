@@ -327,6 +327,66 @@ importer_factories = {
         }
     end,
 
+    [typecache.handlerTypes.dictionary] = function (meta, fullname)
+        local typedef = _userdata_DB.generics.typedef(fullname)
+        if not typedef then return import_export_ignore end
+        local keyMeta = typecache.get(meta.keyType)
+
+        -- only allow strings and integer key types, ignore the rest
+        local isIntegerKey = helpers.is_integer_type(meta.keyType)
+        if keyMeta.elementType ~= 'System.String' and not isIntegerKey then
+            return import_export_ignore
+        end
+
+        local valueHandler = get_handler(meta.keyType, keyMeta)
+
+        return {
+            import = function (src, target)
+                target = target or helpers.create_generic_instance(typedef)
+                -- remove any keys that aren't present in our import data
+                local it = target:GetEnumerator()
+                -- local keysToRemove = {}
+                local handledKeys = {}
+                while it:MoveNext() do
+                    local key = it._current.key
+                    local importValue = src[tostring(key)]
+                    if importValue == nil then
+                        -- we can't modify collections while iterating through them, need to do that in a separate loop
+                        -- I'm thinking we want to keep existing values as is most of the time for mods, skip removal for now
+                        -- keysToRemove[#keysToRemove+1] = key
+                    else
+                        handledKeys[key] = true
+                        valueHandler.import(importValue, it._current.value)
+                    end
+                end
+                -- for _, key in ipairs(keysToRemove) do target:Remove(key) end
+                for key, valueData in pairs(src) do
+                    local realKey = isIntegerKey and tonumber(key) or key
+                    if not handledKeys[realKey] then
+                        if target:ContainsKey(realKey) then
+                            valueHandler.import(valueData, target[realKey])
+                        else
+                            target[realKey] = valueHandler.import(valueData)
+                        end
+                    end
+                end
+            end,
+            export = function (src, target, options)
+                if src == nil then return 'null' end
+                target = target or {}
+
+                local it = target:GetEnumerator()
+                while it:MoveNext() do
+                    local key = it._current.key
+                    local value = it._current.value
+                    target[key] = valueHandler.export(value, nil, options)
+                end
+                return target
+            end,
+        }
+        -- return import_export_ignore
+    end,
+
     [typecache.handlerTypes.object] = function (meta, fullname)
         local typeOverrides = type_settings.type_settings[fullname]
 

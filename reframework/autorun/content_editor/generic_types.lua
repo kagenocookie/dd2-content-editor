@@ -16,7 +16,9 @@ local function clean_generic_type_definition_name(typename)
     return typename
 end
 
+--- @type table<string, System.Type>
 local generic_runtime_types = {}
+--- @type table<string, System.Type>
 local generic_runtime_types_by_base_path = {}
 
 local basepathRegex = '^[a-zA-Z0-9+_.]*`%d<'
@@ -46,7 +48,7 @@ end
 --- Currently supported: classes NOT nested inside generic types, with any number of NON-generic parameters<br>
 --- e.g. List<>, Dictionary<,>, ClassSelector<>
 --- @param classname string
---- @return REManagedObject|nil
+--- @return System.Type|nil
 local function get_generic_typedef(classname)
     local t = generic_runtime_types[classname]
     if t then return t end
@@ -80,7 +82,7 @@ local function get_generic_typedef(classname)
         end
         local innerTypes = {}
         local innerClassnames = effectiveClassname:gsub('^[a-zA-Z0-9_.]+`%d+<', '')
-        for inner in innerClassnames:gmatch('([a-zA-Z0-9_.]+)[,>]') do
+        for inner in innerClassnames:gmatch('([a-zA-Z0-9_.%[%]]+)[,>]') do
             innerTypes[#innerTypes+1] = inner
         end
 
@@ -91,6 +93,7 @@ local function get_generic_typedef(classname)
             types = sdk.create_managed_array('System.Type', #innerTypes)
             for i = 1, #innerTypes do
                 types[i - 1] = sdk.typeof(innerTypes[i])
+                -- print('generic argument type ', classname, types[i - 1], types[i - 1]:get_FullName())
             end
             -- now we can construct the concrete type out of the definition
             t = baseType:MakeGenericType(types)
@@ -108,7 +111,7 @@ end
 
 --- Manually define a classname mapping into a runtime type, in case the automatic magic doesn't resolve a type properly
 --- @param classname string
---- @param runtimeType REManagedObject System.Type
+--- @param runtimeType System.Type
 local function add_generic_typedef(classname, runtimeType)
     generic_runtime_types[classname] = runtimeType
 end

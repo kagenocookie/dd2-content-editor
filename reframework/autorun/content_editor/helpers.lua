@@ -41,11 +41,11 @@ end
 local systemActivator = sdk.find_type_definition('System.Activator'):get_method('CreateInstance')
 local arrayActivator = sdk.find_type_definition('System.Array'):get_method('CreateInstance')
 
---- @param classname string Classname, should be the element type if array and not the array type itself
+--- @param classname string|System.Type Classname, should be the element type if array and not the array type itself
 --- @param arrayLength integer|nil If nil, creates a normal class instance, if a number then creates an array with that length
 --- @return REManagedObject|SystemArray|nil
 local function create_generic(classname, arrayLength)
-    local genType = generic_types.typedef(classname)
+    local genType = type(classname) == 'string' and generic_types.typedef(classname) or classname
     if genType == nil then
         return nil
     end
@@ -290,6 +290,18 @@ local function _object_to_string_internal(item, classname, context)
             return tostring(item)
         end
     else
+        if type(item) == 'number' then
+            local meta = typecache.get(classname)
+            if meta.type == typecache.handlerTypes.enum then
+                local enum = enums.get_enum(classname)
+                local enumLabel = enum and enum.get_label(item)
+                if enumLabel then
+                    return enumLabel
+                else
+                    return tostring(item) .. ' [enum mismatch '..classname..']'
+                end
+            end
+        end
         -- in case of abstract classes, our input classname would've been the base class
         -- try and fetch the actual class and use that one's toString
         -- if that fails, fallback to whatever base classname we received
@@ -496,6 +508,10 @@ end
 
 _userdata_DB._ui_utils = {
     create_instance = create_new_instance,
+    create_generic_instance = create_generic,
+
+    is_integer_type = function (classname) return integer_types[classname] end,
+    is_float_type = function (classname) return float_types[classname] end,
 
     create_array = create_array,
     is_arraylike = is_arraylike,

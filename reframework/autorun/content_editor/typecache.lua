@@ -6,6 +6,7 @@ if _userdata_DB._typecache then return _userdata_DB._typecache end
 --- @field fields [string, string, FieldFlags][]|nil [fieldName, fieldClass, flags]
 --- @field subtypes string[]|nil
 --- @field elementType string|nil
+--- @field keyType string|nil For dictionary key types, null otherwise
 --- @field itemCount integer
 --- @field baseTypes string[]|nil
 --- @field specialType nil|SpecialType
@@ -25,6 +26,7 @@ local handlerType = {
     array = 4,
     genericList = 5,
     nullableValue = 6,
+    dictionary = 7,
 }
 
 --- @enum FieldFlags
@@ -41,7 +43,7 @@ local fieldFlags = {
 local core = require('content_editor.core')
 local utils = require('content_editor.utils')
 local type_definitions = require('content_editor.definitions')
-local generic_types = require "content_editor.generic_types"
+local generic_types = require("content_editor.generic_types")
 
 local ctrl = require('content_editor.game_controller')
 
@@ -165,6 +167,21 @@ local function build_typecache(typedef, typecache)
             print('Unsupported list element type', elementType)
             typecache[fullname] = readonly_cache_item
         end
+        return
+    end
+
+    if fullname:sub(1, 37) == 'System.Collections.Generic.Dictionary' then
+        local genericType = sdk.find_type_definition(fullname)
+        local args = genericType:get_generic_argument_types()
+        local keyType = args[1]
+        local keyTypeStr = args[1]:get_full_name()
+        local valueType = args[2]
+
+        local elementType = valueType:get_full_name()
+        if not typecache[keyTypeStr] then build_typecache(keyType, typecache) end
+        if not typecache[elementType] then build_typecache(valueType, typecache) end
+
+        typecache[fullname] = { type = handlerType.dictionary, elementType = elementType, keyType = keyTypeStr, itemCount = 999 }
         return
     end
 
@@ -321,7 +338,7 @@ end
 local cacheInvalidated = false
 
 local function load_type_cache()
-    local hash = ctrl.version .. ' ' .. type_definitions._hash
+    local hash = core.VERSION_STR .. ' ' .. ctrl.version .. ' ' .. type_definitions._hash
     local newCache = json.load_file(typecache_path)
     if newCache and newCache.__VERSION == currentTypecacheVersion and newCache.__HASH == hash then
         cache = newCache

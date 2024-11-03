@@ -66,9 +66,13 @@ local function get_glob_regex(type)
     return path
 end
 
+local version = {0, 4, 0}
+
 _userdata_DB.__core = {
-    --- Active mod version
-    VERSION = {0, 3, 0},
+    --- Active mod version {major, minor, patch}
+    VERSION = version,
+    --- Active mod version string
+    VERSION_STR = table.concat(version, '.'),
     --- Basic game specific metadata
     game = ctrl,
     --- Base content db path

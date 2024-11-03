@@ -424,6 +424,112 @@ local function create_arraylike_ui(meta, classname, label, array_access, setting
     end
 end
 
+--- @param meta TypeCacheData
+--- @param classname string
+--- @param label string
+--- @param settings UISettings
+--- @return UIHandler
+local function dictionary_ui(meta, classname, label, settings)
+    --- @type UIHandler
+    return function (context)
+        local dict = context.get()
+        local items = context.data.elements
+        local refreshBtn = false
+        local changed = false
+        if context.data._has_extra_expander or ui.treenode_suffix(context.label, classname) then
+            if items then
+                imgui.same_line()
+                refreshBtn = imgui.button('Refresh list')
+                for idx, pair in ipairs(items) do
+                    local keyStr = helpers.to_string(pair[1], meta.keyType)
+                    local valueStr = helpers.to_string(pair[2], meta.elementType)
+
+                    imgui.begin_rect()
+                    imgui.push_id(idx)
+                    if not settings.is_readonly and imgui.button('X') then
+                        -- delete all child element containers and re-create them next iteration, that's the easiest way of ensuring we don't mess up the children index keys
+                        ui_context.delete_children(context)
+                        if type(dict) == 'table' then
+                            dict[pair[1]] = nil
+                        else
+                            dict:Remove(pair[1])
+                        end
+                        imgui.pop_id()
+                        imgui.end_rect(1)
+                        imgui.tree_pop()
+                        imgui.tree_pop()
+                        imgui.tree_pop()
+                        context.data.elements = nil
+                        return true
+                    end
+                    if not settings.is_readonly then imgui.same_line() end
+
+                    if ui.treenode_suffix(keyStr, valueStr) then
+                        local isNewChildCtx = context.children[pair[1]] == nil
+                        local childCtx = create_field_editor(context, classname, pair[1], meta.elementType, valueStr, default_accessor, settings, true)
+                        if isNewChildCtx then
+                            childCtx.data._has_extra_expander = true
+                            childCtx.ui = apply_ui_handler_overrides(childCtx.ui, classname, "__element", meta.elementType)
+                        end
+
+                        local childChanged = childCtx:ui()
+                        changed = childChanged or changed
+
+                        imgui.tree_pop()
+                    end
+                    imgui.pop_id()
+                    imgui.end_rect(1)
+                end
+                if imgui.tree_node('New entry') then
+                    local newCtx = ui_context.get_or_create_child(context, '__new', {}, '', nil, '')
+                    create_field_editor(newCtx, '__none', 'new_key', meta.keyType, 'Key', nil, settings, true):ui()
+                    create_field_editor(newCtx, '__none', 'new_value', meta.elementType, 'Value', nil, settings, true):ui()
+
+                    if imgui.button('Add') then
+                        local newkey = newCtx.children.new_key.get()
+                        local newvalue = newCtx.children.new_value.get()
+                        dict[newkey] = newvalue
+                        items = nil
+                    end
+                    if imgui.is_item_hovered() then imgui.set_tooltip('If the entry already exists, it will be replaced with a new instance') end
+                    imgui.tree_pop()
+                else
+                    ui_context.delete_child(context, '__new')
+                    context.data.new_key = nil
+                    context.data.new_value = nil
+                end
+            end
+
+            if refreshBtn or not items then
+                if type(dict) == 'userdata' then
+                    local it = dict:GetEnumerator()
+                    items = {}
+                    while it:MoveNext() do
+                        local key = type(it._current.key) == 'userdata' and it._current.key:add_ref() or it._current.key
+                        local value = type(it._current.value) == 'userdata' and it._current.value.add_ref and it._current.value:add_ref() or it._current.value
+                        items[#items+1] = { key, value }
+                    end
+                elseif type(dict) == 'table' then
+                    items = {}
+                    for k, v in pairs(dict) do
+                        items[#items+1] = { k, v }
+                    end
+                end
+                context.data.elements = items
+            end
+
+            if not items then
+                imgui.text('Dictionary is null or invalid')
+                return false
+            end
+
+            imgui.tree_pop()
+        end
+
+        return changed
+    end
+end
+
 --- @type table<HandlerType, UIHandlerFactory>
 local field_editor_factories
 
@@ -612,6 +718,9 @@ field_editor_factories = {
     [typecache.handlerTypes.genericList] = function (meta, classname, label, settings)
         local accessor = settings.is_raw_data and helpers.array_accessor('table') or helpers.array_accessor(classname) --[[@as ArrayLikeAccessors]]
         return create_arraylike_ui(meta, classname, label, accessor, settings)
+    end,
+    [typecache.handlerTypes.dictionary] = function (meta, classname, label, settings)
+        return dictionary_ui(meta, classname, label, settings)
     end,
     [typecache.handlerTypes.nullableValue] = function (meta, classname, label, settings)
         --- @type UIHandler
