@@ -4,6 +4,7 @@ if _userdata_DB._definitions then return _userdata_DB._definitions end
 --- @type table<string, UserdataEditorSettings>
 local type_settings = require('content_editor.definitions.default')
 local hasSpecific, type_settings_specific = pcall(require, 'content_editor.definitions.' .. reframework.get_game_name())
+local core = require('content_editor.core')
 
 local function merge_table(target, src)
     for key, val in pairs(src) do
@@ -89,6 +90,12 @@ end
 --- @return UserdataEditorSettings
 local function get_type_overrides(type)
     return type_settings[type] or {}
+end
+
+local rszPath = core.get_path('rsz/' .. reframework.get_game_name() .. '.json')
+local rszTypes = json.load_file(rszPath)
+if rszTypes then
+    add_type_overrides('', rszTypes)
 end
 
 if hasSpecific then

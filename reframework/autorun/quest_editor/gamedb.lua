@@ -557,12 +557,17 @@ local function upsert_quest_entity(quest)
         QuestResourceManager.ResourceControllerDict[quest.id] = resCtrl
     end
 
-    if quest.Log then
-        -- TODO is it fine to just create a new one? should we update the existing instance?
-        local newLogInfo = helpers.create_instance('app.QuestLogManager.QuestLogInfo')
-        newLogInfo:call('.ctor(app.QuestLogResource)', quest.Log)
-        QuestLogManager._QuestLogInfoDict[quest.id] = newLogInfo
-    end
+    -- TODO This crashes the game as of now
+    -- if quest.Log then
+    --     if not QuestLogManager._QuestLogInfoDict:ContainsKey(quest.id) then
+    --         newLogInfo = sdk.create_instance('app.QuestLogManager.QuestLogInfo', true)
+    --         newLogInfo:call('.ctor(app.QuestLogResource)', quest.Log)
+    --         QuestLogManager._QuestLogInfoDict[quest.id] = newLogInfo
+    --     else
+    --         newLogInfo = QuestLogManager._QuestLogInfoDict[quest.id]
+    --         newLogInfo._Resource = quest.Log
+    --     end
+    -- end
 
     if quest.OracleHints then
         QuestManager._OracleAcceptHintDatabase[quest.id] = quest.OracleHints._QuestAcceptHints

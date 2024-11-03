@@ -54,7 +54,7 @@ local utf16_font = imgui.load_font('NotoSansSC-Bold.otf', imgui.get_default_font
 --- @type table<string, WindowDefinition>
 local editor_defs = {
     user = {
-        title = 'User',
+        title = 'Settings',
         draw = function ()
             local changed, newValue = imgui.input_text('Author name', config.data.editor.author_name)
             if changed then
@@ -67,6 +67,7 @@ local editor_defs = {
                 config.save()
             end
             imgui_wrappers.tooltip('Name to save into the author field for new data bundles')
+            imgui_wrappers.setting_checkbox('Debug mode', config.data.editor, 'devmode', config.save, "Show some additional options used for editor development, remove some error handling, add more logging.\nBest left off unless you know what you're doing.")
         end
     },
     load_order = {
@@ -200,27 +201,35 @@ local function draw_editor()
     end
 
     local changed
-    if imgui.button('Refresh database') then
-        udb.reload_all_bundles()
-    end
-    imgui_wrappers.tooltip('This will reload all DB files from disk and re-import them into the game. Any unsaved changes will be lost.\nNot fully tested yet, may not work as expected - Reset scripts can be more reliable.')
-
-    imgui.same_line()
-    if imgui.button('Reset type cache') then
-        typecache.clear()
-        set_need_script_reset()
-    end
-    imgui.same_line()
-    if imgui.button('Save type cache') then
-        typecache.save()
-    end
-    if imgui.is_item_hovered() then imgui.set_tooltip('Force save the current type cache') end
-    imgui.same_line()
     local idx
     imgui.set_next_item_width(200)
     changed, idx = imgui.combo('##Open new window', 1, editor_labels)
     if changed and idx > 1 then
         open_editor_window(editor_ids[idx])
+    end
+
+    imgui.same_line()
+    if imgui.button('Refresh database') then
+        udb.reload_all_bundles()
+    end
+    imgui_wrappers.tooltip('This will reload all DB files from disk and re-import them into the game. Any unsaved changes will be lost.\nNot fully tested yet, may not work as expected - Reset scripts can be more reliable.')
+
+    if config.data.editor.devmode then
+        imgui.same_line()
+        if imgui.button('Reset type cache') then
+            typecache.clear()
+            set_need_script_reset()
+        end
+        imgui.same_line()
+        if imgui.button('Save type cache') then
+            typecache.save()
+        end
+        if imgui.is_item_hovered() then imgui.set_tooltip('Force save the current type cache') end
+        imgui.same_line()
+        if imgui.button('Process rsz.json') then
+            typecache.process_rsz_data()
+        end
+        if imgui.is_item_hovered() then imgui.set_tooltip('Preprocess the rsz' .. reframework.get_game_name() .. '.json file for optimized type lookups.\nOnly needed when the rsz data changes and a new version is not included with the mod yet.\nThe original rsz file should be placed in reframework/data/rsz/rsz{gamename}.json.\nCan take a bit to execute.') end
     end
 
     if imgui.tree_node('Data dumps') then

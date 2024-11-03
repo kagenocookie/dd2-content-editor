@@ -15,6 +15,7 @@ local utils = require('content_editor.utils')
 --- @field show_window boolean
 --- @field selected_editor_tab_index number
 --- @field author_name string
+--- @field devmode boolean|nil
 --- @field author_description string|nil
 --- @field active_bundle string|nil
 --- @field next_editor_id integer

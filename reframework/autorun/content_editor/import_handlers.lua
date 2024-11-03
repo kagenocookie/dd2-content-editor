@@ -447,6 +447,7 @@ importer_factories = {
                         fields[#fields+1] = { fieldName, override.import_handler, override and override.accessors or default_accessors, fieldClass }
                     else
                         local submeta = typecache.get(fieldClass)
+                        -- print('fetching field handler', fullname .. ':', fieldClass, fieldName) -- DEBUGGING
                         local subhandler = get_handler(fieldClass, submeta)
                         fields[#fields+1] = { fieldName, subhandler, override and override.accessors or default_accessors, fieldClass }
                     end

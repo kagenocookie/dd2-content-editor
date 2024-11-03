@@ -433,6 +433,19 @@ local function dictionary_ui(meta, classname, label, settings)
     --- @type UIHandler
     return function (context)
         local dict = context.get()
+        if not dict then
+            imgui.text('Dictionary is null')
+            if imgui.button('Create') then
+                local newInst = settings.is_raw_data and {} or helpers.create_generic_instance(classname)
+                if newInst then
+                    context.set(newInst)
+                    return true
+                else
+                    print('ERROR: could not instantiate instance of dictionary', classname)
+                end
+            end
+            return false
+        end
         local items = context.data.elements
         local refreshBtn = false
         local changed = false
@@ -520,6 +533,7 @@ local function dictionary_ui(meta, classname, label, settings)
 
             if not items then
                 imgui.text('Dictionary is null or invalid')
+                imgui.tree_pop()
                 return false
             end
 
@@ -694,7 +708,7 @@ field_editor_factories = {
                             imgui.set_tooltip('Field is not serialized\nUsually this means the data is used only during runtime and managed automatically by the game, or the mod automatically handles it for you.')
                         end
                         imgui.same_line()
-                        imgui.push_style_color(0, 0xffdddddd)
+                        imgui.push_style_color(0, 0xfff3f3f3)
                     end
                     local childChanged = childCtx:ui()
                     imgui.pop_id()

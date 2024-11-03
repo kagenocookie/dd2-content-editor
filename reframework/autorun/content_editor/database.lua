@@ -813,7 +813,6 @@ local function set_bundle_enabled(bundleName, enabled)
     local settings = internal.config.data.bundle_settings[bundleName] or {}
     settings.disabled = not enabled
     internal.config.data.bundle_settings[bundleName] = settings
-    internal.config.save()
     if enabled then
         local bundleImports = {}
         if load_single_bundle_safe(allBundleEntry, bundleImports) then
@@ -831,6 +830,7 @@ local function set_bundle_enabled(bundleName, enabled)
         utils.table_remove(activeBundles, activeBundle)
         refresh_enums()
     end
+    internal.config.save()
 end
 
 --- @param bundleName1 string
@@ -951,19 +951,24 @@ local function generate_entity_label(entity)
 end
 
 local function finish_database_init()
+    log.info('Initializing content editor type info...')
+    local timestamps = {os.clock()}
     print('Initializing content editor type info...')
     typecache.load()
+    timestamps[#timestamps+1] = os.clock()
     for _, et in pairs(entity_types) do
         for _, t in ipairs(et.root_types or {}) do
             typecache.get(t)
         end
     end
 
+    timestamps[#timestamps+1] = os.clock()
     print('Starting content import for pre-existing game data...')
 
     -- this event is intended for plugins to fetch any current pre-existing game state and initialize the already present instances
     events.emit('get_existing_data')
 
+    timestamps[#timestamps+1] = os.clock()
     print('All content entity types ready, starting load...')
     if core.editor_enabled then
         enums.refresh()
@@ -971,15 +976,24 @@ local function finish_database_init()
 
     load_data_bundles()
     events.emit('bundles_loaded')
+    timestamps[#timestamps+1] = os.clock()
 
     typecache.save_if_invalid()
     db_ready = true
     events.emit('ready')
+    timestamps[#timestamps+1] = os.clock()
+    if internal.config.data.editor.devmode then
+        local f = '' for i, n in ipairs(timestamps) do f = f .. ((timestamps[i + 1] or os.clock()) - n) .. ', ' end
+        -- read typecache, init root types, get_existing_data, load bundles, save typecache & ready
+        log.info('Content editor initialized in ' .. f .. ' seconds')
+    else
+        log.info('Content editor initialized in ' .. (timestamps[#timestamps] - timestamps[1]) .. ' seconds')
+    end
 end
 
 re.on_application_entry('UpdateBehavior', function ()
     if not db_ready and not db_failed and next(entity_types) and core.game.game_data_is_ready() then
-        -- db_failed = true finish_database_init() if true then return end
+        db_failed = true finish_database_init() if true then return end
         -- if we have at least one entity type registered, we should be confident that they're all there and ready
         -- if we wanted to allow a provider to delay, we can add a flag to the entity type later
         local success, msg = pcall(finish_database_init)

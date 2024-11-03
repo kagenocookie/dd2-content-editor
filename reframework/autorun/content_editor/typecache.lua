@@ -58,11 +58,14 @@ local typecache_path = core.get_path('cache/typecache.json')
 local cache = {}
 
 local ignored_types = {
+    ["System.MulticastDelegate"] = true,
+    ["System.Delegate"] = true,
+}
+
+local ignored_parents = {
     ["System.ValueType"] = true,
     ["System.Object"] = true,
     ["System.Enum"] = true,
-    ["System.MulticastDelegate"] = true,
-    ["System.Delegate"] = true,
 }
 
 --- @param typedef RETypeDefinition
@@ -70,6 +73,13 @@ local ignored_types = {
 local function build_typecache(typedef, typecache)
     local fullname = typedef:get_full_name()
     if typecache[fullname] then return end
+
+    if ignored_types[fullname] then
+        typecache[fullname] = { type = handlerType.readonly, itemCount = 0 }
+        return
+    end
+
+    -- print('generating cache', fullname) -- DEBUGGING
 
     if typedef:is_value_type() then
         if typedef:is_a(type_enum) then
@@ -96,7 +106,7 @@ local function build_typecache(typedef, typecache)
             local nullableInner = fullname:sub(19, -2)
             local innerType = sdk.find_type_definition(nullableInner)
             if not innerType then
-                print('Unsupported nullabe inner type ' .. nullableInner)
+                print('Unsupported nullable inner type ' .. nullableInner)
                 return
             end
 
@@ -106,7 +116,6 @@ local function build_typecache(typedef, typecache)
             else
                 typecache[fullname] = { type = handlerType.nullableValue, itemCount = 1, elementType = nullableInner }
             end
-            return
         else
             local fields = typedef:get_fields()
             local cacheEntry = { type = handlerType.value, fields = {}, itemCount = 0 }
@@ -188,9 +197,24 @@ local function build_typecache(typedef, typecache)
     local fields = {} --- @type REField[]
     local parents = {} --- @type string[]
     local parenttype = typedef:get_parent_type()
+    local parentFieldFlags = {}
     while parenttype do
         local parentfull = parenttype:get_full_name()
-        if ignored_types[parentfull] then break end
+        if ignored_types[parentfull] then
+            typecache[fullname] = { type = handlerType.readonly, itemCount = 0 }
+            return
+        end
+        if ignored_parents[parentfull] then break end
+        build_typecache(parenttype, typecache)
+        local parentCache = typecache[parentfull]
+        if parentCache and parentCache.fields then
+            for iii, pf in ipairs(parentCache.fields) do
+                local nameInParent = pf[1]
+                if nameInParent and not parentFieldFlags[nameInParent] then
+                    parentFieldFlags[nameInParent] = pf[3]
+                end
+            end
+        end
 
         for _, pf in ipairs(parenttype:get_fields()) do
             fields[#fields+1] = pf
@@ -228,14 +252,6 @@ local function build_typecache(typedef, typecache)
     local next_field_i = #order + 1
     local addedFields = {}
     local import_whitelist = typeOverrides.import_field_whitelist
-    for i = #(parents or {}), 1, -1 do
-        if import_whitelist then break end
-        local parent = parents[i]
-        local parentSettings = typeSettings[parent]
-        if parentSettings then
-            import_whitelist = parentSettings.import_field_whitelist
-        end
-    end
 
     for _, field in ipairs(fields) do
         if not field:is_static() then
@@ -290,10 +306,13 @@ local function build_typecache(typedef, typecache)
             end
 
             local flags = fieldFlags.AllNullable
-            if fieldOverrides and fieldOverrides.import_ignore or (import_whitelist ~= nil and not utils.table_contains(import_whitelist, fieldName)) then
+            local parentFlag = parentFieldFlags[fieldName]
+            if fieldOverrides and fieldOverrides.import_ignore or (import_whitelist ~= nil and not utils.table_contains(import_whitelist, fieldName)) or (parentFlag and parentFlag & fieldFlags.ImportEnable == 0) then
                 flags = flags - fieldFlags.ImportEnable
             end
             if fieldOverrides and fieldOverrides.ui_ignore then
+                flags = flags - fieldFlags.UIEnable
+            elseif (not fieldOverrides or fieldOverrides.ui_ignore ~= true) and parentFlag and (parentFlag & fieldFlags.UIEnable == 0) then
                 flags = flags - fieldFlags.UIEnable
             end
             if fieldOverrides and (fieldOverrides.not_nullable or fieldType:is_value_type()) then
@@ -308,13 +327,21 @@ local function build_typecache(typedef, typecache)
             -- potential optimization: flatten the array like, field1,type1,flags1,field2,type2,flags3,...
             addedFields[fieldName] = field
             objectCacheEntry.fields[insert_index] = {fieldName, fieldEffectiveType, flags}
-            if not typecache[fieldEffectiveType] then
-                build_typecache(fieldType, typecache)
-            end
         end
         ::continue::
     end
+
     objectCacheEntry.itemCount = next_field_i - 1
+
+    for iii, field in ipairs(objectCacheEntry.fields) do
+        local fieldTypename = field[2]
+        if not fieldTypename then
+            print('missing field type wtf', fullname, field[1], field[2], field[3], 'field index', iii)
+        elseif not typecache[fieldTypename] then
+            local fieldType = sdk.find_type_definition(fieldTypename)
+            build_typecache(fieldType, typecache)
+        end
+    end
 
     if typeOverrides and typeOverrides.abstract then
         local largest_abstract_field_count = 0
@@ -382,12 +409,109 @@ local function get_typecache_entry(classname)
     return cacheEntry
 end
 
+local function process_rsz()
+    local rszData = json.load_file('rsz/rsz' .. reframework.get_game_name() .. '.json')
+    if not rszData then print('rsz data not found') return end
+
+    -- force clean data in the rsz json for this
+    _userdata_DB.editor.set_need_script_reset()
+    cache = {}
+    type_definitions.type_settings = {}
+
+    local outputDefinitions = {}
+    for _, data in pairs(rszData) do
+        local name = data.name
+        -- ignore system types, enums, arrays, generics, compiler thingies, also via unless we find a way to handle them
+        local ignoredType = name == ''
+            or (name:find('System.') == 1)
+            or (name:find('via.') == 1)
+            or (#data.fields == 1 and data.fields[1].name == 'value__')
+            or name:sub(-2) == '[]'
+            or name:find('!')
+            or name:find('<')
+            or name:find('%[%[')
+            or name:find('<>c') ~= nil
+        if not ignoredType then
+            local fields = {}
+            local t = sdk.find_type_definition(name)
+            local tc = t and get_typecache_entry(name)
+
+            if tc and tc.type ~= handlerType.readonly then
+                if data.fields then
+                    for _, field in ipairs(data.fields) do
+                        local fname = field.name---@type string
+                        local ignore = fname:find('^v%d+$') or fname:match('^v%d+_')
+                        if not ignore then
+                            if fname:find('STRUCT_') == 1 then
+                                local realname = fname:gsub('^STRUCT_', ''):gsub('_+[^_]+$', '')
+                                if not utils.table_contains(fields, realname) then
+                                    if utils.table_find(tc.fields, function (item) return item[1] == realname end) then
+                                        fields[#fields+1] = realname
+                                    else
+                                        print('struct did not match any TDB fields', name, fname, '=>', realname)
+                                    end
+                                end
+                            else
+                                fields[#fields+1] = fname
+                            end
+                        end
+                    end
+                end
+
+                if tc.baseTypes then
+                    -- move any fields that belong to the parent class, to the parent class
+                    -- god help me
+                    for i = #tc.baseTypes, 1, -1 do
+                        local parent = tc.baseTypes[i]
+                        local parentTc = get_typecache_entry(parent)
+                        if parentTc and parentTc.type ~= handlerType.readonly and parentTc.fields then
+                            if not outputDefinitions[parent] then
+                                outputDefinitions[parent] = { import_field_whitelist = {} }
+                                local parentFields = outputDefinitions[parent].import_field_whitelist
+                                for _, pFieldData in ipairs(parentTc.fields) do
+                                    local pfield = pFieldData[1]
+                                    -- print('checking for field', pfield)
+                                    if utils.table_contains(fields, pfield) then
+                                        parentFields[#parentFields+1] = pfield
+                                        -- print('moving field', pfield, '=>', parent)
+                                        table.remove(fields, utils.table_index_of(fields, pfield))
+                                    end
+                                end
+                            else
+                                -- print('existing parent merge', name, parent)
+                                local parentFields = outputDefinitions[parent].import_field_whitelist
+                                for _, pfield in ipairs(parentFields) do
+                                    local idx = utils.table_index_of(fields, pfield)
+                                    if idx ~= 0 then table.remove(fields, idx) end
+                                end
+                            end
+                        end
+                    end
+                end
+                local fieldcount = tc.fields and #tc.fields
+                if fieldcount ~= #fields then
+                    outputDefinitions[name] = {
+                        import_field_whitelist = fields,
+                    }
+                end
+            end
+        end
+    end
+
+    local outfn = core.get_path('rsz/' .. reframework.get_game_name() .. '.json')
+    local outjson = json.dump_string(outputDefinitions, 2)
+    outjson = outjson:gsub('"import_field_whitelist": null', '"import_field_whitelist": []')
+    fs.write(outfn, outjson)
+end
+
 _userdata_DB._typecache = {
     get = get_typecache_entry,
     load = load_type_cache,
     clear = clear_type_cache,
     save = save_type_cache,
     save_if_invalid = save_if_invalid,
+
+    process_rsz_data = process_rsz,
 
     handlerTypes = handlerType,
     fieldFlags = fieldFlags,

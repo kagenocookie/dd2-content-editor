@@ -35,13 +35,17 @@ local function emit_event(name, ...)
     local store = events[name]
     if not store then return end
 
-    -- print('Emitting event', name, #store .. ' listeners', ...)
-    -- log.info('Emitting event ' .. name .. ' with ' .. #store .. ' listeners...')
+    local devmode = _userdata_DB.__internal.config.data.editor.devmode
     for i, cb in ipairs(store) do
-        -- log.info('Invoking event listener ' .. tostring(i))
-        local success, ret = pcall(cb, ...)
-        if not success then
-            print('ERROR in event ' .. name .. ' callback ' .. tostring(i) .. ': ' .. tostring(ret))
+        if devmode then
+            log.info('Invoking event listener ' .. name .. ' #' .. tostring(i))
+            cb(...)
+        else
+            local success, ret = pcall(cb, ...)
+            if not success then
+                print('ERROR in event ' .. name .. ' callback ' .. tostring(i) .. ': ' .. tostring(ret))
+                log.info('ERROR in event ' .. name .. ' callback ' .. tostring(i) .. ': ' .. tostring(ret))
+            end
         end
     end
 end
