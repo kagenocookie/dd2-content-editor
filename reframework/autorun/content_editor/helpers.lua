@@ -323,7 +323,7 @@ local function _object_to_string_internal(item, classname, context)
     end
 
     if type(item) == 'userdata' and item.ToString then
-        local success, str = pcall(item.ToString, item)
+        local success, str = pcall(item.call, item, 'ToString()')
         if success then
             return str
         else

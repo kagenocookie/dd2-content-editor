@@ -5,8 +5,6 @@ local function game_data_is_ready()
     return QuestManager.QuestCatalogDict and QuestManager.QuestCatalogDict:getCount() > 0
 end
 
-local version = sdk.find_type_definition('via.version'):get_method('getMainRevisionString'):call(nil)
 return {
     game_data_is_ready = game_data_is_ready,
-    version = version,
 }

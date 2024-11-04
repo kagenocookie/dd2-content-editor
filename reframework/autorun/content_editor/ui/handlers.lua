@@ -94,7 +94,7 @@ value_type_handler_defs['System.Guid'] = function (ctx)
     end
     imgui.same_line()
     imgui.set_next_item_width(w - 66)
-    local changed, newGuidStr = imgui.input_text(ctx.label, helpers.to_string(value))
+    local changed, newGuidStr = imgui.input_text(ctx.label, helpers.to_string(value, 'System.Guid'))
     if changed then
         local valid, newGuid = utils.guid_try_parse(newGuidStr)
         if valid then

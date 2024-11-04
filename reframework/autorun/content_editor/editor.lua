@@ -161,9 +161,13 @@ local function embed_window(window_type_id, id, state)
     local handler = editor_defs[window_type_id]
     if handler then
         imgui.push_id('window_' .. id)
-        local success, error = pcall(handler.draw, state)
-        if not success then
-            print('ERROR: content editor window ' .. (state.name or window_type_id) .. '#' .. id .. ' caused error:\n' .. tostring(error))
+        if config.data.editor.devmode then
+            handler.draw(state)
+        else
+            local success, error = pcall(handler.draw, state)
+            if not success then
+                print('ERROR: content editor window ' .. (state.name or window_type_id) .. '#' .. id .. ' caused error:\n' .. tostring(error))
+            end
         end
         imgui.pop_id()
     else

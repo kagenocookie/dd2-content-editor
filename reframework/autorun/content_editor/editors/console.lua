@@ -341,6 +341,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
                 if imgui.button('Re-evaluate') then
                     cache._eval = nil
                     cache._success = nil
+                    cache._is_managed = nil
                 end
             end
             local success
@@ -370,7 +371,12 @@ editor.define_window('data_viewer', 'Data console', function (state)
                 else
                     console_ctx.data.children = console_ctx.data.children or {}
                     if type(data) == 'userdata' then
-                        display_managed(data--[[@as any]], console_ctx.data.children)
+                        if cache._is_managed == nil then cache._is_managed = sdk.is_managed_object(data) end
+                        if cache._is_managed then
+                            display_managed(data--[[@as any]], console_ctx.data.children)
+                        else
+                            imgui.text(tostring(data))
+                        end
                     elseif type(data) == 'table' then
                         display_table(data, console_ctx.data.children)
                     elseif data == nil then
