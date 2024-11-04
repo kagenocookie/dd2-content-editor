@@ -192,6 +192,34 @@ object_handlers['via.Transform'] = function (context)
     return false
 end
 
+object_handlers['via.Prefab'] = function (context)
+    local pfb = context.get()
+    if not pfb then
+        imgui.text(context.label .. ' Prefab null')
+        imgui.same_line()
+        if imgui.button('Create') then
+            context.set(sdk.create_instance('via.Prefab'):add_ref())
+            return true
+        end
+        return false
+    end
+    local path = pfb:get_Path()
+    local changed
+    changed, context.data.newpath = imgui.input_text('Path', context.data.newpath or path or '')
+    if changed and context.data.newpath and context.data.newpath ~= path then
+        if imgui.button('Change') then
+            pfb:set_Path(context.data.newpath)
+            context.data.newpath = nil
+        end
+        imgui.same_line()
+        if imgui.button('Cancel') then
+            context.data.newpath = nil
+        end
+    end
+
+    return false
+end
+
 --- @type ObjectFieldAccessors
 local default_accessor = {
     get = function (object, fieldname)
@@ -215,7 +243,7 @@ local boxed_enum_accessor = {
 
 --- @type ObjectFieldAccessors
 local getter_prop_accessor = {
-    get = function (object, propName) return object:call('get_' .. propName) end,
+    get = function (object, propGetter) return object:call(propGetter) end,
     set = function (object, value, fieldname) print('WARNING: Attempted to set read-only prop', object, fieldname, value) end
 }
 

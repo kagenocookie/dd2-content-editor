@@ -38,7 +38,8 @@ udb.events.on('data_imported', function (data)
     if data.shop and #data.shop > 0 then
         ItemManager.ItemShopData._Params = helpers.expand_system_array(
             ItemManager.ItemShopData._Params,
-            utils.pluck(data.shop, 'runtime_instance')
+            utils.pluck(data.shop, 'runtime_instance'),
+            'app.ItemShopParam'
         )
     end
 end)

@@ -340,19 +340,19 @@ local function register(register_extension)
             for _, prop in ipairs(props) do
                 local childCtx = ctx.children[prop]
                 if childCtx == nil then
-                    print(ctx.data.classname, prop)
-                    local propType = sdk.find_type_definition(ctx.data.classname):get_method('get_' .. prop):get_return_type():get_full_name()
+                    local getter = 'get_' .. prop
+                    local propType = sdk.find_type_definition(ctx.data.classname):get_method(getter):get_return_type():get_full_name()
                     childCtx = _userdata_DB._ui_handlers._internal.create_field_editor(
                         ctx,
                         ctx.data.classname,
-                        prop,
+                        getter,
                         propType,
                         prop .. '/Readonly',
                         _userdata_DB._ui_handlers._internal.accessors.getter,
                         getter_settings)
                     childCtx.ui = _userdata_DB._ui_handlers._internal.apply_overrides(childCtx.ui, ctx.data.classname, "__element", propType)
                 end
-                childCtx.ui(childCtx)
+                childCtx:ui()
             end
             return changed
         end
