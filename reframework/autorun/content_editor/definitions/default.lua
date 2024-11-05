@@ -18,4 +18,10 @@ return {
     ['via.Quaternion'] = {
         force_expander = false,
     },
+    ['via.Float4'] = {
+        force_expander = false,
+    },
+    ['via.vec4'] = {
+        force_expander = false,
+    },
 }

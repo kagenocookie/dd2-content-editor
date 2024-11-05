@@ -33,17 +33,17 @@ local object_handlers = {
 
 --- @type table<string, UIHandler>
 local value_type_handler_defs = {
-    ["System.UInt32"] = common.int(1, 0, 4294967295),
-    ["System.Int32"] = common.int(1, -2147483648, 2147483647),
-    ["System.UInt64"] = common.int(1, 0, 18446744073709551616),
-    ["System.Int64"] = common.int(1, -9223372036854775808, 9223372036854775807),
-    ["System.UInt16"] = common.int(1, 0, 65535),
-    ["System.Int16"] = common.int(1, -32767, 32767),
+    ["System.UInt32"] = common.int(0.1, 0, 4294967295),
+    ["System.Int32"] = common.int(0.1, -2147483648, 2147483647),
+    ["System.UInt64"] = common.int(0.1, 0, 18446744073709551616),
+    ["System.Int64"] = common.int(0.1, -9223372036854775808, 9223372036854775807),
+    ["System.UInt16"] = common.int(0.1, 0, 65535),
+    ["System.Int16"] = common.int(0.1, -32767, 32767),
     ["System.Byte"] = common.int(0.1, 0, 255),
     ["System.SByte"] = common.int(0.1, -128, 127),
     ["System.Boolean"] = common.bool,
-    ["System.Single"] = common.float(1, -9999999999, 9999999999),
-    ["System.Double"] = common.float(1, -9999999999, 9999999999),
+    ["System.Single"] = common.float(0.1, -9999999999, 9999999999),
+    ["System.Double"] = common.float(0.1, -9999999999, 9999999999),
     ['via.vec2'] = common.vec2,
     ['via.vec3'] = common.vec3,
     ['via.vec4'] = common.vec4,
@@ -917,6 +917,7 @@ end
 --- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
 --- @param setter nil|fun(oldValue: any, newValue: any)
 --- @param uiSettingOverrides UISettings|nil
+--- @return boolean changed
 local function show_root_entity(target, owner, label, classname, editorId, setter, uiSettingOverrides)
     if not target then error('OI! ui needs a target and a parent!') end
     classname = classname or helpers.get_type(target)
@@ -951,10 +952,11 @@ end
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
 --- @param editorId any A key by which to identify this editor or a table. If unspecified, the label or target object's address will be used as a key.
+--- @return boolean changed
 local function show_entity_ui(target, owner, label, classname, editorId)
-    if not target then imgui.text_colored((label or 'Target') .. ' is null', core.get_color('error')) return end
+    if not target then imgui.text_colored((label or 'Target') .. ' is null', core.get_color('error')) return false end
 
-    show_root_entity(target, owner, label, classname, editorId)
+    return show_root_entity(target, owner, label, classname, editorId)
 end
 
 --- Show an entity in a read-only state (read only not yet fully implemented)
@@ -963,10 +965,11 @@ end
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
 --- @param editorId any A key by which to identify this editor or a table. If unspecified, the label or target object's address will be used as a key.
+--- @return boolean changed
 local function show_entity_ui_readonly(target, owner, label, classname, editorId)
     if not target then imgui.text_colored((label or 'Target') .. ' is null', core.get_color('error')) return end
 
-    show_root_entity(target, owner, label, classname, editorId, nil, {
+    return show_root_entity(target, owner, label, classname, editorId, nil, {
         is_readonly = true,
         hide_nonserialized = false,
         is_raw_data = false,

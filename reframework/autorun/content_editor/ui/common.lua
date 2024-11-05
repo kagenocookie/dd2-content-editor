@@ -10,7 +10,7 @@ local utils = require('content_editor.utils')
 local function create_int(speed, min_range, max_range, format_string)
     min_range = min_range == nil and -99999 or min_range
     max_range = max_range == nil and 99999 or max_range
-    speed = speed == nil and 1 or speed
+    speed = speed == nil and 0.1 or speed
     local support_extra_range = min_range <= -2147483648 or max_range > 2147483647
 
     return function (ctx)
@@ -50,7 +50,7 @@ end
 local function create_float(speed, min_range, max_range, format_string)
     min_range = min_range == nil and -99999 or min_range
     max_range = max_range == nil and 99999 or max_range
-    speed = speed == nil and 1 or speed
+    speed = speed == nil and 0.1 or speed
 
     return function (ctx)
         local changed, value = imgui.drag_float(ctx.label, ctx.get(), speed, min_range, max_range, format_string)
@@ -326,11 +326,11 @@ end, function() return Vector3f.new(0, 0, 0) end)
 local function handle_color(ctx)
     local value = ctx.get()
     local rgba = value.rgba
-    local newval = Vector4f.new(((rgba & 0xff000000) >> 24) / 255, ((rgba & 0xff0000) >> 16) / 255, ((rgba & 0xff00) >> 8) / 255, (rgba & 0xff) / 255)
+    local newval = Vector4f.new((rgba & 0xff) / 255, ((rgba & 0xff00) >> 8) / 255, ((rgba & 0xff0000) >> 16) / 255, ((rgba & 0xff000000) >> 24) / 255)
     local changed
     changed, newval = imgui.color_edit4(ctx.label, newval)
     if changed then
-        value.rgba = (math.floor(newval.x*255) << 24) + (math.floor(newval.y*255) << 16) + (math.floor(newval.z*255) << 8) + math.floor(newval.w*255)
+        value.rgba = math.floor(newval.x*255) + (math.floor(newval.y*255) << 8) + (math.floor(newval.z*255) << 16) + (math.floor(newval.w*255) << 24)
         ctx.set(value)
     end
     return changed

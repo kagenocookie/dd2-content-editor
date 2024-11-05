@@ -373,6 +373,23 @@ local function register(register_extension)
         end
     end)
 
+    local nil_setter = function () end
+    register_extension('readonly', function (handler)
+        --- @type UIHandler
+        return function (ctx)
+            if not ctx.set ~= nil_setter then
+                ctx.set = nil_setter
+            end
+            imgui.text_colored('*', core.get_color('info'))
+            if imgui.is_item_hovered() then
+                imgui.set_tooltip('Field is read only')
+            end
+            imgui.same_line()
+            handler(ctx)
+            return false
+        end
+    end)
+
     register_extension('handler_pre', function (handler, data)
         local custom_handler = data.handler --- @type fun(ctx: UIContainer): nil
         if not custom_handler then return handler end
