@@ -1,7 +1,7 @@
 if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB._game_controller then return _userdata_DB._game_controller end
 
-local success, ctrl = pcall(require, 'content_editor.' .. reframework:get_game_name() .. '.control')
+local success, ctrl = pcall(require, 'content_editor.' .. reframework:get_game_name() .. '.info')
 
 if not success then
     ctrl = { }
@@ -26,6 +26,20 @@ if ctrl.version == nil then
         print('Content editor could not determine game version')
         log.info('Content editor could not determine game version')
         ctrl.version = '-1'
+    end
+end
+
+if ctrl.get_root_scene == nil then
+    local rootScene
+    ctrl.get_root_scene = function()
+        if rootScene then return rootScene end
+        success, scene = pcall(sdk.call_native_func, sdk.get_native_singleton("via.SceneManager"), sdk.find_type_definition("via.SceneManager"), "get_CurrentScene()")
+        if success then
+            rootScene = scene
+            return scene
+        else
+            rootScene = nil
+        end
     end
 end
 

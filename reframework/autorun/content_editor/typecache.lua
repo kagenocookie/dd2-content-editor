@@ -45,7 +45,7 @@ local utils = require('content_editor.utils')
 local type_definitions = require('content_editor.definitions')
 local generic_types = require("content_editor.generic_types")
 
-local ctrl = require('content_editor.game_controller')
+local info = require('content_editor.gameinfo')
 
 local type_enum = sdk.find_type_definition('System.Enum')
 local type_userdata = sdk.find_type_definition('via.UserData')
@@ -365,7 +365,7 @@ end
 local cacheInvalidated = false
 
 local function load_type_cache()
-    local hash = core.VERSION_STR .. ' ' .. ctrl.version .. ' ' .. type_definitions._hash
+    local hash = core.VERSION_STR .. ' ' .. info.version .. ' ' .. type_definitions._hash
     local newCache = json.load_file(typecache_path)
     if newCache and newCache.__VERSION == currentTypecacheVersion and newCache.__HASH == hash then
         cache = newCache

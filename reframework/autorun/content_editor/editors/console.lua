@@ -6,6 +6,7 @@ local udb = require('content_editor.database')
 local core = require('content_editor.core')
 local helpers = require('content_editor.helpers')
 local utils = require('content_editor.utils')
+local info = require('content_editor.gameinfo')
 
 local editor = require('content_editor.editor')
 local ui = require('content_editor.ui')
@@ -83,16 +84,6 @@ end
 local globalSettings = editor.persistent_storage.get('console', {})
 local maxlines = 12
 
-local rootScene
-local function find_root_scene()
-    if rootScene then return rootScene end
-    local success, scene = pcall(sdk.call_native_func, sdk.get_native_singleton("via.SceneManager"), sdk.find_type_definition("via.SceneManager"), "get_CurrentScene()")
-    if success then
-        rootScene = scene
-        return scene
-    end
-end
-
 local sceneFindComponents = sdk.find_type_definition('via.Scene'):get_method('findComponents(System.Type)')
 local compGetGO = sdk.find_type_definition('via.Component'):get_method('get_GameObject')
 local goGetName = sdk.find_type_definition('via.GameObject'):get_method('get_Name')
@@ -100,7 +91,7 @@ local goGetName = sdk.find_type_definition('via.GameObject'):get_method('get_Nam
 --- @param name_prefix string|nil
 --- @param remap nil|fun(item: any): any
 local function find_gameobjects(typedef, name_prefix, remap)
-    local scene = find_root_scene()
+    local scene = info.get_root_scene()
     if not scene then return nil end
     if not typedef then return nil end
 
