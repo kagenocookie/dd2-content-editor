@@ -52,7 +52,7 @@ PrepareFiles -Folder "quest_editor" -FileList (
     "reframework/autorun/editor_quest.lua",
     "natives/stm/appdata/quest/qu8000/qu8000.scn.20",
     "natives/stm/appdata/quest/qu8000/resident.scn.20",
-    "natives/stm/appsystem/scene/quest.scn.20",
+    # "natives/stm/appsystem/scene/quest.scn.20",
     "campfire.jpg"
 )
 Copy-Item -Path quest_editor.ini -Destination "_build/quest_editor/modinfo.ini"
@@ -68,6 +68,9 @@ PrepareFiles -Folder "item_editor" -FileList (
     "reframework/autorun/editor_items.lua",
     "reframework/autorun/item_editor"
 )
+
+MakeModinfo "weather_editor" "weathers editor" $Version "DD2 human weathers editor addon for Content database"
+PrepareFiles -Folder "weather_editor" -FileList ("reframework/autorun/editor_weathers.lua")
 
 Set-Location _build
 & "C:/Program Files/7-Zip/7z.exe" a ../content_editor_full.zip *
