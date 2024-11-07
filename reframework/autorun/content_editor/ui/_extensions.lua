@@ -374,7 +374,8 @@ local function register(register_extension)
     end)
 
     local nil_setter = function () end
-    register_extension('readonly', function (handler)
+    register_extension('readonly', function (handler, data)
+        local text = data.text or 'Field is read only'
         --- @type UIHandler
         return function (ctx)
             if not ctx.set ~= nil_setter then
@@ -382,7 +383,7 @@ local function register(register_extension)
             end
             imgui.text_colored('*', core.get_color('info'))
             if imgui.is_item_hovered() then
-                imgui.set_tooltip('Field is read only')
+                imgui.set_tooltip(text)
             end
             imgui.same_line()
             handler(ctx)

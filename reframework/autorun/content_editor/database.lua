@@ -926,6 +926,17 @@ local function insert_new_entity(type, bundle, entityData)
     return entity
 end
 
+---Create and if possible inject a new entity. A new ID will be automatically generated for the given data bundle.
+---@param entity DBEntity
+---@param bundle string
+---@return DBEntity|nil
+local function clone_as_new_entity(entity, bundle)
+    local data = export_entity(entity)
+    data.id = nil
+    data.label = nil
+    return insert_new_entity(entity.type, bundle, data)
+end
+
 --- Triggers the import function of the entity, to force apply any changes made to the entity
 --- @param entity DBEntity
 --- @return boolean success
@@ -1033,6 +1044,7 @@ _userdata_DB.database = {
     create_entity = create_entity,
     load_entity = load_entity,
     insert_new_entity = insert_new_entity,
+    clone_as_new_entity = clone_as_new_entity,
     reimport_entity = reimport_entity,
     export_entity = export_entity,
     generate_entity_label = generate_entity_label,
