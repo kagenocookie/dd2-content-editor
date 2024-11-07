@@ -15,6 +15,7 @@ if _userdata_DB._typecache then return _userdata_DB._typecache end
 --- @enum SpecialType
 local specialType = {
     userdata = 1,
+    resource = 2,
 }
 
 --- @enum HandlerType
@@ -49,6 +50,7 @@ local info = require('content_editor.gameinfo')
 
 local type_enum = sdk.find_type_definition('System.Enum')
 local type_userdata = sdk.find_type_definition('via.UserData')
+local type_resourceHolder = sdk.find_type_definition('via.ResourceHolder')
 local currentTypecacheVersion = 1
 
 local readonly_cache_item = { type = handlerType.readonly, itemCount = 1 }
@@ -358,7 +360,9 @@ local function build_typecache(typedef, typecache)
     end
 
     if typedef:is_a(type_userdata) then
-        objectCacheEntry.specialType = 1
+        objectCacheEntry.specialType = specialType.userdata
+    elseif typedef:is_a(type_resourceHolder) then
+        objectCacheEntry.specialType = specialType.resource
     end
 end
 

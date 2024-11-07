@@ -58,7 +58,7 @@
 --- @field show_nested boolean|nil
 
 --- @class ValueImporter
---- @field import fun(src: table, currentValue: nil|(REManagedObject|any)): any
+--- @field import fun(src: any, currentValue: nil|(REManagedObject|any)): any
 --- @field export fun(src: any, target: table|nil, options: ExportOptions|nil): any
 
 --- @class ExportOptions : table

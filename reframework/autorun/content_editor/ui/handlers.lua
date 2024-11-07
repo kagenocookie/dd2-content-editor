@@ -634,6 +634,11 @@ field_editor_factories = {
         if object_handlers[classname] then
             return object_handlers[classname]
         end
+        if meta.specialType == 2 then
+            local resourceClass = classname:gsub('Holder$', '')
+            object_handlers[classname] = common.resource_holder(resourceClass)
+            return object_handlers[classname]
+        end
 
         local typesettings = type_settings.type_settings[classname] or {}
         if typesettings.abstract then
@@ -967,7 +972,7 @@ end
 --- @param editorId any A key by which to identify this editor or a table. If unspecified, the label or target object's address will be used as a key.
 --- @return boolean changed
 local function show_entity_ui_readonly(target, owner, label, classname, editorId)
-    if not target then imgui.text_colored((label or 'Target') .. ' is null', core.get_color('error')) return end
+    if not target then imgui.text_colored((label or 'Target') .. ' is null', core.get_color('error')) return false end
 
     return show_root_entity(target, owner, label, classname, editorId, nil, {
         is_readonly = true,

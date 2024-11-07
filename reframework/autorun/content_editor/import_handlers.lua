@@ -9,9 +9,9 @@ local helpers = require('content_editor.helpers')
 -- helper functions
 local type_guid = sdk.find_type_definition('System.Guid')
 
---#endregion
+--- @return ValueImporter
 local function vec2(classname)
-    --- @return ValueImporter
+    --- @type ValueImporter
     return {
         export = function (src, target)
             target = target or {}
@@ -28,8 +28,9 @@ local function vec2(classname)
     }
 end
 
+--- @return ValueImporter
 local function vec3(classname)
-    --- @return ValueImporter
+    --- @type ValueImporter
     return {
         export = function (src, target)
             target = target or {}
@@ -44,6 +45,31 @@ local function vec3(classname)
             target.x = src.x
             target.y = src.y
             target.z = src.z
+            return target
+        end,
+    }
+end
+
+--- @return ValueImporter
+local function resource(resourceClassname)
+    --- @type ValueImporter
+    return {
+        export = function (src)
+            if src == nil then return 'null' end
+            return src:get_ResourcePath()
+        end,
+        import = function (src, target)
+            if src == nil then return target end
+            if src == 'null' then return nil end
+            if target ~= nil and target:get_ResourcePath() == src then return target end
+
+            local newres = sdk.create_resource(resourceClassname, src)
+            if not newres then return nil end
+
+            newres = newres:add_ref()
+            target = sdk.create_instance(resourceClassname .. 'Holder', true):add_ref()
+            target:call('.ctor()')
+            target:write_qword(0x10, newres:get_address())
             return target
         end,
     }
@@ -69,6 +95,8 @@ local known_importers = {
     ['via.vec3'] = vec3('via.vec3'),
     ['via.vec2'] = vec2('via.vec2'),
     ['via.Prefab'] = prefab,
+    ['via.render.TextureResourceHolder'] = resource('via.render.TextureResource'),
+    ['via.gui.GUIResourceHolder'] = resource('via.gui.GUIResource'),
 }
 
 --- @type ValueImporter
@@ -388,6 +416,12 @@ importer_factories = {
     end,
 
     [typecache.handlerTypes.object] = function (meta, fullname)
+        if meta.specialType == 2 then
+            local resourceClass = fullname:gsub('Holder$', '')
+            known_importers[fullname] = resource(resourceClass)
+            return known_importers[fullname]
+        end
+
         local typeOverrides = type_settings.type_settings[fullname]
 
         -- immediately store the handler so we don't die of recursion
@@ -585,6 +619,9 @@ _userdata_DB.import_handlers = {
     import = import,
 
     create_conditional = conditional,
+    common = {
+        resource = resource,
+    }
 }
 
 return _userdata_DB.import_handlers

@@ -66,7 +66,7 @@ local function get_glob_regex(type)
     return path
 end
 
-local version = {0, 4, 0}
+local version = {0, 4, 1}
 
 _userdata_DB.__core = {
     --- Active mod version {major, minor, patch}

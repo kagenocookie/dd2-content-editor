@@ -190,6 +190,49 @@ local function create_flags_enum(enum, items_per_row_count)
     end
 end
 
+--- @param resourceClassname string
+--- @return UIHandler
+local function resource_holder(resourceClassname)
+    local importer
+    --- @type UIHandler
+    return function (context)
+        local res = context.get()
+        imgui.text(context.label)
+        if type(res) == 'string' then
+            local changed, newpath = imgui.input_text('Resource path', res)
+            if changed then
+                context.set(newpath)
+                return true
+            end
+            return false
+        end
+
+        local curpath = res and res:get_ResourcePath() or ''
+        local changed, newpath = imgui.input_text('Resource path', context.data.newpath or curpath)
+        if changed then
+            context.data.newpath = newpath
+        end
+        if context.data.newpath and context.data.newpath ~= curpath then
+            if imgui.button('Change') then
+                importer = importer or _userdata_DB.import_handlers.common.resource(resourceClassname).import
+                local newres = importer(context.data.newpath, nil)
+                if newres then
+                    context.set(newres)
+                    return true
+                else
+                    print('ERROR: failed to create resource ', resourceClassname, context.data.newpath)
+                end
+            end
+            imgui.same_line()
+            if imgui.button('Cancel') then
+                context.data.newpath = nil
+            end
+        end
+
+        return false
+    end
+end
+
 --- @param enumProvider fun(context: UIContainer): EnumSummary|nil
 --- @return UIHandler
 local function create_dynamic_enum_filterable(enumProvider)
@@ -403,6 +446,8 @@ _quest_DB._common_handlers = {
     vec2_int = int_vec2,
     vec3_int = int_vec3,
     color = handle_color,
+
+    resource_holder = resource_holder,
 
     expandable_tree = create_expandable,
     toggleable = toggleable_value,
