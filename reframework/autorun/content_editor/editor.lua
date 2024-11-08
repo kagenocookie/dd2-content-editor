@@ -9,10 +9,11 @@ local typecache = require('content_editor.typecache')
 local enums = require('content_editor.enums')
 local imgui_wrappers = require('content_editor.ui.imgui_wrappers')
 local utils = require('content_editor.utils')
+local presets = require('content_editor.object_presets')
 
 core.editor_enabled = true
 
-local window_title = 'Content editor v' .. table.concat(core.VERSION, '.')
+local window_title = 'Content editor v' .. core.VERSION_STR .. ', gamever: ' .. core.game.version
 local tabs = {}
 
 --- @class WindowDefinition
@@ -334,6 +335,8 @@ _userdata_DB.editor = {
     set_need_script_reset = set_need_script_reset,
 
     active_bundle = config.data.editor.active_bundle,
+
+    presets = presets,
 
     persistent_storage = {
         get = persistent_storage_get,

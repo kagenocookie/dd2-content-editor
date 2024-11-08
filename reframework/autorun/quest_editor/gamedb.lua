@@ -8,58 +8,15 @@ local QuestManager = sdk.get_managed_singleton('app.QuestManager')
 local QuestResourceManager = sdk.get_managed_singleton('app.QuestResourceManager')
 local AIAreaManager = sdk.get_managed_singleton("app.AIAreaManager")
 local QuestLogManager = sdk.get_managed_singleton('app.QuestLogManager')
-local SuddenQuestManager = sdk.get_managed_singleton('app.SuddenQuestManager')
 local QuestDeliverManager = sdk.get_managed_singleton('app.QuestDeliverManager')
-local TimeManager = sdk.get_managed_singleton("app.TimeManager")
 local AISituationManager = sdk.get_managed_singleton('app.AISituationManager')
-
-local function game_data_is_ready()
-    return QuestManager.QuestCatalogDict and QuestManager.QuestCatalogDict:getCount() > 0
-end
-
-local field_time_getTimeData = sdk.find_type_definition('app.TimeManager'):get_field('_TimeData')
-local method_timeData_day = sdk.find_type_definition('app.TimeManager.TimeData'):get_method('get_InGameDay')
-local method_timeData_seconds = sdk.find_type_definition('app.TimeManager.TimeData'):get_method('get_InGameElapsedDaySeconds')
-
---- Returns a number of ingame seconds elapsed since the game was started
---- @return integer
-local function get_ingame_timestamp()
-    -- TODO how does this behave in unmoored world?
-    local td = field_time_getTimeData:get_data(TimeManager)
-    local day = method_timeData_day:call(td)
-    local dayTime = method_timeData_seconds:call(td) -- number goes up to 2880
-    return day * 86400 + math.floor(dayTime * 30)
-end
-
-local function split_timestamp_components(time)
-    local time_int = math.floor(time)
-    local days = math.floor(time_int / 86400)
-    time_int = time_int % 86400
-    local hrs = math.floor(time_int / 3600)
-    time_int = time_int % 3600
-    local mins = math.floor(time_int / 60)
-    time_int = time_int % 60
-    local sec = time_int
-    return days, hrs, mins, sec
-end
-
-local function format_timestamp(time)
-    local days, hrs, mins, sec = split_timestamp_components(time)
-    if days > 0 then
-        return string.format('%d:%02d:%02d:%02d', days, hrs, mins, sec)
-    elseif hrs > 0 then
-        return string.format('%02d:%02d:%02d', hrs, mins, sec)
-    else
-        return string.format('%02d:%02d', mins, sec)
-    end
-end
 
 --- @return table<string,app.QuestCatalogData>
 local function get_active_quest_catalogs()
     local list = QuestManager.QuestCatalogDict:getValues()
     local result = {}
     if list then
-        local success, res = pcall(function () return list:get_elements() end)
+        local success, res = pcall(list.get_elements, list)
         if success then
             -- print('Found ' .. tostring(#res) .. ' active quest catalogs')
             for _, ctg in pairs(res) do
@@ -173,14 +130,6 @@ end
 -- local questSceneController = sdk.get_managed_singleton('app.MainFlowManager'):get_MainContentsController():get_OtherFolderControllerList()[0]
 -- local MainFlowManager = sdk.get_managed_singleton('app.QuestManager').Tree
 
---- @return app.SuddenQuestEntity|nil
-local function get_game_sq_entity(id)
-    if SuddenQuestManager._EntityDict:call('ContainsKey', id) then
-        return SuddenQuestManager._EntityDict:get_Item(id)
-    end
-    return nil
-end
-
 --- @return app.QuestManager.QuestEntity|nil
 local function get_game_quest_entity(id)
     if QuestManager.EntityDict:call('ContainsKey', id) then
@@ -192,7 +141,6 @@ end
 --- @param questId integer
 --- @return via.Folder|nil
 local function get_quest_scene_folder(questId)
-    -- if utils.is_in_title_screen() then return nil end
     local qc = get_quest_scene_collector() --- @type any
     if qc == nil then return nil end
 
@@ -354,86 +302,7 @@ local function get_AIKeyLocation_uni_position(locationId)
 end
 
 local quat_identity = sdk.find_type_definition('via.Quaternion'):get_field('Identity'):get_data()
-local position_to_vec3 = sdk.find_type_definition('via.Position'):get_method('op_Explicit')
-local function is_game_reserved_location_id(id)
-    return id < 10000
-end
-local function verify_location_id_exists(id)
-    return get_AIKeyLocation_uni_position(id) ~= nil
-end
--- local function create_world_graph_node(position, id, areaFullName, add_to_world_graph)
---     local node = sdk.create_instance('app.AIWorldGraphNode')
---     node.KeyLocation = id or math.random(10000, 99999)
---     node._AIAreaHierarchy = sdk.create_managed_array('app.AIAreaDefinition', 0)
---     node._AILocalAreaHierarchy = sdk.create_managed_array('app.AILocalAreaDefinition', 0)
---     node._Pos = position_to_vec3:call(nil, position)
---     node._Rotation = quat_identity
---     node:set_AreaFullName(areaFullName or 'UNKNOWN')
---     node._Tag = 0 -- app.AIWorldGraphTagCategory
---     if add_to_world_graph then
---         AIAreaManager:addWorldGraphNode(node)
---     end
---     return node
--- end
 
-
----@param selectData app.SuddenQuestSelectData
----@param contextDataLookup table<integer,app.SuddenQuestContextData|EventContext>
-local function sq_upsert_entity(selectData, contextDataLookup)
-    local id = selectData._SerialNum
-
-    local entity = get_game_sq_entity(id)
-    if entity == nil then
-        --- @type app.SuddenQuestEntity
-        entity = sdk.create_instance('app.SuddenQuestEntity'):add_ref()
-        -- entity:call('.ctor()')
-    end
-
-    entity:set_Key(id)
-    entity:set_StartLocation(selectData._StartLocation)
-    entity:set_EndLocation(selectData._EndLocation)
-    entity:set_RelayLocation(selectData._RelayLocation)
-    entity:set_StartCondition(selectData._StartCondition)
-    entity:set_StartDistanceMin(selectData._StartDistanceMin)
-    entity:set_StartDistanceMax(selectData._StartDistance)
-    entity:set_IntervalHour(selectData._IntervalTime._Day * 24.0 + selectData._IntervalTime._Hour)
-    entity:set_TimeLimitHour(12.0) -- I think this is the time you have to accept before it auto-cancels
-
-    local dataList = entity:get_ContextDataList()
-    dataList:Clear()
-    for _, ptr in ipairs(selectData._SelectDataArray:get_elements()) do
-        --- @cast ptr app.SuddenQuestSelectData.SelectData
-        local ctx = ptr and contextDataLookup[ptr._Key]
-        if ctx then
-            dataList:Add(ctx.rootContext or ctx)
-        end
-    end
-
-    if entity._CurrentContextData then
-        local ctx = entity._CurrentContextData._Data
-
-        local enemyList = entity._EnemyGenerateList
-        --- @type (REManagedObject|table)[]
-        local enemyListTable = enemyList:ToArray():get_elements()
-        enemyList:Clear()
-        for _, enemyInfo in pairs(ctx._EnemySettingList) do
-            local inst = utils.first_where(enemyListTable, function (i) return i.ContextData == enemyInfo end)
-            if not inst then
-                inst = sdk.create_instance('app.SuddenQuestEntity.GenerateEnemyInfo'):add_ref()
-                inst.ContextData = enemyInfo
-            end
-            enemyList:Add(inst)
-        end
-    end
-
-    if SuddenQuestManager._EntityDict:ContainsKey(id) then
-        SuddenQuestManager._EntityDict[id] = entity
-    else
-        SuddenQuestManager._EntityDict:Add(id, entity)
-    end
-
-    return entity
-end
 
 local function get_single_quest_catalog()
     local _, catalog = next(get_active_quest_catalogs())
@@ -590,12 +459,6 @@ end
 -- })
 
 _quest_DB.gamedb = {
-    is_ready = game_data_is_ready,
-
-    get_ingame_timestamp = get_ingame_timestamp,
-    format_timestamp = format_timestamp,
-    split_timestamp_components = split_timestamp_components,
-
     get_quest_catalogs = get_active_quest_catalogs,
     get_first_quest_catalog = get_first_quest_catalog,
 
@@ -614,14 +477,11 @@ _quest_DB.gamedb = {
 
     create_go_with_component = create_go_with_component,
 
-    get_event_entity = get_game_sq_entity,
-
     get_quest_entity = get_game_quest_entity,
 
     get_AIKeyLocation_position = get_AIKeyLocation_position,
     get_AIKeyLocation_uni_position = get_AIKeyLocation_uni_position,
 
-    upsert_event_entity = sq_upsert_entity,
     upsert_quest_entity = upsert_quest_entity,
 
     quaternion_identity = quat_identity,

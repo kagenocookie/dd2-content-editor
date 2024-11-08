@@ -5,6 +5,16 @@ local function game_data_is_ready()
     return QuestManager.QuestCatalogDict and QuestManager.QuestCatalogDict:getCount() > 0
 end
 
+local function setup()
+    local enums = _userdata_DB.enums
+    local utils = _userdata_DB.utils
+    local utils_dd2 = _userdata_DB.utils_dd2
+    local CharacterID = enums.get_enum('app.CharacterID')
+    CharacterID.set_display_labels(utils.map(CharacterID.values, function (val) return {val, CharacterID.valueToLabel[val] .. ' : ' .. utils_dd2.translate_character_name(val)} end))
+    enums.create_subset(CharacterID, 'CharacterID_NPC', function (label) return label == 'Invalid' or label:sub(1,3) == 'ch3' and label:len() > 5 end)
+end
+
 return {
     game_data_is_ready = game_data_is_ready,
+    setup = setup,
 }

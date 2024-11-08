@@ -139,35 +139,6 @@ local function refresh_game_data()
             end
         end
 
-        for _, ctx in ipairs(catalog._QuestSuddenTableData._ContextDataArray:get_elements()) do
-            --- @cast ctx app.SuddenQuestContextData
-
-            if ctx._SerialNum == 118 and udb.get_entity('event_context', 118) then
-                -- the basegame has a duplicate id for this one SuddenQuestContext...
-                -- I highly doubt they actually have a way to use the second one in any way, so I won't support it either, just pretend it doesn't exist
-                goto continue
-            end
-
-            local ee = udb.create_entity({
-                id = ctx._SerialNum,
-                type = 'event_context',
-                context = ctx._Data,
-                rootContext = ctx,
-            }, nil, true)
-            udb.mark_entity_dirty(ee, false)
-            ::continue::
-        end
-
-        for _, selectData in ipairs(catalog._QuestSuddenTableData._SelectDataArray:get_elements()) do
-            --- @cast selectData app.SuddenQuestSelectData
-            local ee = udb.create_entity({
-                selectData = selectData,
-                type = 'event',
-                id = selectData._SerialNum,
-            }, nil, true)
-            udb.mark_entity_dirty(ee, false)
-        end
-
         for i = 0, catalog._QuestRewardTableData._DataList:get_Count() - 1 do
             local reward = catalog._QuestRewardTableData._DataList[i]
             udb.register_pristine_entity({
@@ -197,19 +168,6 @@ local function refresh_game_data()
             end
         end
     end
-
-    for _, elem in pairs(GenerateManager:get_DomainQueryGenerateTable()._Elements) do
-        local ee = udb.create_entity({
-            id = elem._RequestID,
-            type = 'domain_query_generate_table',
-            table = elem,
-        }, nil, true)
-        udb.mark_entity_dirty(ee, false)
-    end
-
-    udb.get_entity_enum('event').resort()
-    udb.get_entity_enum('event_context').resort()
-    -- udb.get_entity_enum('quest').resort()
 end
 
 --#region Hooks for making custom quest additions work
@@ -402,14 +360,6 @@ local function load_quest_variables_enum()
     end
 end
 
-local function refresh_game_event_entity(id)
-    local data = udb.get_entity('event', id)
-    if data then
-        --- @cast data Event
-        gamedb.upsert_event_entity(data.selectData, udb.get_all_entities('event_context'))
-    end
-end
-
 local function get_mapped_data_table()
     error('Unimplemented')
     local quest_dump = {}
@@ -420,19 +370,6 @@ local function get_mapped_data_table()
     end
 
     return quest_dump
-end
-
-local function dump_sudden_quests()
-    local sq_dump = {}
-    for questId, quest in pairs(udb.get_all_entities('event')) do
-        local ctg = "SuddenQuestSelectData"
-        sq_dump[ctg] = sq_dump[ctg] or {}
-        local sq = exporter.raw_dump_object(quest) ---@cast sq -nil
-        sq.SelectDataOptions = utils.map(sq._SelectDataArray, function (i) return exporter.raw_dump_object(udb.get_entity('event_context', i)) end)
-        sq_dump[ctg][questId] = sq
-    end
-
-    return sq_dump
 end
 
 local function get_full_raw_data()
@@ -482,51 +419,8 @@ end
 
 
 ---@diagnostic disable: return-type-mismatch
-local function is_vanilla_event(eventId) return eventId <= basegame_sudden_quest_last_select_id end
-local function is_vanilla_event_context(contextId) return contextId <= basegame_sudden_quest_last_context_id end
 local function is_vanilla_quest(id) return basegameQuestIds[id] end
---- @return Event
-local function event_get(id) return udb.get_entity('event', id) end
---- @return EventContext
-local function event_get_context(contextId) return udb.get_entity('event_context', contextId) end
 ---@diagnostic enable: return-type-mismatch
-
-local function event_get_possible_character_ids(id)
-    local evt = event_get(id)
-    if not evt then return {} end
-    local list = {}
-    for _, selectable in ipairs(evt.selectData._SelectDataArray:get_elements()) do
-        --- @cast selectable app.SuddenQuestSelectData.SelectData
-        local ctx = event_get_context(selectable._Key)
-        if not ctx then
-            print('Huuhhh??? why is this pointing to an unknown context?', id, selectable._Key)
-        else
-            list[#list + 1] = ctx.context._NpcID
-        end
-    end
-
-    return list
-end
-local function event_get_possible_character_names(id)
-    local npcIds = event_get_possible_character_ids(id)
-    return utils.map(npcIds, function (npcId) return enums.CharacterID.valueToLabel[npcId] .. ': ' .. tostring(utils_dd2.translate_character_name(npcId)) end)
-end
-
-local function event_get_first_context(id)
-    local data = event_get(id)
-    if not data or not data.selectData._SelectDataArray or data.selectData._SelectDataArray:get_size() == 0 then return nil end
-    local ctxId = data.selectData._SelectDataArray:get_element(0)._Key
-    return event_get_context(ctxId)
-end
-
---- Get all contexts for a sudden quest
---- @return EventContext[]
-local function event_get_contexts(id)
-    local data = event_get(id)
-    if not data or not data.selectData._SelectDataArray then print('n ctx for evt', id) return {} end
-    return utils.map(data.selectData._SelectDataArray:get_elements(), function (sda) return event_get_context(sda:get_field('_Key')) end)
-end
---#endregion
 
 --#region DB management utils
 
@@ -552,117 +446,12 @@ end)
 udb.events.on('data_imported', function (data)
     --- @cast data QuestDBImportData
 
-    local _, catalog = next(game_catalogs)
-    if data.event_context then
-        catalog._QuestSuddenTableData._ContextDataArray = helpers.expand_system_array(
-            catalog._QuestSuddenTableData._ContextDataArray,
-            utils.map(data.event_context, function (entity) return entity.rootContext end)
-        )
-    end
-    if data.event then
-        catalog._QuestSuddenTableData._SelectDataArray = helpers.expand_system_array(
-            catalog._QuestSuddenTableData._SelectDataArray,
-            utils.map(data.event, function (entity) return entity.selectData end)
-        )
-        for _, e in ipairs(data.event) do
-            gamedb.upsert_event_entity(e.selectData, udb.get_all_entities_map('event_context')--[[@as table<integer,EventContext>]])
-        end
-    end
     if data.quest then
         for _, e in ipairs(data.quest) do
             gamedb.upsert_quest_entity(e)
         end
     end
 end)
-
-udb.register_entity_type('event_context', {
-    import = function (data, instance)
-        --- @cast data Import.EventContext
-        --- @cast instance EventContext|nil
-        instance = instance or {}
-        if instance.rootContext == nil then
-            instance.rootContext = sdk.create_instance('app.SuddenQuestContextData'):add_ref()
-            instance.rootContext._SerialNum = data.id
-        end
-
-        instance.context = import_handlers.import('app.SuddenQuestContextData.ContextData', data.data, instance.rootContext._Data)
-        instance.rootContext._Data = instance.context
-        return instance
-    end,
-    export = function (data)
-        --- @cast data EventContext
-        --- @type Import.EventContext
-        return {
-            npcID = data.context._NpcID,
-            data = import_handlers.export(data.context, 'app.SuddenQuestContextData.ContextData')
-        }
-    end,
-    delete = function (ctx)
-        --- @cast ctx EventContext
-        if is_vanilla_event_context(ctx.id) then
-            re.msg('Could not delete event context id ' .. ctx.id .. '. Deleting basegame data not yet supported.')
-            return 'not_deletable'
-        end
-
-        -- remove ctx from any entity that uses it
-        for _, evt in pairs(udb.get_all_entities('event')) do
-            -- suboptimal but we don't delete often so it's whatever
-            --- @cast evt Event
-            local idx = utils.table_index_of(evt.selectData._SelectDataArray:get_elements(), function (ptr) return ptr._Key == ctx.id end)
-            while idx ~= 0 do
-                evt.selectData._SelectDataArray = helpers.system_array_remove_at(evt.selectData._SelectDataArray, idx - 1)
-                idx = utils.table_index_of(evt.selectData._SelectDataArray:get_elements(), function (ptr) return ptr._Key == ctx.id end)
-            end
-        end
-
-        -- remove from game DB
-        local catalog = gamedb.get_first_quest_catalog()
-        remove_array_elem_if_exists(ctx.rootContext, catalog._QuestSuddenTableData, '_ContextDataArray', 'app.SuddenQuestContextData')
-    end,
-    root_types = {'app.SuddenQuestContextData'},
-    insert_id_range = {100000, 999000},
-})
-
-udb.register_entity_type('event', {
-    import = function (data, instance)
-        --- @cast data Import.EventData
-        --- @cast instance Event|nil
-        instance = instance or {}
-        instance.selectData = import_handlers.import('app.SuddenQuestSelectData', data.data, instance.selectData)
-        instance.selectData._SerialNum = data.id
-        return instance
-    end,
-    root_types = {'app.SuddenQuestSelectData'},
-    export = function (data)
-        --- @cast data Event
-        --- @type Import.EventData
-        return {
-            data = import_handlers.export(data.selectData, 'app.SuddenQuestSelectData')
-        }
-    end,
-    delete = function (event)
-        --- @cast event Event
-        if is_vanilla_event(event.id) then
-            re.msg('Could not delete event id ' .. event.id .. '. Deleting basegame data not yet supported.')
-            return 'not_deletable'
-        end
-
-        local catalog = gamedb.get_first_quest_catalog()
-        remove_array_elem_if_exists(event.selectData, catalog._QuestSuddenTableData, '_SelectDataArray', 'app.SuddenQuestSelectData')
-        SuddenQuestManager._EntityDict:Remove(event.id)
-    end,
-    generate_label = function (entity)
-        --- @cast entity Event
-        local ctxId = entity.selectData._SelectDataArray
-            and entity.selectData._SelectDataArray:get_size() > 0
-            and entity.selectData._SelectDataArray:get_element(0)._Key
-        local ctx = ctxId and event_get_context(ctxId)
-        local type = enums.SuddenQuestType.valueToLabel[ctx and ctx.context._Type or 0]
-        local label = tostring(enums.AIKeyLocation.valueToLabel[entity.selectData._StartLocation])
-        return tostring(entity.id) .. ' ' .. type .. ' - ' .. label
-    end,
-    insert_id_range = {100000, 999000},
-})
 
 udb.register_entity_type('quest', {
     import = function (data, instance)
@@ -852,72 +641,9 @@ udb.register_entity_type('quest_reward', {
     insert_id_range = {1000000, 9999000},
 })
 
-udb.register_entity_type('domain_query_generate_table', {
-    import = function (import_data, instance)
-        --- @cast import_data Import.DQGenerateTable
-        --- @cast instance DQGenerateTable
-        local genTable = GenerateManager:get_DomainQueryGenerateTable()
-        local storedInstance = utils.first_where(genTable._Elements, function (value) return value._RequestID == import_data.id end)
-        if instance == nil then
-            instance = {
-                id = import_data.id,
-                type = import_data.type,
-            }
-        end
-
-        instance.label = import_data.label
-        if storedInstance ~= nil then
-            instance.table = storedInstance
-        end
-        if import_data.table then
-            import_data.table._RequestID = import_data.id
-            instance.table = import_handlers.import('app.DomainQueryGenerateTable.DomainQueryGenetateTableElement', import_data.table, instance.table)
-        end
-        if storedInstance == nil and instance.table then
-            genTable._Elements = helpers.expand_system_array(genTable._Elements, { instance.table }, 'app.DomainQueryGenerateTable.DomainQueryGenetateTableElement')
-        end
-
-        return instance
-    end,
-    export = function (instance)
-        --- @cast instance DQGenerateTable
-        --- @type Import.DQGenerateTable
-        return {
-            id = instance.id,
-            table = import_handlers.export(instance.table),
-            label = instance.label,
-            type = instance.type,
-        }
-    end,
-    delete = function (instance)
-        --- @cast instance DQGenerateTable
-        local genTable = GenerateManager:get_DomainQueryGenerateTable()
-        local idx = utils.table_index_of(genTable._Elements, instance.table)
-        if idx ~= 0 then
-            genTable._Elements = helpers.system_array_remove_at(genTable._Elements, idx)
-        end
-    end,
-    generate_label = function (entity)
-        --- @cast entity DQGenerateTable
-        return 'DomainQueryGenerate ' .. entity.id .. ' - ' .. enums.DomainQueryGenerateRequestID.get_label(entity.table._RequestID)
-    end,
-    root_types = {'app.DomainQueryGenerateTable'},
-    replaced_enum = 'app.DomainQueryGenerateRequestID',
-    insert_id_range = {1000, 99999},
-})
-
 local event_exports = {
-    get = event_get,
-    get_context = event_get_context,
-    get_contexts = event_get_contexts,
-    get_first_context = event_get_first_context,
-    get_possible_character_ids = event_get_possible_character_ids,
-    get_possible_character_names = event_get_possible_character_names,
-
     is_vanilla_event = is_vanilla_event,
     is_vanilla_event_context = is_vanilla_event_context,
-
-    refresh_game_entity = refresh_game_event_entity,
 }
 
 local quest_exports = {
@@ -932,11 +658,9 @@ local quest_exports = {
 _quest_DB.database = {
     catalogs = game_catalogs,
 
-    events = event_exports,
     quests = quest_exports,
 
     dump = {
-        dump_sudden_quests = dump_sudden_quests,
         get_full_raw_data_dump = get_full_raw_data,
         dump_mapped_game_data = get_mapped_data_table,
     }

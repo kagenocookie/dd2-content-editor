@@ -5,7 +5,6 @@ local udb = require('content_editor.database')
 local editor = require('content_editor.editor')
 local ui = require('content_editor.ui.imgui_wrappers')
 local config = require('content_editor._internal').config
-local presets = require('content_editor.object_presets')
 local utils = require('content_editor.utils')
 
 local inputs = {}
@@ -153,7 +152,7 @@ end
 --- @param label string|nil
 --- @param disallow_no_preset boolean|nil
 local function preset_picker(state, type, storage_key, label, disallow_no_preset)
-    local options = presets.get_names(type)
+    local options = editor.presets.get_names(type)
     if not options or #options == 0 then
         imgui.text_colored('No presets defined for type: ' .. tostring(type), editor.get_color('disabled'))
         imgui.spacing()
@@ -186,7 +185,7 @@ local function preset_picker(state, type, storage_key, label, disallow_no_preset
         config.save()
     end
     imgui.spacing()
-    return newVal and presets.get_preset_data(type, newVal) or nil
+    return newVal and editor.presets.get_preset_data(type, newVal) or nil
 end
 
 ---@param state EditorState
@@ -234,6 +233,10 @@ local function create_button_with_preset(state, preset_type, storage_key, header
     return false, nil
 end
 
+--- Clone a preset and apply some override values to it
+--- @param preset table|nil
+--- @param overrideData table
+--- @return table
 local function preset_instantiate(preset, overrideData)
     return utils.table_assign(preset and utils.clone_table(preset) or {}, overrideData)
 end

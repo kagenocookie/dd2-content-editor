@@ -31,19 +31,6 @@
 --- @field resident_filepath string
 --- @field controller app.QuestController
 
---- @class Event : DBEntity
---- @field type 'event'
---- @field selectData app.SuddenQuestSelectData
-
---- @class EventContext : DBEntity
---- @field type 'event_context'
---- @field context app.SuddenQuestContextData.ContextData
---- @field rootContext app.SuddenQuestContextData
-
---- @class DQGenerateTable : DBEntity
---- @field type 'domain_query_generate_table'
---- @field table app.DomainQueryGenerateTable.DomainQueryGenetateTableElement
-
 -- Data exchange formats
 
 --- @class Import.Quest : EntityImportData
@@ -67,13 +54,3 @@
 --- @field questId integer
 --- @field PrevProcCondition table|nil
 --- @field QuestAction table
-
---- @class Import.EventContext : EntityImportData
---- @field npcID app.CharacterID
---- @field data table
-
---- @class Import.EventData : EntityImportData
---- @field data table
-
---- @class Import.DQGenerateTable : EntityImportData
---- @field table table

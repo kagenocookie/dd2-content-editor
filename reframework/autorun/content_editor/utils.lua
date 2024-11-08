@@ -1,4 +1,5 @@
-if type(_shadowcookie_utils) ~= 'nil' then return _shadowcookie_utils end
+if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
+if _userdata_DB.utils then return _userdata_DB.utils end
 
 local MessageManager = sdk.get_managed_singleton('app.MessageManager')
 local CharacterManager = sdk.get_managed_singleton('app.CharacterManager')
@@ -23,17 +24,10 @@ end
 
 local function dictionary_get_values(dict)
     local result = {}
-    local entries = dict:get_field('_entries')
-    -- an empty dictionary can have a null entries field
-    if not entries then return {} end
-
-    for k, entry in pairs(entries) do
-        -- the key is the dictionary hash, if it's 0 then it's an empty entry
-        if entry:get_field('key') ~= 0 then
-            local item = entry:get_field('value')
-            -- print_type_info(item)
-            result[k] = item
-        end
+    local enumerator = dict:GetEnumerator()
+    while enumerator:MoveNext() do
+        local current = enumerator:get_Current()
+        result[#result+1] = current.value
     end
 
     return result
@@ -566,10 +560,6 @@ local function get_irl_timestamp(withTimezone)
     return timenow
 end
 
-local function is_in_title_screen()
-    return CharacterManager:get_ManualPlayer() == nil
-end
-
 --- @param folder via.Folder|via.Transform
 --- @return via.Transform[] children
 local function folder_get_children(folder)
@@ -582,6 +572,29 @@ local function folder_get_children(folder)
     end
     it:call('System.IDisposable.Dispose')
     return list
+end
+
+local function split_timestamp_components(time)
+    local time_int = math.floor(time)
+    local days = math.floor(time_int / 86400)
+    time_int = time_int % 86400
+    local hrs = math.floor(time_int / 3600)
+    time_int = time_int % 3600
+    local mins = math.floor(time_int / 60)
+    time_int = time_int % 60
+    local sec = time_int
+    return days, hrs, mins, sec
+end
+
+local function format_timestamp(timeSeconds)
+    local days, hrs, mins, sec = split_timestamp_components(timeSeconds)
+    if days > 0 then
+        return string.format('%d:%02d:%02d:%02d', days, hrs, mins, sec)
+    elseif hrs > 0 then
+        return string.format('%02d:%02d:%02d', hrs, mins, sec)
+    else
+        return string.format('%02d:%02d', mins, sec)
+    end
 end
 
 local getComponent = sdk.find_type_definition('via.GameObject'):get_method('getComponent(System.Type)')
@@ -614,7 +627,7 @@ local function enumerator_to_table(enumerator)
     return list
 end
 
-_shadowcookie_utils = {
+_userdata_DB.utils = {
     log = log_all,
     string_join = string_join,
     get_irl_timestamp = get_irl_timestamp,
@@ -667,7 +680,7 @@ _shadowcookie_utils = {
     system_array_of_type = system_array_of_type,
     enumerator_to_table = enumerator_to_table,
 
-    is_in_title_screen = is_in_title_screen,
+    format_timestamp = format_timestamp,
 
     translate_guid = translate_message_guid,
     translate = translate_message,
@@ -677,4 +690,4 @@ _shadowcookie_utils = {
     folder_get_children = folder_get_children,
 }
 
-return _shadowcookie_utils
+return _userdata_DB.utils

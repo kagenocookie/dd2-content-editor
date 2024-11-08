@@ -9,6 +9,8 @@ end
 
 if ctrl.game_data_is_ready == nil then ctrl.game_data_is_ready = function () return true end end
 
+if ctrl.setup == nil then ctrl.setup = function () end end
+
 if ctrl.version == nil then
     local t_ver = sdk.find_type_definition('via.version')
     if t_ver and t_ver:get_method('getMainRevisionString') then

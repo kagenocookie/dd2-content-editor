@@ -56,7 +56,7 @@ local function draw_imgui_quest_status()
         local pos_data = {
             locations = {}
         }
-        local sq_entities = utils.dictionary_get_values(SuddenQuestManager._EntityDict)
+        local sq_entities = utils.dictionary_to_table(SuddenQuestManager._EntityDict)
         for id, entity in pairs(sq_entities) do
             local selectId = entity:get_Key()
             local sq = db.events.get(selectId)
@@ -65,54 +65,6 @@ local function draw_imgui_quest_status()
                 if pos then
                     pos_data.locations["pos" .. tostring(id)] = {x = pos.x, y = pos.y, z = pos.z}
                 end
-            end
-        end
-        json.dump_file('gibbed_Almanac/escort_quest_starts.json', pos_data)
-    end
-
-    if imgui.button('Dump currently possible escort starting positions') then
-        local pos_data = {
-            locations = {}
-        }
-        local sq_entities = utils.dictionary_get_values(SuddenQuestManager._EntityDict)
-        for id, entity in pairs(sq_entities) do
-            local selectId = entity:get_Key()
-            local sq = db.events.get(selectId)
-            if sq then
-                local ctx = db.events.get_first_context(selectId)
-                local sq_type = ctx and ctx.context._Type
-                if sq_type == 2 or sq_type == 3 then
-                    -- local sq_type = entity._CurrentContextData and entity._CurrentContextData._Data._Type
-                    -- if sq_type == 2 or sq_type == 3 then
-                    if entity:checkStartCondition() then
-                        local pos = gamedb.get_AIKeyLocation_uni_position(entity:get_StartLocation())
-                        if pos then
-                            pos_data.locations["pos" .. tostring(id)] = {x = pos.x, y = pos.y, z = pos.z}
-                        end
-                    else
-                        local cond = entity:get_StartCondition()
-
-                        local subconds = true
-                        for _, condition in ipairs(cond._ConditionArray:get_elements()) do
-                            local eval = condition:evaluate()
-                            if not eval then
-                                subconds = false
-                                print("Can't do event", entity:get_Key(), condition:get_type_definition():get_name(), eval)
-                            end
-                        end
-                        if subconds then
-                            local pos = gamedb.get_AIKeyLocation_uni_position(entity:get_StartLocation())
-                            if pos then
-                                pos_data.locations["pos" .. tostring(id)] = {x = pos.x, y = pos.y, z = pos.z}
-                            end
-                        end
-                    end
-                else
-                    -- print('Ignoring battle event', selectId)
-                end
-            -- else
-            --     print('sq type', sq_type)
-            -- end
             end
         end
         json.dump_file('gibbed_Almanac/escort_quest_starts.json', pos_data)

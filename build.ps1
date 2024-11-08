@@ -46,30 +46,31 @@ PrepareFiles -Folder "dd2_content_editor" -FileList (
 )
 Copy-Item -Path modinfo_dd2.ini -Destination "_build/dd2_content_editor/modinfo.ini"
 
-# MakeModinfo "quest_editor" "Quest editor" $Version "DD2 quest editor addon for Content database"
+MakeModinfo "quest_editor" "Quest editor" "v0.1.0" "DD2 quest editor addon for Content editor"
 PrepareFiles -Folder "quest_editor" -FileList (
     "reframework/autorun/quest_editor",
     "reframework/autorun/editor_quest.lua",
     "natives/stm/appdata/quest/qu8000/qu8000.scn.20",
-    "natives/stm/appdata/quest/qu8000/resident.scn.20",
-    # "natives/stm/appsystem/scene/quest.scn.20",
-    "campfire.jpg"
+    "natives/stm/appdata/quest/qu8000/resident.scn.20"
+    # "natives/stm/appsystem/scene/quest.scn.20"
 )
-Copy-Item -Path quest_editor.ini -Destination "_build/quest_editor/modinfo.ini"
 
-MakeModinfo "shop_editor" "Shop editor" $Version "DD2 shops editor addon for Content database"
+MakeModinfo "event_editor" "Event editor" $Version "DD2 events editor addon for Content editor"
+PrepareFiles -Folder "event_editor" -FileList ("reframework/autorun/editor_events.lua")
+
+MakeModinfo "shop_editor" "Shop editor" $Version "DD2 shops editor addon for Content editor"
 PrepareFiles -Folder "shop_editor" -FileList ("reframework/autorun/editor_shops.lua")
 
-MakeModinfo "param_editor" "Parameter editor" $Version "DD2 human parameter editor addon for Content database"
+MakeModinfo "param_editor" "Parameter editor" $Version "DD2 human, job parameter editor addon for Content editor"
 PrepareFiles -Folder "param_editor" -FileList ("reframework/autorun/editor_human_params.lua")
 
-MakeModinfo "item_editor" "Item editor" $Version "DD2 item editor addon for Content database"
+MakeModinfo "item_editor" "Item editor" $Version "DD2 item editor addon for Content editor"
 PrepareFiles -Folder "item_editor" -FileList (
     "reframework/autorun/editor_items.lua",
     "reframework/autorun/item_editor"
 )
 
-MakeModinfo "weather_editor" "weathers editor" $Version "DD2 human weathers editor addon for Content database"
+MakeModinfo "weather_editor" "Weathers editor" $Version "DD2 human weathers editor addon for Content editor"
 PrepareFiles -Folder "weather_editor" -FileList ("reframework/autorun/editor_weathers.lua")
 
 Set-Location _build

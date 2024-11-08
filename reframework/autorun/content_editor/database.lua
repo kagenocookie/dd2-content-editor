@@ -954,6 +954,8 @@ end
 --- @param entity DBEntity
 --- @return string
 local function generate_entity_label(entity)
+    -- labels are meaningless if the editor isn't enabled
+    if not core.editor_enabled then return '<disabled>' end
     local tt = entity_types[entity.type]
     if tt then
         return tt.generate_label and tt.generate_label(entity) or entity.label or 'unlabeled'
@@ -963,6 +965,7 @@ end
 
 local function finish_database_init()
     log.info('Initializing content editor type info...')
+    core.game.setup()
     local timestamps = {os.clock()}
     print('Initializing content editor type info...')
     typecache.load()
