@@ -281,9 +281,13 @@ if core.editor_enabled then
     local ui = require('content_editor.ui')
 
     --- @param character app.Character
-    local function forceUpdateCharaFurmask(character)
+    local function forceRefresh(character, part)
         local partSwapper = character:get_HumanPartSwapper()
-        if partSwapper then partSwapper:swapFurMaskMap() end
+        if partSwapper then
+            if part == 1 then partSwapper:swapFurMaskMap() end
+            if part == 2 then partSwapper:forceUpdateStatusOfSwapObjects() end
+            if part == 3 then partSwapper:call('requestSwap(app.PartSwapper.Parts)', 32 + 64 + 128 + 256) end
+        end
     end
 
     definitions.override('styles', {
@@ -361,11 +365,14 @@ if core.editor_enabled then
                     imgui.indent(8)
                     imgui.begin_rect()
                     imgui.text('Selected variant')
+                    local furmaskChanged = false
+                    local meshesChanged = false
                     if recordData.furmaskIndex then
                         local furmask = selectedItem.furmasks and selectedItem.furmasks[variantKey]
                         local path = furmask and furmask:get_ResourcePath()
                         local changed, newpath = imgui.input_text('Furmask .pfb', path or '')
                         if changed then
+                            furmaskChanged = true
                             if furmask then
                                 if newpath and newpath ~= '' then
                                     if newpath ~= path then
@@ -387,15 +394,24 @@ if core.editor_enabled then
                                 udb.mark_entity_dirty(selectedItem)
                             end
                         end
-                        if imgui.button('Force update furmasks') then
-                            local player = CharacterManager:get_ManualPlayer()
-                            if player then forceUpdateCharaFurmask(player) end
-                            local it = PawnManager._PawnCharacterList:GetEnumerator()
-                            while it:MoveNext() do forceUpdateCharaFurmask(it._current) end
+                        if imgui.button('Force swap meshes') then
+                            meshesChanged = true
                         end
-                        if imgui.is_item_hovered() then imgui.set_tooltip('Will force regenerate furmasks of the player and pawns based on the currently defined paths') end
+                        imgui.same_line()
+                        state.autorefresh = select(2, imgui.checkbox('Auto-refresh styles and furmasks', state.autorefresh == nil and true or state.autorefresh))
+                        if imgui.is_item_hovered() then imgui.set_tooltip('Will force any style or furmask changes to apply to the player and pawns in realtime\nMesh changes are a bit slow, use the button or re-equip items for those') end
                     end
-                    ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem)
+                    local stylesChanged = ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem)
+
+                    if state.autorefresh then
+                        local refreshPart = furmaskChanged and 1 or stylesChanged and 2 or meshesChanged and 3 or nil
+                        if refreshPart then
+                            local player = CharacterManager:get_ManualPlayer()
+                            if player then forceRefresh(player, refreshPart) end
+                            local it = PawnManager._PawnCharacterList:GetEnumerator()
+                            while it:MoveNext() do forceRefresh(it._current, refreshPart) end
+                        end
+                    end
                     imgui.end_rect(4)
                     imgui.unindent(8)
                     imgui.spacing()
