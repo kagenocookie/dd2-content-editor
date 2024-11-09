@@ -301,12 +301,6 @@ local function load_single_bundle(bundle, bundleImports)
         initial_insert_ids = bundle.initial_insert_ids or {},
         next_insert_ids = {},
     }
-    for t, et in pairs(entity_types) do
-        if not newBundle.initial_insert_ids[t] then
-            newBundle.initial_insert_ids[t] = generate_random_initial_insert_id(t)
-        end
-        newBundle.next_insert_ids[t] = newBundle.initial_insert_ids[t]
-    end
     activeBundles[#activeBundles+1] = newBundle
     if utils.table_find_index(allBundles, function (b) return b.name == bundle.name end) == 0 then
         allBundles[#allBundles+1] = bundle
@@ -494,10 +488,6 @@ local function create_bundle(name)
         next_insert_ids = {},
         initial_insert_ids = {},
     }
-    for t, et in pairs(entity_types) do
-        bundle.initial_insert_ids[t] = generate_random_initial_insert_id(t)
-        bundle.next_insert_ids[t] = bundle.initial_insert_ids[t]
-    end
     activeBundles[#activeBundles+1] = bundle
     allBundles[#allBundles+1] = {
         author = bundle.info.author,
@@ -895,6 +885,11 @@ local function get_next_insert_id(bundleName, entityType)
     local bundle = get_active_bundle_by_name(bundleName)
     local nextId
     if bundle then
+        if not bundle.initial_insert_ids[entityType] then
+            bundle.initial_insert_ids[entityType] = generate_random_initial_insert_id(entityType)
+            bundle.next_insert_ids[entityType] = bundle.initial_insert_ids[entityType]
+        end
+
         nextId = bundle.next_insert_ids[entityType] or generate_random_initial_insert_id(entityType)
         while get_entity(entityType, nextId) do
             nextId = nextId + 1
