@@ -6,11 +6,7 @@
             "_Hour": 0
         },
         "_RelayLocation": 0,
-        "_SelectDataArray": [{
-                "_Key": 383907
-            }
-        ],
-        "_SerialNum": 454202,
+        "_SelectDataArray": [],
         "_StartCondition": {
             "_ConditionArray": null,
             "_Operator": 0

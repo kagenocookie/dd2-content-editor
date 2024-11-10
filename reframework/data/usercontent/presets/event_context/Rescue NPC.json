@@ -25,7 +25,7 @@
 			"_Day": 30,
 			"_Hour": 0
 		},
-		"_NpcID": 1857826560,
+		"_NpcID": 1071544705,
 		"_RelayTalkSetting": {
 			"_Distance": 20.0,
 			"_LetterMessageID": "00000000-0000-0000-0000-000000000000",
@@ -45,7 +45,7 @@
 		},
 		"_SuccessSetting": {
 			"_Distance": 10.0,
-			"_Flags": 4
+			"_Flags": 1
 		},
 		"_TaskSetting": {
 			"_ResourceData": "null",
