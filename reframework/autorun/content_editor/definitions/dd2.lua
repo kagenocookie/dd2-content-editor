@@ -1868,6 +1868,17 @@ return {
             'app.actinter.cmd.move.StraightToTarget',
         }
     },
+    ['app.generate.refill.condition.RefillConditionBase'] = {
+        abstract = {
+            'app.generate.refill.condition.GroupDeadCount',
+        }
+    },
+    ['app.generate.refill.action.RefillActionBase'] = {
+        abstract = {
+            'app.generate.refill.action.GroupGenerate',
+            'app.generate.refill.action.MultiGroupGenerate',
+        }
+    },
     ['app.ItemCommonParam'] = {
         abstract = {
             'app.ItemDataParam',
@@ -2024,4 +2035,7 @@ return {
             CachedSpeechController = { import_ignore = true }
         }
     },
+    ['app.SuddenQuestEntity'] = {
+        fieldOrder = {'<Key>k__BackingField', '_CurrentPhase'},
+    }
 }

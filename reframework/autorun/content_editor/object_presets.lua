@@ -43,7 +43,7 @@ local function refresh_available_presets()
                 print('WARNING: invalid preset path ', presetPath, type, name)
             else
                 define_preset(type, name, newPreset)
-                print('adding new preset', type, name, newPreset)
+                -- print('adding new preset', type, name, newPreset)
             end
         end
     end

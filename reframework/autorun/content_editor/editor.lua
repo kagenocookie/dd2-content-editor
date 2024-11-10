@@ -35,7 +35,7 @@ local function persistent_storage_get(key, defaultData)
         config.data.editor.storage[key] = data
     else
         if defaultData then
-            utils.merge_into_table(defaultData, data)
+            utils.merge_table_defaults(defaultData, data)
         end
     end
     return data
@@ -156,7 +156,7 @@ local function open_editor_window(window_type_id, initial_state)
 end
 
 --- @param window_type_id string
---- @param id integer
+--- @param id integer|string
 --- @param state table
 local function embed_window(window_type_id, id, state)
     local handler = editor_defs[window_type_id]

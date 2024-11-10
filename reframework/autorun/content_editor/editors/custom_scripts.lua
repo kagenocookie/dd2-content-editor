@@ -35,8 +35,10 @@ udb.register_entity_type('custom_script', {
 })
 
 --- @param script CustomScriptEntity
+--- @return boolean success, any result
 local function try_execute_script(script)
     local success, result = pcall(script.script_func)
+    return success, result
 end
 
 --- Define a custom script hook
@@ -96,6 +98,7 @@ end
 _userdata_DB.custom_scripts = {
     define_script_hook = define_script_hook,
     define_script_hook_editor_override = define_script_hook_editor_override,
+    try_execute = try_execute_script,
 }
 
 if core.editor_enabled then

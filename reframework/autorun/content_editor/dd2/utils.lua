@@ -28,10 +28,22 @@ local function get_ingame_timestamp()
     return day * 86400 + math.floor(dayTime * 30)
 end
 
+--- @return string
+local function get_main_pawn_search_id()
+    -- the pawn search id is stored in app.PawnDataContext._SearchId, though it doesn't seem to be set on the runtime context on the character directly
+    -- we can just use app.GUIBase.CharaData as a proxy instead and let it fetch it from wherever
+    local charaData = sdk.create_instance('app.GUIBase.CharaData'):add_ref()
+    local mainPawnId_ch000000_00 = 2283028347
+    charaData:call('.ctor(app.CharacterID, System.Boolean)', mainPawnId_ch000000_00, false)
+    local pawnId = charaData:get_PawnId()
+    return pawnId
+end
+
 _userdata_DB.utils_dd2 = {
     translate_character_name = translate_character_name,
     translate_item_name = translate_item_name,
     get_ingame_timestamp = get_ingame_timestamp,
+    get_main_pawn_search_id = get_main_pawn_search_id,
 }
 
 return _userdata_DB.utils_dd2

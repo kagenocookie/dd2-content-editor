@@ -215,6 +215,25 @@ local function clone_table(source)
     return target
 end
 
+---@param defaults table
+---@param target table
+---@return table
+local function merge_table_defaults(defaults, target)
+    target = target or {}
+    for key, sourceVal in pairs(defaults) do
+        if target[key] == nil then
+            if type(sourceVal) == 'table' then
+                target[key] = clone_table(sourceVal)
+            else
+                target[key] = sourceVal
+            end
+        elseif type(sourceVal) == 'table' and type(target[key]) == 'table' then
+            merge_table_defaults(sourceVal, target[key])
+        end
+    end
+    return target
+end
+
 ---@param source table
 ---@param target table
 ---@return table
@@ -650,6 +669,7 @@ _userdata_DB.utils = {
     dictionary_get_values = dictionary_get_values,
     dictionary_to_table = dictionary_to_table,
     merge_into_table = merge_into_table,
+    merge_table_defaults = merge_table_defaults,
     table_assign = table_assign,
     clone_table = clone_table,
     table_index_of = table_index_of,

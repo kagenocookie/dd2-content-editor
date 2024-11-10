@@ -155,7 +155,7 @@ udb.register_entity_type('event', {
 
         SuddenQuestManager._EntityDict--[[@as any]]:Remove(event.id)
         for _, catalog in ipairs(gamedb.get_catalogs()) do
-            catalog._QuestSuddenTableData._ContextDataArray =
+            catalog._QuestSuddenTableData._SelectDataArray =
                 helpers.system_array_remove(catalog._QuestSuddenTableData._SelectDataArray, event.selectData, 'app.SuddenQuestSelectData')
         end
     end,

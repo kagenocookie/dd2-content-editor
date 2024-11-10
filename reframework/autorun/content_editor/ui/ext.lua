@@ -9,6 +9,9 @@ local utils = require('content_editor.utils')
 
 local inputs = {}
 
+--- @type table<string, fun(entity: DBEntity, state: table): changed: boolean>
+local entity_editors = {}
+
 ---@param obj DBEntity
 local function show_save_settings(obj)
     local curBundle = udb.get_entity_bundle(obj)
@@ -106,11 +109,12 @@ local filters = {}
 --- @param storage_key string|nil The key under which to store the selected entity, will use the type as key if unset
 --- @param label string|nil
 --- @param filter nil|fun(entity: DBEntity): boolean
+--- @return DBEntity|nil selected, boolean changed
 local function entity_picker(type, state, storage_key, label, filter)
     local enum = udb.get_entity_enum(type)
     if not enum then
         imgui.text_colored('Invalid entity type: ' .. tostring(type), editor.get_color('disabled'))
-        return nil
+        return nil, false
     end
 
     local stateFilters = filters[state]
@@ -143,7 +147,7 @@ local function entity_picker(type, state, storage_key, label, filter)
     if changed then
         set_selected_entity_picker_entity(state, storage_key, udb.get_entity(type, newVal))
     end
-    return udb.get_entity(type, newVal)
+    return udb.get_entity(type, newVal), changed
 end
 
 --- @param state EditorState
@@ -241,6 +245,68 @@ local function preset_instantiate(preset, overrideData)
     return utils.table_assign(preset and utils.clone_table(preset) or {}, overrideData)
 end
 
+--- @param type string
+--- @param func fun(entity: DBEntity, state: table): changed: boolean
+local function set_entity_editor(type, func)
+    entity_editors[type] = func
+end
+
+--- @param entity DBEntity
+--- @param state table
+--- @param expandTreeLabel string|nil Label to display for a tree view. Will be shown plainly without a tree if nil.
+--- @return boolean changed
+local function show_entity_editor(entity, state, expandTreeLabel)
+    local editorFunc = entity_editors[entity.type]
+    if not editorFunc then
+        imgui.text_colored('No editor defined for entity type ' .. entity.type, editor.get_color('warning'))
+        return false
+    end
+
+    local expand = not expandTreeLabel or imgui.tree_node(expandTreeLabel)
+    if not expand then return false end
+    if not expandTreeLabel then imgui.push_id(entity.type .. entity.id) end
+
+    show_entity_metadata(entity)
+    local success, changed
+    if config.data.editor.devmode then
+        success, changed = true, editorFunc(entity, state)
+    else
+        success, changed = pcall(editorFunc, entity, state)
+    end
+
+    if expandTreeLabel then imgui.tree_pop() else imgui.pop_id() end
+    if success then
+        if changed then udb.mark_entity_dirty(entity) end
+        return changed
+    else
+        imgui.text_colored('ERROR: ' .. tostring(changed), editor.get_color('error'))
+        print('Entity '..entity.type..' editor error: ' .. tostring(changed))
+        return false
+    end
+end
+
+--- @param container table The object that should contain the ID of the referenced entity
+--- @param idField string
+--- @param linkedEntityType string
+--- @param state table
+--- @param label string|nil
+--- @return boolean changed
+local function show_linked_entity_picker(container, idField, linkedEntityType, state, label)
+    local selected = container[idField] and udb.get_entity(linkedEntityType, container[idField])
+    if selected then
+        _userdata_DB.ui.editor.set_selected_entity_picker_entity(state, linkedEntityType, selected)
+    end
+    local weather, changed = _userdata_DB.ui.editor.entity_picker(linkedEntityType, state, idField, label)
+    if changed then
+        container[idField] = weather and weather.id or nil
+    end
+
+    if weather then
+        return show_entity_editor(weather, state, label)
+    end
+    return false
+end
+
 _userdata_DB._ui_ext = {
     show_entity_metadata = show_entity_metadata,
     show_save_settings = show_save_settings,
@@ -249,6 +315,10 @@ _userdata_DB._ui_ext = {
     preset_instantiate = preset_instantiate,
     set_selected_entity_picker_entity = set_selected_entity_picker_entity,
     create_button_with_preset = create_button_with_preset,
+
+    set_entity_editor = set_entity_editor,
+    show_entity_editor = show_entity_editor,
+    show_linked_entity_picker = show_linked_entity_picker,
 }
 
 return _userdata_DB._ui_ext
