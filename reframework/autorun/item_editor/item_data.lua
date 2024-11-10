@@ -418,12 +418,13 @@ if core.editor_enabled then
         end
     end)
 
-    --- @param item ItemDataEntity
-    local function show_item_editor(item)
+    ui.editor.set_entity_editor('item_data', function (item, state)
+        --- @cast item ItemDataEntity
         if not item.name then item.name = get_item_name:call(nil, item.id, false) end
         if not item.description then item.description = get_item_desc:call(nil, item.id, false) end
 
-        local function markdirty() udb.mark_entity_dirty(item) end
+        local fieldsChanged = false
+        local function markdirty() fieldsChanged = true end
         ui.core.setting_text('Name', item, 'name', markdirty)
         ui.core.setting_text('Description', item, 'description', markdirty, 4)
         ui.core.setting_text('Icon .pfb filepath', item, 'icon_path', markdirty)
@@ -431,13 +432,13 @@ if core.editor_enabled then
             local enable_rect = imgui.checkbox('Use custom icon UV rect', false)
             if enable_rect then
                 item.icon_rect = { x = 0, y = 0, w = 160, h = 156 }
-                markdirty()
+                fieldsChanged = true
             end
         else
             local disable_rect = imgui.checkbox('Use custom icon UV rect', true)
             if disable_rect then
                 item.icon_rect = nil
-                markdirty()
+                fieldsChanged = true
             else
                 local vec4 = Vector4f.new(item.icon_rect.x, item.icon_rect.y, item.icon_rect.w, item.icon_rect.h)
                 local changed, newVec4 = imgui.drag_float4('Icon UV rect', vec4, 0.25, 0, nil, '%.0f')
@@ -446,15 +447,16 @@ if core.editor_enabled then
                     item.icon_rect.y = math.floor(newVec4.y)
                     item.icon_rect.w = math.floor(newVec4.z)
                     item.icon_rect.h = math.floor(newVec4.w)
-                    markdirty()
+                    fieldsChanged = true
                 end
             end
         end
 
         imgui.spacing()
 
-        ui.handlers.show_editable(item, 'runtime_instance', item)
-    end
+        return ui.handlers.show_editable(item, 'runtime_instance', item) or fieldsChanged
+        -- ui.handlers.show_editable(item, 'enhance', item)
+    end)
 
     editor.define_window('item_data', 'Items', function (state)
         if editor.active_bundle then
@@ -469,12 +471,10 @@ if core.editor_enabled then
 
         local selectedItem = ui.editor.entity_picker('item_data', state)
         if selectedItem then
-            --- @cast selectedItem ItemDataEntity
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()
-            ui.editor.show_entity_metadata(selectedItem)
-            show_item_editor(selectedItem)
+            ui.editor.show_entity_editor(selectedItem, state)
             imgui.end_rect(4)
             imgui.unindent(8)
             imgui.spacing()

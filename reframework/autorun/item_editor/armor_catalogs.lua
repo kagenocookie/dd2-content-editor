@@ -184,6 +184,44 @@ if core.editor_enabled then
         end
     end
 
+    local function showArmorEditor(selectedItem, state)
+        --- @cast selectedItem ArmorEntity|SkinEntity
+        if imgui.button('Force update meshes') then
+            local player = CharacterManager:get_ManualPlayer()
+            if player then forceUpdateSwapParts(player) end
+            local it = PawnManager._PawnCharacterList:GetEnumerator()
+            while it:MoveNext() do forceUpdateSwapParts(it._current) end
+        end
+        if imgui.is_item_hovered() then imgui.set_tooltip('Will force all mesh parts of the player and pawns to refresh based on the currently defined meshes') end
+        imgui.text('ID: ' .. tostring(selectedItem.id))
+        local recordData = recordTypes[selectedItem.type]
+        for _, field in ipairs(recordData) do
+            local pfbCtrl = selectedItem[field.name] --- @type app.PrefabController|nil
+            local path = pfbCtrl and pfbCtrl.get_ResourcePath and pfbCtrl:get_ResourcePath()--[[@as string|nil]]
+            local changed, newpath = imgui.input_text(field.name, path or '')
+            if changed then
+                if newpath and newpath ~= '' then
+                    if not pfbCtrl then
+                        pfbCtrl = import_handlers.import('app.PrefabController', newpath)
+                        selectedItem[field.name] = pfbCtrl
+                        CharacterEditManager[field.dict][selectedItem.id] = pfbCtrl
+                        udb.mark_entity_dirty(selectedItem)
+                    elseif newpath ~= path then
+                        pfbCtrl._Item:set_Path(newpath)
+                        udb.mark_entity_dirty(selectedItem)
+                    end
+                else
+                    selectedItem[field.name] = nil
+                    CharacterEditManager[field.dict][selectedItem.id] = nil
+                    udb.mark_entity_dirty(selectedItem)
+                end
+            end
+        end
+    end
+    for armorMeshType, _ in pairs(armorCatalogs) do
+        ui.editor.set_entity_editor(armorMeshType, showArmorEditor)
+    end
+
     editor.define_window('armor_catalogs', 'Armor catalogs', function (state)
         _, state.part_type, state.part_type_filter = ui.core.combo_filterable('Part type', state.part_type, recordTypes, state.part_type_filter or '')
         if state.part_type then
@@ -202,36 +240,7 @@ if core.editor_enabled then
                 imgui.indent(8)
                 imgui.begin_rect()
                 ui.editor.show_entity_metadata(selectedItem)
-                if imgui.button('Force update meshes') then
-                    local player = CharacterManager:get_ManualPlayer()
-                    if player then forceUpdateSwapParts(player) end
-                    local it = PawnManager._PawnCharacterList:GetEnumerator()
-                    while it:MoveNext() do forceUpdateSwapParts(it._current) end
-                end
-                if imgui.is_item_hovered() then imgui.set_tooltip('Will force all mesh parts of the player and pawns to refresh based on the currently defined meshes') end
-                imgui.text('ID: ' .. tostring(selectedItem.id))
-                for _, field in ipairs(recordData) do
-                    local pfbCtrl = selectedItem[field.name] --- @type app.PrefabController|nil
-                    local path = pfbCtrl and pfbCtrl.get_ResourcePath and pfbCtrl:get_ResourcePath()--[[@as string|nil]]
-                    local changed, newpath = imgui.input_text(field.name, path or '')
-                    if changed then
-                        if newpath and newpath ~= '' then
-                            if not pfbCtrl then
-                                pfbCtrl = import_handlers.import('app.PrefabController', newpath)
-                                selectedItem[field.name] = pfbCtrl
-                                CharacterEditManager[field.dict][selectedItem.id] = pfbCtrl
-                                udb.mark_entity_dirty(selectedItem)
-                            elseif newpath ~= path then
-                                pfbCtrl._Item:set_Path(newpath)
-                                udb.mark_entity_dirty(selectedItem)
-                            end
-                        else
-                            selectedItem[field.name] = nil
-                            CharacterEditManager[field.dict][selectedItem.id] = nil
-                            udb.mark_entity_dirty(selectedItem)
-                        end
-                    end
-                end
+                showArmorEditor(selectedItem, state)
                 imgui.end_rect(4)
                 imgui.unindent(8)
                 imgui.spacing()
@@ -250,6 +259,7 @@ if core.editor_enabled then
                     if styleType then
                         local styles = udb.get_entities_where(styleType, function (entity)
                             for _, idField in ipairs(recordData[1].styleField) do
+                                --- @cast entity StyleEntity
                                 if entity.variants['1910070090'] and entity.variants['1910070090'][idField] == selectedItem.id
                                 or entity.variants['2776536455'] and entity.variants['2776536455'][idField] == selectedItem.id then
                                     return true

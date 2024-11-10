@@ -3,6 +3,8 @@ local udb = require('content_editor.database')
 local import_handlers = require('content_editor.import_handlers')
 local enums = require('content_editor.enums')
 
+require('content_editor.dd2.weather_effect')
+
 local weathers = enums.get_enum('app.WeatherManager.WeatherEnum').valueToLabel
 local areas = enums.get_enum('app.WeatherArea').valueToLabel
 
@@ -55,6 +57,11 @@ udb.register_entity_type('weather', {
         end
         return instance
     end,
+    delete = function (instance)
+        if instance.id < 10000 then return 'not_deletable' end
+        WeatherManager.mWeatherUserData.mWeatherDataList:Remove(instance.runtime_instance)
+        return 'ok'
+    end,
     insert_id_range = {10000, 9999000},
     root_types = {'app.WeatherUserData'},
 })
@@ -80,6 +87,50 @@ if core.editor_enabled then
         }
     })
 
+    ui.editor.set_entity_editor('weather', function (weather, state)
+        --- @cast weather WeatherEntity
+
+        if editor.active_bundle and imgui.button('Clone selected as new weather') then
+            local newEntity = udb.clone_as_new_entity(weather, editor.active_bundle)
+            if newEntity then
+                ui.editor.set_selected_entity_picker_entity(state, 'weather', newEntity)
+                weather = newEntity
+            end
+        end
+
+        if imgui.button('Change weather') then
+            WeatherManager:changeWeatherLookImmediate(weather.weather_type, weather.area)
+        end
+        if WeatherManager._NowArea == weather.area and WeatherManager._NowWeatherEnum == weather.weather_type then
+            state.autorefresh = select(2, imgui.checkbox('Auto-refresh changes', state.autorefresh))
+            imgui.same_line()
+            state.refresh_immediate = select(2, imgui.checkbox('Refresh immediately', state.refresh_immediate))
+            if not state.autorefresh then
+                imgui.same_line()
+                if imgui.button('Refresh') then
+                    if state.refresh_immediate then
+                        WeatherManager:changeWeatherLookImmediate(weather.weather_type, weather.area)
+                    else
+                        WeatherManager:changeWeather(true)
+                    end
+                end
+            end
+        end
+        imgui.spacing()
+        imgui.begin_rect()
+        local changed = ui.handlers.show(weather.runtime_instance, weather, nil, 'app.WeatherUserData.WeatherData')
+        imgui.end_rect(4)
+        imgui.spacing()
+        if changed and state.autorefresh then
+            if state.refresh_immediate then
+                WeatherManager:changeWeatherLookImmediate(weather.weather_type, weather.area)
+            else
+                WeatherManager:changeWeather(true)
+            end
+        end
+        return changed
+    end)
+
     editor.define_window('weathers', 'Weathers', function (state)
         WeatherManager = WeatherManager or sdk.get_managed_singleton('app.WeatherManager') ---@type app.WeatherManager
         local nowArea = WeatherManager._NowArea
@@ -93,48 +144,7 @@ if core.editor_enabled then
 
         local weather = ui.editor.entity_picker('weather', state)
         if weather then
-            --- @cast weather WeatherEntity
-            if editor.active_bundle and imgui.button('Clone selected as new weather') then
-                local newEntity = udb.clone_as_new_entity(weather, editor.active_bundle)
-                if newEntity then
-                    ui.editor.set_selected_entity_picker_entity(state, 'weather', newEntity)
-                    weather = newEntity
-                end
-            end
-
-            if imgui.button('Change weather') then
-                WeatherManager:changeWeatherLookImmediate(weather.weather_type, weather.area)
-            end
-            if nowArea == weather.area and nowWeather == weather.weather_type then
-                state.autorefresh = select(2, imgui.checkbox('Auto-refresh changes', state.autorefresh))
-                imgui.same_line()
-                state.refresh_immediate = select(2, imgui.checkbox('Refresh immediately', state.refresh_immediate))
-                if not state.autorefresh then
-                    imgui.same_line()
-                    if imgui.button('Refresh') then
-                        if state.refresh_immediate then
-                            WeatherManager:changeWeatherLookImmediate(weather.weather_type, weather.area)
-                        else
-                            WeatherManager:changeWeather(true)
-                        end
-                    end
-                end
-            end
-            imgui.spacing()
-            imgui.indent(8)
-            imgui.begin_rect()
-            ui.editor.show_entity_metadata(weather)
-            local changed = ui.handlers.show(weather.runtime_instance, weather, nil, 'app.WeatherUserData.WeatherData')
-            imgui.end_rect(4)
-            imgui.unindent(8)
-            imgui.spacing()
-            if changed and state.autorefresh then
-                if state.refresh_immediate then
-                    WeatherManager:changeWeatherLookImmediate(weather.weather_type, weather.area)
-                else
-                    WeatherManager:changeWeather(true)
-                end
-            end
+            ui.editor.show_entity_editor(weather, state)
         end
     end)
 

@@ -133,6 +133,65 @@ if core.editor_enabled then
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
 
+    ui.editor.set_entity_editor('weapon', function (selectedItem, state)
+        --- @cast selectedItem WeaponEntity
+        local path = selectedItem.prefab and (selectedItem.prefab._Item--[[@as app.PrefabController]]):get_ResourcePath()
+        if selectedItem.id < max_custom_weapon_id then
+            imgui.text_colored('For custom weapons, make sure the app.Weapon->WeaponID inside the .pfb matches the ID of the entity\nOtherwise the game can crash on unpause. Disabling the bundle with the custom weapon and reloading should fix it.', core.get_color('danger'))
+        end
+        local changed, newpath = imgui.input_text('Prefab', path or '')
+        if changed then
+            if newpath and newpath ~= '' then
+                if not pfbCtrl then
+                    pfbCtrl = import_handlers.import('app.RefCounter`1<app.PrefabController>', { _Item = newpath })
+                    if pfbCtrl and pfbCtrl:get_RefCount() < 1 then pfbCtrl:addRef() end
+
+                    selectedItem.prefab = pfbCtrl
+                    EquipmentManager.WeaponCatalog[selectedItem.id] = pfbCtrl
+                    udb.mark_entity_dirty(selectedItem)
+                elseif newpath ~= path then
+                    pfbCtrl._Item._Item:set_Path(newpath)
+                    udb.mark_entity_dirty(selectedItem)
+                end
+            else
+                selectedItem.prefab = nil
+                EquipmentManager.WeaponCatalog:Remove(selectedItem.id)
+                udb.mark_entity_dirty(selectedItem)
+            end
+        end
+
+        if selectedItem.offsets then
+            imgui.text('Changes to offsets may not apply immediately.\nIn case of issues, try unequipping the weapon and unpausing before re-equipping it. Maybe equip something else first as well.')
+            if imgui.button('Remove offset override') then
+                EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.system_array_remove(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, selectedItem.offsets, 'app.WeaponSetting.OffsetSetting')
+                selectedItem.offsets = nil
+            end
+            changed = ui.handlers.show(selectedItem.offsets, selectedItem, 'Offset override', 'app.WeaponSetting.OffsetSetting') or changed
+        else
+            local effectiveOffsets = EquipmentManager.WeaponSetting:getOffsetSettings(selectedItem.id)
+            if imgui.button('Add offset override') then
+                if selectedItem.offsets then
+                    EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.system_array_remove(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, selectedItem.offsets, 'app.WeaponSetting.OffsetSetting')
+                    selectedItem.offsets = nil
+                end
+                if effectiveOffsets then
+                    selectedItem.offsets = helpers.clone(effectiveOffsets, 'app.WeaponSetting.OffsetSetting')
+                    selectedItem.offsets.ID = selectedItem.id
+                else
+                    selectedItem.offsets = import_handlers.import('app.WeaponSetting.OffsetSetting', { ID = selectedItem.id })
+                end
+                EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.expand_system_array(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, { selectedItem.offsets })
+                changed = true
+            end
+            if effectiveOffsets then
+                ui.handlers.show_readonly(effectiveOffsets, nil, 'Effective offsets', 'app.WeaponSetting.OffsetSetting', state)
+            else
+                imgui.text_colored('No weapon offsets available for this weapon', core.get_color('danger'))
+            end
+        end
+        return changed
+    end)
+
     editor.define_window('weapons', 'Weapons', function (state)
         if editor.active_bundle then
             if imgui.button('Create new') then
@@ -147,60 +206,10 @@ if core.editor_enabled then
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()
-            ui.editor.show_entity_metadata(selectedItem)
-            local path = selectedItem.prefab and (selectedItem.prefab._Item--[[@as app.PrefabController]]):get_ResourcePath()
-            if selectedItem.id < max_custom_weapon_id then
-                imgui.text_colored('For custom weapons, make sure the app.Weapon->WeaponID inside the .pfb matches the ID of the entity\nOtherwise the game can crash on unpause. Disabling the bundle with the custom weapon and reloading should fix it.', core.get_color('danger'))
-            end
-            local changed, newpath = imgui.input_text('Prefab', path or '')
-            if changed then
-                if newpath and newpath ~= '' then
-                    if not pfbCtrl then
-                        pfbCtrl = import_handlers.import('app.RefCounter`1<app.PrefabController>', { _Item = newpath })
-                        if pfbCtrl and pfbCtrl:get_RefCount() < 1 then pfbCtrl:addRef() end
-
-                        selectedItem.prefab = pfbCtrl
-                        EquipmentManager.WeaponCatalog[selectedItem.id] = pfbCtrl
-                        udb.mark_entity_dirty(selectedItem)
-                    elseif newpath ~= path then
-                        pfbCtrl._Item._Item:set_Path(newpath)
-                        udb.mark_entity_dirty(selectedItem)
-                    end
-                else
-                    selectedItem.prefab = nil
-                    EquipmentManager.WeaponCatalog:Remove(selectedItem.id)
-                    udb.mark_entity_dirty(selectedItem)
-                end
-            end
-
-            if selectedItem.offsets then
-                imgui.text('Changes to offsets may not apply immediately.\nIn case of issues, try unequipping the weapon and unpausing before re-equipping it. Maybe equip something else first as well.')
-                if imgui.button('Remove offset override') then
-                    EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.system_array_remove(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, selectedItem.offsets, 'app.WeaponSetting.OffsetSetting')
-                    selectedItem.offsets = nil
-                end
-                ui.handlers.show(selectedItem.offsets, selectedItem, 'Offset override', 'app.WeaponSetting.OffsetSetting')
-            else
-                local effectiveOffsets = EquipmentManager.WeaponSetting:getOffsetSettings(selectedItem.id)
-                if imgui.button('Add offset override') then
-                    if selectedItem.offsets then
-                        EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.system_array_remove(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, selectedItem.offsets, 'app.WeaponSetting.OffsetSetting')
-                        selectedItem.offsets = nil
-                    end
-                    if effectiveOffsets then
-                        selectedItem.offsets = helpers.clone(effectiveOffsets, 'app.WeaponSetting.OffsetSetting')
-                        selectedItem.offsets.ID = selectedItem.id
-                    else
-                        selectedItem.offsets = import_handlers.import('app.WeaponSetting.OffsetSetting', { ID = selectedItem.id })
-                    end
-                    EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.expand_system_array(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, { selectedItem.offsets })
-                end
-                if effectiveOffsets then
-                    ui.handlers.show_readonly(effectiveOffsets, nil, 'Effective offsets', 'app.WeaponSetting.OffsetSetting', state)
-                else
-                    imgui.text_colored('No weapon offsets available for this weapon', core.get_color('danger'))
-                end
-            end
+            ui.editor.show_entity_editor(selectedItem, state)
+            imgui.end_rect(4)
+            imgui.unindent(8)
+            imgui.spacing()
 
             imgui.spacing()
             imgui.spacing()
@@ -217,10 +226,6 @@ if core.editor_enabled then
                     ui.handlers.show_readonly(off, nil, 'Offsets', 'app.WeaponSetting.OffsetSetting', state)
                 end
             end
-
-            imgui.end_rect(4)
-            imgui.unindent(8)
-            imgui.spacing()
         end
     end)
 end

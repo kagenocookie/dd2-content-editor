@@ -91,7 +91,7 @@ local function show_entity_metadata(obj)
 end
 
 --- @param state EditorState
---- @param storage_key string The key under which to store the new selection ID
+--- @param storage_key string|integer The key under which to store the new selection ID
 --- @param entity DBEntity|integer|nil The entity or its ID to select, or nil to deselect
 local function set_selected_entity_picker_entity(state, storage_key, entity)
     local entityId = type(entity) == 'nil' and -1 or type(entity) == 'table' and entity.id or entity
@@ -106,7 +106,7 @@ end
 local filters = {}
 --- @param type string
 --- @param state EditorState
---- @param storage_key string|nil The key under which to store the selected entity, will use the type as key if unset
+--- @param storage_key string|integer|nil The key under which to store the selected entity, will use the type as key if unset
 --- @param label string|nil
 --- @param filter nil|fun(entity: DBEntity): boolean
 --- @return DBEntity|nil selected, boolean changed
@@ -155,6 +155,7 @@ end
 --- @param storage_key string|nil The key under which to store the selected entity, will use the type as key if unset
 --- @param label string|nil
 --- @param disallow_no_preset boolean|nil
+--- @return table|nil selectedPreset
 local function preset_picker(state, type, storage_key, label, disallow_no_preset)
     local options = editor.presets.get_names(type)
     if not options or #options == 0 then
@@ -182,13 +183,14 @@ local function preset_picker(state, type, storage_key, label, disallow_no_preset
         table.insert(options, 1, '<default>')
     end
 
+    if imgui.calc_item_width() > 300 then imgui.set_next_item_width(300) end
+
     local changed, newVal
     changed, newVal, stateFilters[storage_key] = ui.combo_filterable(label or 'Preset', current_selected_preset, options, stateFilters[storage_key] or '')
     if changed then
         state._selected_preset[storage_key] = newVal
         config.save()
     end
-    imgui.spacing()
     return newVal and editor.presets.get_preset_data(type, newVal) or nil
 end
 
@@ -205,11 +207,9 @@ local function create_button_with_preset(state, preset_type, storage_key, header
     imgui.begin_rect()
     imgui.text(headerLabel or ('New ' .. preset_type))
     imgui.spacing()
-    if imgui.calc_item_width() > 300 then
-        imgui.set_next_item_width(300)
-    end
     local canCreate = editor.active_bundle ~= nil
     local preset = preset_picker(state, preset_type, storage_key, nil, disallow_no_preset)
+    imgui.spacing()
     local btnPress = canCreate and (preset or not disallow_no_preset) and imgui.button(buttonLabel or 'Create')
     if cloneSource then
         imgui.same_line()
@@ -262,9 +262,11 @@ local function show_entity_editor(entity, state, expandTreeLabel)
         return false
     end
 
-    local expand = not expandTreeLabel or imgui.tree_node(expandTreeLabel)
-    if not expand then return false end
-    if not expandTreeLabel then imgui.push_id(entity.type .. entity.id) end
+    if expandTreeLabel then
+        if not imgui.tree_node(expandTreeLabel) then return false end
+    else
+        imgui.push_id(entity.type .. entity.id)
+    end
 
     show_entity_metadata(entity)
     local success, changed
@@ -274,7 +276,12 @@ local function show_entity_editor(entity, state, expandTreeLabel)
         success, changed = pcall(editorFunc, entity, state)
     end
 
-    if expandTreeLabel then imgui.tree_pop() else imgui.pop_id() end
+    if expandTreeLabel then
+        imgui.tree_pop()
+    else
+        imgui.pop_id()
+    end
+
     if success then
         if changed then udb.mark_entity_dirty(entity) end
         return changed
@@ -286,25 +293,27 @@ local function show_entity_editor(entity, state, expandTreeLabel)
 end
 
 --- @param container table The object that should contain the ID of the referenced entity
---- @param idField string
+--- @param idField string|integer
 --- @param linkedEntityType string
 --- @param state table
 --- @param label string|nil
 --- @return boolean changed
 local function show_linked_entity_picker(container, idField, linkedEntityType, state, label)
-    local selected = container[idField] and udb.get_entity(linkedEntityType, container[idField])
-    if selected then
-        _userdata_DB.ui.editor.set_selected_entity_picker_entity(state, linkedEntityType, selected)
+    local initialSelected = container[idField] and udb.get_entity(linkedEntityType, container[idField]) or nil
+    if initialSelected then
+        _userdata_DB.ui.editor.set_selected_entity_picker_entity(state, idField, initialSelected)
     end
-    local weather, changed = _userdata_DB.ui.editor.entity_picker(linkedEntityType, state, idField, label)
+    local selectedEntity, changed = _userdata_DB.ui.editor.entity_picker(linkedEntityType, state, idField, label)
     if changed then
-        container[idField] = weather and weather.id or nil
+        container[idField] = selectedEntity and selectedEntity.id or nil
     end
 
-    if weather then
-        return show_entity_editor(weather, state, label)
+    changed = changed or initialSelected ~= selectedEntity
+
+    if selectedEntity then
+        return show_entity_editor(selectedEntity, state, label) or changed
     end
-    return false
+    return changed
 end
 
 _userdata_DB._ui_ext = {

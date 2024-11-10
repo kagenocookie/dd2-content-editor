@@ -4,6 +4,7 @@ local utils = require('content_editor.utils')
 local helpers = require('content_editor.helpers')
 local import_handlers = require('content_editor.import_handlers')
 local gamedb = require('event_editor.events_gamedata')
+require('event_editor.scripted_events')
 
 local minimum_custom_event_id = 100000
 
@@ -13,7 +14,7 @@ local GenerateManager = sdk.get_managed_singleton('app.GenerateManager') ---@typ
 --- @class Event : DBEntity
 --- @field type 'event'
 --- @field selectData app.SuddenQuestSelectData
---- @field runtimeEntity app.SuddenQuestEntity|nil
+--- @field scriptEffects integer[]|nil
 
 --- @class EventContext : DBEntity
 --- @field type 'event_context'
@@ -21,11 +22,11 @@ local GenerateManager = sdk.get_managed_singleton('app.GenerateManager') ---@typ
 --- @field rootContext app.SuddenQuestContextData
 
 --- @class Import.EventContext : EntityImportData
---- @field npcID app.CharacterID
 --- @field data table
 
 --- @class Import.EventData : EntityImportData
 --- @field data table
+--- @field scriptEffects integer[]|nil
 
 udb.events.on('get_existing_data', function ()
     local catalogs = gamedb.get_catalogs()
@@ -77,7 +78,7 @@ udb.events.on('data_imported', function (data)
             utils.map(data.event, function (entity) return entity.selectData end)
         )
         for _, e in ipairs(data.event) do
-            gamedb.upsert_entity(e.selectData, udb.get_all_entities_map('event_context')--[[@as table<integer,EventContext>]])
+            gamedb.refresh_entity(e)
         end
     end
 end)
@@ -100,7 +101,6 @@ udb.register_entity_type('event_context', {
         --- @cast data EventContext
         --- @type Import.EventContext
         return {
-            npcID = data.context._NpcID,
             data = import_handlers.export(data.context, 'app.SuddenQuestContextData.ContextData')
         }
     end,
@@ -137,6 +137,7 @@ udb.register_entity_type('event', {
         instance = instance or {}
         instance.selectData = import_handlers.import('app.SuddenQuestSelectData', data.data, instance.selectData)
         instance.selectData._SerialNum = data.id
+        instance.scriptEffects = data.scriptEffects
         return instance
     end,
     root_types = {'app.SuddenQuestSelectData'},
@@ -144,7 +145,8 @@ udb.register_entity_type('event', {
         --- @cast data Event
         --- @type Import.EventData
         return {
-            data = import_handlers.export(data.selectData, 'app.SuddenQuestSelectData')
+            data = import_handlers.export(data.selectData, 'app.SuddenQuestSelectData'),
+            scriptEffects = data.scriptEffects,
         }
     end,
     delete = function (event)

@@ -168,6 +168,10 @@ if core.editor_enabled then
 
     local definitions = require('content_editor.definitions')
 
+    ui.editor.set_entity_editor('shop', function (entity, state)
+        return ui.handlers.show_editable(entity, 'runtime_instance', entity, nil, 'app.ItemShopParam')
+    end)
+
     editor.define_window('shop', 'Shops', function (state)
         local selectedShop = ui.editor.entity_picker('shop', state)
         if selectedShop then

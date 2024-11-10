@@ -12,8 +12,6 @@ local enums = require('quest_editor.enums')
 local editor = require('content_editor.editor')
 local udb = require('content_editor.database')
 
-local NPCManager = sdk.get_managed_singleton('app.NPCManager')
-
 editor.define_window('quests', 'Quests', function (state)
     imgui.spacing()
     if imgui.tree_node('Dump quest data') then

@@ -63,7 +63,7 @@ local recordClasses = {
     -- _HeadMeshDB = {'app.HeadMeshSwapItem', 'app.HeadStyle'}, -- species + gender + headstyle
     -- _HeadSkinDB = {'app.HeadSkinSwapItem', 'app.SkinStyle'}, -- species + gender + skinstyle
 }
-local recordTypes = utils.get_sorted_table_keys(recordClasses)
+local recordTypes = utils.get_sorted_table_keys(recordClasses) ---@type string[]
 
 local visorIds = {}
 
@@ -276,6 +276,15 @@ for _, name in ipairs(recordTypes) do
     })
 end
 
+definitions.override('styles', {
+    ['app.HelmSwapItem'] = { fields = { _HelmStyle = { ui_ignore = true, import_ignore = true } } },
+    ['app.TopsSwapItem'] = { fields = { _TopsStyle = { ui_ignore = true, import_ignore = true } } },
+    ['app.PantsSwapItem'] = { fields = { _PantsStyle = { ui_ignore = true, import_ignore = true } } },
+    ['app.MantleSwapItem'] = { fields = { _MantleStyle = { ui_ignore = true, import_ignore = true } } },
+    ['app.BackpackSwapItem'] = { fields = { _BackpackStyle = { ui_ignore = true, import_ignore = true } } },
+    ['app.UnderwearSwapItem'] = { fields = { _UnderwearStyle = { ui_ignore = true, import_ignore = true } } },
+})
+
 if core.editor_enabled then
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
@@ -290,7 +299,7 @@ if core.editor_enabled then
         end
     end
 
-    definitions.override('styles', {
+    definitions.override('', {
         ['app.TopsAmPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.TopsBdPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.TopsBtPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
@@ -303,14 +312,78 @@ if core.editor_enabled then
         ['app.BackpackPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.FacewearPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.BeardPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
-        ['app.HelmSwapItem'] = { fields = { _HelmStyle = { ui_ignore = true, import_ignore = true } } },
-        ['app.TopsSwapItem'] = { fields = { _TopsStyle = { ui_ignore = true, import_ignore = true } } },
-        ['app.PantsSwapItem'] = { fields = { _PantsStyle = { ui_ignore = true, import_ignore = true } } },
-        ['app.MantleSwapItem'] = { fields = { _MantleStyle = { ui_ignore = true, import_ignore = true } } },
-        ['app.BackpackSwapItem'] = { fields = { _BackpackStyle = { ui_ignore = true, import_ignore = true } } },
-        ['app.UnderwearSwapItem'] = { fields = { _UnderwearStyle = { ui_ignore = true, import_ignore = true } } },
         ['app.CharacterEditDefine.VisorControlFlag'] = { uiHandler = ui.handlers.common.enum_flags(enums.get_enum('app.CharacterEditDefine.VisorControlFlag')) },
     })
+
+    local function showStyles(selectedItem, state)
+        local recordData = recordClasses[state.style_type]
+        imgui.text('Style ID: ' .. selectedItem.id)
+        imgui.text('Style hash: ' .. tostring(selectedItem.styleHash))
+        local variantIds = utils.get_sorted_table_keys(selectedItem.variants)
+        local variantIdLabels = utils.map(variantIds, function (value) return variantLabels[value] or value end)
+        state.variant_id = select(2, imgui.combo('Variant', state.variant_id, variantIdLabels))
+        local furmaskChanged, meshesChanged, stylesChanged = false, false, false
+        if state.variant_id and variantIds[state.variant_id] then
+            local variantKey = variantIds[state.variant_id]
+            imgui.spacing()
+            imgui.indent(8)
+            imgui.begin_rect()
+            imgui.text('Selected variant')
+            if recordData.furmaskIndex then
+                local furmask = selectedItem.furmasks and selectedItem.furmasks[variantKey]
+                local path = furmask and furmask:get_ResourcePath()
+                local changed, newpath = imgui.input_text('Furmask .pfb', path or '')
+                if changed then
+                    furmaskChanged = true
+                    if furmask then
+                        if newpath and newpath ~= '' then
+                            if newpath ~= path then
+                                furmask._Item:set_Path(newpath)
+                                udb.mark_entity_dirty(selectedItem)
+                            end
+                        else
+                            if selectedItem.furmasks then
+                                selectedItem.furmasks[variantKey] = nil
+                            end
+                            CharacterEditManager._FurMaskMapGenderCatalog[recordData.furmaskIndex][tonumber(variantKey)]:Remove(selectedItem.styleHash)
+                            udb.mark_entity_dirty(selectedItem)
+                        end
+                    elseif newpath and newpath ~= '' then
+                        local pfbCtrl = import_handlers.import('app.PrefabController', newpath)
+                        selectedItem.furmasks = selectedItem.furmasks or {}
+                        selectedItem.furmasks[variantKey] = pfbCtrl
+                        CharacterEditManager._FurMaskMapGenderCatalog[recordData.furmaskIndex][tonumber(variantKey)][selectedItem.styleHash] = pfbCtrl
+                        udb.mark_entity_dirty(selectedItem)
+                    end
+                end
+                if imgui.button('Force swap meshes') then
+                    meshesChanged = true
+                end
+                imgui.same_line()
+                state.autorefresh = select(2, imgui.checkbox('Auto-refresh styles and furmasks', state.autorefresh == nil and true or state.autorefresh))
+                if imgui.is_item_hovered() then imgui.set_tooltip('Will force any style or furmask changes to apply to the player and pawns in realtime\nMesh changes are a bit slow, use the button or re-equip items for those') end
+            end
+            stylesChanged = ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem)
+
+            if state.autorefresh then
+                local refreshPart = furmaskChanged and 1 or stylesChanged and 2 or meshesChanged and 3 or nil
+                if refreshPart then
+                    local player = CharacterManager:get_ManualPlayer()
+                    if player then forceRefresh(player, refreshPart) end
+                    local it = PawnManager._PawnCharacterList:GetEnumerator()
+                    while it:MoveNext() do forceRefresh(it._current, refreshPart) end
+                end
+            end
+            imgui.end_rect(4)
+            imgui.unindent(8)
+            imgui.spacing()
+        end
+        return furmaskChanged or meshesChanged or stylesChanged
+    end
+
+    for _, rtype in ipairs(recordTypes) do
+        ui.editor.set_entity_editor(rtype, showStyles)
+    end
 
     local equipped_style_result
     editor.define_window('styles', 'Styles', function (state)
@@ -354,68 +427,7 @@ if core.editor_enabled then
                 imgui.indent(8)
                 imgui.begin_rect()
                 ui.editor.show_entity_metadata(selectedItem)
-                imgui.text('Style ID: ' .. selectedItem.id)
-                imgui.text('Style hash: ' .. tostring(selectedItem.styleHash))
-                local variantIds = utils.get_sorted_table_keys(selectedItem.variants)
-                local variantIdLabels = utils.map(variantIds, function (value) return variantLabels[value] or value end)
-                state.variant_id = select(2, imgui.combo('Variant', state.variant_id, variantIdLabels))
-                if state.variant_id and variantIds[state.variant_id] then
-                    local variantKey = variantIds[state.variant_id]
-                    imgui.spacing()
-                    imgui.indent(8)
-                    imgui.begin_rect()
-                    imgui.text('Selected variant')
-                    local furmaskChanged = false
-                    local meshesChanged = false
-                    if recordData.furmaskIndex then
-                        local furmask = selectedItem.furmasks and selectedItem.furmasks[variantKey]
-                        local path = furmask and furmask:get_ResourcePath()
-                        local changed, newpath = imgui.input_text('Furmask .pfb', path or '')
-                        if changed then
-                            furmaskChanged = true
-                            if furmask then
-                                if newpath and newpath ~= '' then
-                                    if newpath ~= path then
-                                        furmask._Item:set_Path(newpath)
-                                        udb.mark_entity_dirty(selectedItem)
-                                    end
-                                else
-                                    if selectedItem.furmasks then
-                                        selectedItem.furmasks[variantKey] = nil
-                                    end
-                                    CharacterEditManager._FurMaskMapGenderCatalog[recordData.furmaskIndex][tonumber(variantKey)]:Remove(selectedItem.styleHash)
-                                    udb.mark_entity_dirty(selectedItem)
-                                end
-                            elseif newpath and newpath ~= '' then
-                                local pfbCtrl = import_handlers.import('app.PrefabController', newpath)
-                                selectedItem.furmasks = selectedItem.furmasks or {}
-                                selectedItem.furmasks[variantKey] = pfbCtrl
-                                CharacterEditManager._FurMaskMapGenderCatalog[recordData.furmaskIndex][tonumber(variantKey)][selectedItem.styleHash] = pfbCtrl
-                                udb.mark_entity_dirty(selectedItem)
-                            end
-                        end
-                        if imgui.button('Force swap meshes') then
-                            meshesChanged = true
-                        end
-                        imgui.same_line()
-                        state.autorefresh = select(2, imgui.checkbox('Auto-refresh styles and furmasks', state.autorefresh == nil and true or state.autorefresh))
-                        if imgui.is_item_hovered() then imgui.set_tooltip('Will force any style or furmask changes to apply to the player and pawns in realtime\nMesh changes are a bit slow, use the button or re-equip items for those') end
-                    end
-                    local stylesChanged = ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem)
-
-                    if state.autorefresh then
-                        local refreshPart = furmaskChanged and 1 or stylesChanged and 2 or meshesChanged and 3 or nil
-                        if refreshPart then
-                            local player = CharacterManager:get_ManualPlayer()
-                            if player then forceRefresh(player, refreshPart) end
-                            local it = PawnManager._PawnCharacterList:GetEnumerator()
-                            while it:MoveNext() do forceRefresh(it._current, refreshPart) end
-                        end
-                    end
-                    imgui.end_rect(4)
-                    imgui.unindent(8)
-                    imgui.spacing()
-                end
+                showStyles(selectedItem, state)
                 imgui.end_rect(4)
                 imgui.unindent(8)
                 imgui.spacing()

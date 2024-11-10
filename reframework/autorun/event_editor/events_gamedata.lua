@@ -18,19 +18,32 @@ local function get_first_catalog()
 end
 
 --- @return app.SuddenQuestEntity|nil
-local function get_game_entity(id)
+local function get_runtime_entity(id)
     if SuddenQuestManager._EntityDict:call('ContainsKey', id) then
         return SuddenQuestManager._EntityDict:get_Item(id)
     end
     return nil
 end
 
----@param selectData app.SuddenQuestSelectData
----@param contextDataLookup table<integer,app.SuddenQuestContextData|EventContext>
-local function upsert_entity(selectData, contextDataLookup)
-    local id = selectData._SerialNum
+--- @param entity app.SuddenQuestEntity
+--- @param data Event
+local function event_entity_is_synced_with_source_data(entity, data)
+    return entity:get_StartLocation() == data.selectData._StartLocation
+        and entity:get_EndLocation() == data.selectData._EndLocation
+        and entity:get_RelayLocation() == data.selectData._RelayLocation
+        and entity:get_StartCondition() == data.selectData._StartCondition
+        and entity:get_StartDistanceMin() == data.selectData._StartDistanceMin
+        and entity:get_StartDistanceMax() == data.selectData._StartDistance
+        and entity:get_IntervalHour() == data.selectData._IntervalTime._Day * 24.0 + data.selectData._IntervalTime._Hour
+end
 
-    local entity = get_game_entity(id)
+---@param ent Event
+---@param contextDataLookup table<integer,EventContext>
+local function upsert_entity(ent, contextDataLookup)
+    local id = ent.id
+    local selectData = ent.selectData
+
+    local entity = get_runtime_entity(id)
     if entity == nil then
         entity = sdk.create_instance('app.SuddenQuestEntity'):add_ref()--[[@as app.SuddenQuestEntity]]
     end
@@ -52,7 +65,7 @@ local function upsert_entity(selectData, contextDataLookup)
         --- @cast ptr app.SuddenQuestSelectData.SelectData
         local ctx = ptr and contextDataLookup[ptr._Key]
         if ctx then
-            dataList:Add(ctx.rootContext or ctx)
+            dataList:Add(ctx.rootContext)
         end
     end
 
@@ -86,7 +99,7 @@ end
 --- @param event Event
 local function refresh_game_event_entity(event)
     if event then
-        upsert_entity(event.selectData, udb.get_all_entities('event_context'))
+        upsert_entity(event, udb.get_all_entities_map('event_context')--[[@as any]])
     end
 end
 
@@ -101,18 +114,6 @@ local function event_get_contexts(id)
     local data = udb.get_entity('event', id)
     if not data or not data.selectData._SelectDataArray then return {} end
     return utils.map(data.selectData._SelectDataArray:get_elements(), function (sda) return udb.get_entity('event_context', sda._Key) end)
-end
-
---- @param entity app.SuddenQuestEntity
---- @param data Event
-local function event_entity_is_synced_with_source_data(entity, data)
-    return entity:get_StartLocation() == data.selectData._StartLocation
-        and entity:get_EndLocation() == data.selectData._EndLocation
-        and entity:get_RelayLocation() == data.selectData._RelayLocation
-        and entity:get_StartCondition() == data.selectData._StartCondition
-        and entity:get_StartDistanceMin() == data.selectData._StartDistanceMin
-        and entity:get_StartDistanceMax() == data.selectData._StartDistance
-        and entity:get_IntervalHour() == data.selectData._IntervalTime._Day * 24.0 + data.selectData._IntervalTime._Hour
 end
 
 local function event_get_possible_character_ids(id)
@@ -141,8 +142,7 @@ return {
     get_catalogs = get_catalogs,
     get_first_catalog = get_first_catalog,
 
-    get_game_entity = get_game_entity,
-    upsert_entity = upsert_entity,
+    get_runtime_entity = get_runtime_entity,
     refresh_entity = refresh_game_event_entity,
     get_first_context = event_get_first_context,
     get_contexts = event_get_contexts,

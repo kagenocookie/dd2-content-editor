@@ -73,6 +73,34 @@ udb.register_entity_type('domain_query_generate_table', {
 if core.editor_enabled then
     local ui = require('content_editor.ui')
     local editor = require('content_editor.editor')
+    local definitions = require('content_editor.definitions')
+
+    ui.editor.set_entity_editor('domain_query_generate_table', function (entity, state)
+        --- @cast entity DQGenerateTable
+        return ui.handlers.show(entity.table, entity, 'Table Data')
+    end)
+
+    definitions.override('', {
+        ['app.DomainQueryGenerateTable.DomainQueryGenetateTableElement'] = {
+            fields = {
+                _RequestID = {
+                    uiHandler = ui.handlers.common.readonly_label(function (value)
+                        return value
+                    end)
+                }
+            },
+        },
+        ['app.GenerateTable.InitialSetData.SystemFlagEnum'] = {
+            uiHandler = ui.handlers.common.enum_flags(enums.get_enum('app.GenerateTable.InitialSetData.SystemFlagEnum')),
+            extensions = { { type = 'tooltip', text = 'Use this if the spawned sets should be randomized (e.g. only spawn either A or B, not both).\nThe sets between an entry with RandomStart and one with RandomEnd will be joined into one random set on spawn.' } }
+        },
+        ['app.GenerateManager.GenerateOprionFlags'] = {
+            uiHandler = ui.handlers.common.enum_flags(enums.get_enum('app.GenerateManager.GenerateOprionFlags'), 3)
+        },
+        ['app.TimeManager.TimeZone'] = {
+            uiHandler = ui.handlers.common.enum_flags(enums.get_enum('app.TimeManager.TimeZone'))
+        },
+    })
 
     editor.define_window('dq_generate_tables', 'Spawn tables', function (state)
         local activeBundle = editor.active_bundle
@@ -95,8 +123,7 @@ if core.editor_enabled then
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()
-            ui.editor.show_entity_metadata(selectedTable)
-            ui.handlers.show(selectedTable.table, selectedTable, 'Table Data')
+            ui.editor.show_entity_editor(selectedTable, state)
             imgui.end_rect(4)
             imgui.unindent(8)
         end

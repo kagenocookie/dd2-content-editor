@@ -1,14 +1,17 @@
+local core = require('content_editor.core')
 local udb = require('content_editor.database')
 local enums = require('content_editor.enums')
 local utils = require('content_editor.utils')
 local helpers = require('content_editor.helpers')
-local gamedb = require('event_editor.events_gamedata')
-
-local minimum_custom_event_id = 100000
+local effects = require('content_editor.script_effects')
 
 local ui = require('content_editor.ui')
 local editor = require('content_editor.editor')
 local utils_dd2 = require('content_editor.dd2.utils')
+
+local gamedb = require('event_editor.events_gamedata')
+
+local minimum_custom_event_id = 100000
 
 --- @param ctx EventContext
 --- @param entity app.SuddenQuestEntity|nil
@@ -33,20 +36,6 @@ local function show_event_context(ctx, entity)
                     ui.core.tooltip("This event can't execute at the moment.\nThis generally means that some required data might be missing, conditions are not fulfilled, or the game is in a state where events don't update like the title screen.")
                 end
             end
-            local timestampLastExecuted = (entity._LastDay * 24 + entity._LastHour) * 3600
-            local eventIntervalSeconds = entity:get_IntervalHour() * 3600
-
-            local timeUntilExecutable = timestampLastExecuted + eventIntervalSeconds - utils_dd2.get_ingame_timestamp()
-            if timeUntilExecutable > 0 then
-                imgui.text_colored('Event on cooldown interval', editor.get_color('warning'))
-                imgui.same_line()
-                imgui.text('Can execute again in ' .. utils.format_timestamp(timeUntilExecutable))
-                imgui.same_line()
-                if imgui.button('Reset last execution time') then
-                    entity._LastDay = -1
-                    entity._LastHour = -1
-                end
-            end
         end
 
         imgui.spacing()
@@ -66,7 +55,7 @@ end
 ---@param uiState table|nil
 local function show_event(event, contextData, uiState)
     local id = event.id
-    local runtimeEntity = event.runtimeEntity
+    local runtimeEntity = gamedb.get_runtime_entity(id)
     imgui.text('Key: ' .. tostring(id) .. '  -  ' .. tostring(runtimeEntity and runtimeEntity:get_NpcRegisterKeyName()))
 
     local chosenCtx = contextData or runtimeEntity and runtimeEntity._CurrentContextData
@@ -78,12 +67,14 @@ local function show_event(event, contextData, uiState)
     end
     imgui.text('Type: ' .. tostring(enums.get_enum('app.QuestDefine.SuddenQuestType').get_label(typeId)))
 
-    if runtimeEntity and not gamedb.event_entity_is_synced_with_source_data(runtimeEntity, event) then
-        imgui.same_line()
+    if runtimeEntity then
         if imgui.button('Update runtime entity from source/context changes') then
-            gamedb.upsert_entity(data.selectData, udb.get_all_entities('event_context'))
+            gamedb.refresh_entity(event)
         end
-        ui.core.tooltip("Some pending changes need to be manually transferred to the game's runtime entity.")
+        if not gamedb.event_entity_is_synced_with_source_data(runtimeEntity, event) then
+            imgui.same_line()
+            ui.core.tooltip("Some pending changes need to be manually transferred to the game's runtime entity.", core.get_color('warning'))
+        end
     else
         imgui.spacing()
         imgui.spacing()
@@ -93,16 +84,23 @@ local function show_event(event, contextData, uiState)
         local timestampLastExecuted = (runtimeEntity._LastDay * 24 + runtimeEntity._LastHour) * 3600
         local eventIntervalSeconds = runtimeEntity:get_IntervalHour() * 3600
 
-        local timeUntilExecutable = timestampLastExecuted + eventIntervalSeconds - gamedb.get_ingame_timestamp()
+        local timeUntilExecutable = timestampLastExecuted + eventIntervalSeconds - utils_dd2.get_ingame_timestamp()
         if timestampLastExecuted > 0 and timeUntilExecutable > 0 then
             imgui.text_colored('Event on cooldown interval', editor.get_color('warning'))
             imgui.same_line()
-            imgui.text('Can execute again in ' .. gamedb.format_timestamp(timeUntilExecutable))
+            imgui.text('Can execute again in ' .. utils.format_timestamp(timeUntilExecutable))
             imgui.same_line()
             if imgui.button('Reset last execution time') then
                 runtimeEntity._LastDay = -1
                 runtimeEntity._LastHour = -1
             end
+        end
+
+        if runtimeEntity._ExecutedDict:get_Count() ~= 0 then
+            if imgui.button('Clear executed contexts') then
+                runtimeEntity._ExecutedDict:Clear()
+            end
+            ui.core.tooltip('Make all linked contexts executable again')
         end
     end
 
@@ -147,19 +145,11 @@ local function show_event(event, contextData, uiState)
             imgui.pop_id()
         end
 
-        if editor.active_bundle and editor.active_bundle ~= '' then
+        if editor.active_bundle and editor.active_bundle ~= '' and uiState then
             imgui.begin_rect()
-            if imgui.button('New context') then
-                --- @type Import.EventContext
-                local data = {
-                    npcID = enums.get_enum('app.CharacterID').labelToValue.Invalid,
-                    data = {
-                        _TaskSetting = {
-                            _ResourceData = 'AppSystem/AI/Situation/TaskData/AITask_1_2_059.user',
-                        }
-                    },
-                }
-                local newCtx = udb.insert_new_entity('event_context', editor.active_bundle, data)
+            local create, preset = ui.editor.create_button_with_preset(uiState, 'event_context', 'new_ctx_link', nil, 'New context')
+            if create then
+                local newCtx = udb.insert_new_entity('event_context', editor.active_bundle, preset)
                 if newCtx then
                     local newPtr = sdk.create_instance('app.SuddenQuestSelectData.SelectData'):add_ref()--[[@as app.SuddenQuestSelectData.SelectData]]
                     newPtr._Key = newCtx.id
@@ -168,18 +158,16 @@ local function show_event(event, contextData, uiState)
                 end
             end
 
-            if uiState then
-                imgui.text('Link existing context')
-                local linkCtx = ui.editor.entity_picker('event_context', uiState, 'event_context_link', 'Context to link')
-                if linkCtx and utils.table_contains(contexts, linkCtx) then
-                    imgui.text('Chosen context is already added for this event')
-                elseif linkCtx and imgui.button('Link') then
-                    local newPtr = sdk.create_instance('app.SuddenQuestSelectData.SelectData'):add_ref()--[[@as app.SuddenQuestSelectData.SelectData]]
-                    newPtr._Key = linkCtx.id
-                    event.selectData._SelectDataArray = helpers.expand_system_array(event.selectData._SelectDataArray, { newPtr })
-                    ui.editor.set_selected_entity_picker_entity(uiState, 'event_context_link', nil)
-                    udb.mark_entity_dirty(event)
-                end
+            imgui.text('Link existing context')
+            local linkCtx = ui.editor.entity_picker('event_context', uiState, 'event_context_link', 'Context to link')
+            if linkCtx and utils.table_contains(contexts, linkCtx) then
+                imgui.text('Chosen context is already added for this event')
+            elseif linkCtx and imgui.button('Link') then
+                local newPtr = sdk.create_instance('app.SuddenQuestSelectData.SelectData'):add_ref()--[[@as app.SuddenQuestSelectData.SelectData]]
+                newPtr._Key = linkCtx.id
+                event.selectData._SelectDataArray = helpers.expand_system_array(event.selectData._SelectDataArray, { newPtr })
+                ui.editor.set_selected_entity_picker_entity(uiState, 'event_context_link', nil)
+                udb.mark_entity_dirty(event)
             end
             imgui.end_rect(2)
         end
@@ -200,23 +188,37 @@ local function dump_sudden_quests()
     return sq_dump
 end
 
+ui.editor.set_entity_editor('event', function (entity, state)
+    --- @cast entity Event
+    local listChanged = effects.ui.show_list(entity, 'scriptEffects', 'Custom effects')
+    show_event(entity, nil, state)
+    return listChanged
+end)
 
 editor.define_window('events', 'Events', function (state)
     if editor.active_bundle then
-        local create, preset = ui.editor.create_button_with_preset(state, 'event_context', 'new_ctx', 'New event')
-        if create then
-            print('preset', preset and preset.id)
-            local ctx = udb.insert_new_entity('event_context', editor.active_bundle, preset)
+        imgui.indent(12)
+        imgui.begin_rect()
+        imgui.text('New event')
+        imgui.spacing()
+        local mainPreset = ui.editor.preset_picker(state, 'event', 'new_event', 'New event', true)
+        local ctxPreset = ui.editor.preset_picker(state, 'event_context', 'new_ctx', 'New context')
+        local create = mainPreset and imgui.button('Create')
+        imgui.end_rect(4)
+        imgui.unindent(12)
+        imgui.spacing()
+        imgui.spacing()
+        if create and mainPreset then
+            local ctx = ctxPreset and udb.insert_new_entity('event_context', editor.active_bundle, ctxPreset)
             --- @cast ctx EventContext
-            local newEventPreset = editor.presets.get_preset_data('event', 'default') or {}
-            newEventPreset = ui.editor.preset_instantiate(newEventPreset, {
+            mainPreset = ui.editor.preset_instantiate(mainPreset, {
                 contextType = ctx and ctx.context._Type,
-                data = utils.table_assign(utils.clone_table(newEventPreset.data), {
-                    _SelectDataArray = { { _Key = ctx and ctx.id } }
+                data = utils.table_assign(utils.clone_table(mainPreset.data), {
+                    _SelectDataArray = { ctx and { _Key = ctx.id } or nil }
                 }),
             })
 
-            local event = udb.insert_new_entity('event', editor.active_bundle, newEventPreset)
+            local event = udb.insert_new_entity('event', editor.active_bundle, mainPreset)
             ui.editor.set_selected_entity_picker_entity(state, 'event', event)
         end
     end
@@ -227,8 +229,7 @@ editor.define_window('events', 'Events', function (state)
         imgui.spacing()
         imgui.indent(8)
         imgui.begin_rect()
-        ui.editor.show_entity_metadata(selectedEvent)
-        show_event(selectedEvent, nil, state)
+        ui.editor.show_entity_editor(selectedEvent, state)
         imgui.end_rect(4)
         imgui.unindent(8)
     end

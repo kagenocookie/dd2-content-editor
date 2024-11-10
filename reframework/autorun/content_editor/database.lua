@@ -890,7 +890,7 @@ local function get_next_insert_id(bundleName, entityType)
             bundle.next_insert_ids[entityType] = bundle.initial_insert_ids[entityType]
         end
 
-        nextId = bundle.next_insert_ids[entityType] or generate_random_initial_insert_id(entityType)
+        nextId = bundle.next_insert_ids[entityType] or bundle.initial_insert_ids[entityType] or generate_random_initial_insert_id(entityType)
         while get_entity(entityType, nextId) do
             nextId = nextId + 1
         end
@@ -1078,14 +1078,20 @@ re.on_draw_ui(function ()
 
         if imgui.button('Editor: ' .. (internal.config.data.editor.enabled and 'enabled' or 'disabled')) then
             internal.config.data.editor.enabled = not internal.config.data.editor.enabled
+            if internal.config.data.editor.enabled then
+                internal.config.data.editor.show_window = true
+            end
             internal.config.save()
         end
         if internal.config.data.editor.enabled ~= core.editor_enabled then
             imgui.text_colored('Reset scripts to apply editor setting change!', core.get_color('warning'))
         end
-        if core.editor_enabled and imgui.button('Toggle editor windows') then
-            internal.config.data.editor.show_window = not internal.config.data.editor.show_window
-            internal.config.save()
+        if core.editor_enabled then
+            imgui.same_line()
+            if imgui.button('Toggle editor windows') then
+                internal.config.data.editor.show_window = not internal.config.data.editor.show_window
+                internal.config.save()
+            end
         end
         load_order_handler()
         imgui.tree_pop()

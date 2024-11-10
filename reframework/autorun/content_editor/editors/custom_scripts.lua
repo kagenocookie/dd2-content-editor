@@ -166,8 +166,7 @@ if core.editor_enabled then
     local curScriptData = {}
 
     --- @param script CustomScriptEntity
-    _userdata_DB.custom_scripts.draw_script_editor = function (script)
-        ui.editor.show_entity_metadata(script)
+    ui.editor.set_entity_editor('custom_script', function (script)
         local tempData = curScriptData[script]
         if not tempData then
             tempData = {}
@@ -217,7 +216,7 @@ if core.editor_enabled then
         end
 
         return entityChanged
-    end
+    end)
 
     editor.define_window('scripts', 'Scripts', function (state)
         local selectedItem = ui.editor.entity_picker('custom_script', state)
@@ -231,7 +230,7 @@ if core.editor_enabled then
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()
-            _userdata_DB.custom_scripts.draw_script_editor(selectedItem)
+            ui.editor.show_entity_editor(selectedItem, state)
             imgui.end_rect(4)
             imgui.unindent(8)
             imgui.spacing()
