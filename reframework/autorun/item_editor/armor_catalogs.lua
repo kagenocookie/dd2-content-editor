@@ -194,7 +194,7 @@ if core.editor_enabled then
         end
         if imgui.is_item_hovered() then imgui.set_tooltip('Will force all mesh parts of the player and pawns to refresh based on the currently defined meshes') end
         imgui.text('ID: ' .. tostring(selectedItem.id))
-        local recordData = recordTypes[selectedItem.type]
+        local recordData = armorCatalogs[selectedItem.type]
         for _, field in ipairs(recordData) do
             local pfbCtrl = selectedItem[field.name] --- @type app.PrefabController|nil
             local path = pfbCtrl and pfbCtrl.get_ResourcePath and pfbCtrl:get_ResourcePath()--[[@as string|nil]]
