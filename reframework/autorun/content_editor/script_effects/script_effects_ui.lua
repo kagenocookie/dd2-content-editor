@@ -45,46 +45,7 @@ end)
 --- @param list_property string
 --- @param label string
 local function show_list(entity, list_property, label)
-    local changed = false
-    local list = entity[list_property] ---@type integer[]|nil
-    if imgui.tree_node(label) then
-        if list then
-            local state = states[entity] or ui.context.create_root(entity, nil, 'Effect', entity.type .. entity.id .. '_effects')
-            states[entity] = state
-
-            for trigger_idx, triggerId in ipairs(list) do
-                imgui.push_id(trigger_idx)
-                state[trigger_idx] = state[trigger_idx] or {}
-                if imgui.button('X') then
-                    table.remove(list, trigger_idx)
-                    imgui.pop_id()
-                    changed = true
-                    break
-                end
-                imgui.same_line()
-                local effect = udb.get_entity('script_effect', triggerId)--[[@as ScriptEffectEntity|nil]]
-                if effect then
-                    if imgui.tree_node(trigger_idx .. '. ' .. effect.trigger_type .. ' - ' .. effect.label) then
-                        changed = ui.editor.show_linked_entity_picker(list, trigger_idx, 'script_effect', state) or changed
-                        imgui.tree_pop()
-                    end
-                else
-                    changed = ui.editor.show_linked_entity_picker(list, trigger_idx, 'script_effect', state) or changed
-                end
-                imgui.pop_id()
-            end
-        end
-        if imgui.button('Add') then
-            entity[list_property] = entity[list_property] or {}
-            entity[list_property][#entity[list_property]+1] = 0
-            changed = true
-        end
-        imgui.tree_pop()
-    else
-        states[entity] = nil
-    end
-    if changed then print('sf list changed') udb.mark_entity_dirty(entity) end
-    return changed
+    return ui.editor.show_linked_entity_list(entity, entity, list_property, 'script_effect', label, states)
 end
 
 editor.define_window('script_effects', 'Script Effects', function (state)

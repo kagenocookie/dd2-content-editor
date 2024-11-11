@@ -2,6 +2,8 @@ if type(_events_controller) ~= 'nil' then return _events_controller end
 
 local udb = require('content_editor.database')
 
+local SuddenQuestManager = sdk.get_managed_singleton('app.SuddenQuestManager') ---@type app.SuddenQuestManager
+
 --- @type app.SuddenQuestEntity|nil
 local currentEntity = nil
 
@@ -48,7 +50,14 @@ local function add_callback(callback)
     callbacks[#callbacks+1] = callback
 end
 
+local function get_current_event()
+    SuddenQuestManager = SuddenQuestManager or sdk.get_managed_singleton('app.SuddenQuestManager')
+    local evt = SuddenQuestManager._CurrentEntity
+    return evt and udb.get_entity('event', evt:get_Key())
+end
+
 _events_controller = {
     on_event_changed = add_callback,
+    get_current = get_current_event,
 }
 return _events_controller

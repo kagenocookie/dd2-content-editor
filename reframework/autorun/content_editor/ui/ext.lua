@@ -316,6 +316,54 @@ local function show_linked_entity_picker(container, idField, linkedEntityType, s
     return changed
 end
 
+--- @param entity DBEntity
+--- @param list_property string
+--- @param linked_type string
+--- @param label string
+--- @param stateContainer table
+local function show_linked_entity_list(entity, list_container, list_property, linked_type, label, stateContainer)
+    local changed = false
+    local list = list_container[list_property] ---@type integer[]|nil
+    if imgui.tree_node(label) then
+        if list then
+            local state = stateContainer[entity] or _userdata_DB.ui.context.create_root(entity, nil, label, label .. entity.type .. entity.id)
+            stateContainer[entity] = state
+
+            for linkedIndex, linkedId in ipairs(list) do
+                imgui.push_id(linkedIndex)
+                state[linkedIndex] = state[linkedIndex] or {}
+                if imgui.button('X') then
+                    table.remove(list, linkedIndex)
+                    imgui.pop_id()
+                    changed = true
+                    break
+                end
+                imgui.same_line()
+                local linked = udb.get_entity(linked_type, linkedId)--[[@as ScriptEffectEntity|nil]]
+                if linked then
+                    if imgui.tree_node(linkedIndex .. '. ' .. linked.label) then
+                        changed = _userdata_DB.ui.editor.show_linked_entity_picker(list, linkedIndex, linked_type, state) or changed
+                        imgui.tree_pop()
+                    end
+                else
+                    changed = _userdata_DB.ui.editor.show_linked_entity_picker(list, linkedIndex, linked_type, state) or changed
+                end
+                imgui.pop_id()
+            end
+        end
+        if imgui.button('Add') then
+            list_container[list_property] = list_container[list_property] or {}
+            list_container[list_property][#list_container[list_property]+1] = 0
+            changed = true
+        end
+        imgui.tree_pop()
+    else
+        stateContainer[entity] = nil
+    end
+    if changed then udb.mark_entity_dirty(entity) end
+    return changed
+end
+
 _userdata_DB._ui_ext = {
     show_entity_metadata = show_entity_metadata,
     show_save_settings = show_save_settings,
@@ -328,6 +376,7 @@ _userdata_DB._ui_ext = {
     set_entity_editor = set_entity_editor,
     show_entity_editor = show_entity_editor,
     show_linked_entity_picker = show_linked_entity_picker,
+    show_linked_entity_list = show_linked_entity_list,
 }
 
 return _userdata_DB._ui_ext
