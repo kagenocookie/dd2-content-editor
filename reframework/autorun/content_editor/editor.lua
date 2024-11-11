@@ -62,12 +62,13 @@ local editor_defs = {
                 config.data.editor.author_name = newValue
                 config.save()
             end
+            imgui_wrappers.tooltip('Name to save into the author field for new data bundles')
             changed, newValue = imgui.input_text_multiline('Author description', config.data.editor.author_description or '', 10)
             if changed then
                 config.data.editor.author_description = newValue
                 config.save()
             end
-            imgui_wrappers.tooltip('Name to save into the author field for new data bundles')
+            imgui_wrappers.tooltip('Optional description that should accompany your mods')
             imgui_wrappers.setting_checkbox('Debug mode', config.data.editor, 'devmode', config.save, "Show some additional options used for editor development, remove some error handling, add more logging.\nBest left off unless you know what you're doing.")
         end
     },

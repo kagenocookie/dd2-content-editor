@@ -25,7 +25,7 @@ return function (udb)
                 end
             end
             if imgui.is_item_hovered() then
-                imgui.set_tooltip('Author: ' .. (bundle.author or '<unknown>'))
+                imgui.set_tooltip('Author: ' .. (bundle.author or '<unknown>') .. (bundle.description and bundle.description ~= '' and ('\n\nDescription:\n' .. bundle.description) or ''))
             end
             imgui.same_line()
             changed, val = imgui.checkbox('Active  ', udb.get_bundle_enabled(bundle.name))
