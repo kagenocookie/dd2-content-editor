@@ -51,7 +51,7 @@ editor.define_window('quests', 'Quests', function (state)
             local newQuest = udb.insert_new_entity('quest', editor.active_bundle, newdata)
             ui.editor.set_selected_entity_picker_entity(state, 'quest', newQuest)
         end
-        ui.core.tooltip("Custom quests need some manual file editing that we can't do through code yet.\nThis button can handle dynamically modifying the quest catalog, but the quest scene files can't be created here.\nNeed to at least modify the stm/appsystem/scene/quest.scn.20 file and create a new stm/appdata/quest/qu###.scn.20 and resident.scn.20 file.\nCheck shadowcookie / Modding haven on discord for more help.", core.get_color('warning'))
+        ui.core.tooltip("Custom quests need some manual file editing that we can't do through code yet.\nThis button can handle dynamically modifying the quest catalog, but the quest scene files can't be created here.\nNeed to at least modify the stm/appsystem/scene/quest.scn.20 file and create a new stm/appdata/quest/qu###.scn.20 and resident.scn.20 file.\nCheck the dd2 content editor wiki for more info.", core.get_color('warning'))
 
         local selectedQuest = ui.editor.entity_picker('quest', state)
         if selectedQuest then

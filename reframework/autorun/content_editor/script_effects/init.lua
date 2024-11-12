@@ -9,6 +9,7 @@ local core = require('content_editor.core')
 --- @field category string
 --- @field start fun(entity: ScriptEffectEntity, ctx: any): any data
 --- @field stop nil|fun(entity: ScriptEffectEntity, data: any)
+--- @field update nil|fun(entity: ScriptEffectEntity, data: any, deltaTime: number): shouldStop: boolean|nil
 
 --- @class ScriptEffectEntity : DBEntity
 --- @field trigger_type string

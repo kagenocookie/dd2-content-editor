@@ -77,12 +77,19 @@ set_ui_hook('script', function (effect, state)
     end
 
     imgui.same_line()
+    if imgui.button('New update script') then
+        effect.data.update_script_id = udb.insert_new_entity('custom_script', editor.active_bundle).id
+        changed = true
+    end
+
+    imgui.same_line()
     if imgui.button('New stop script') then
         effect.data.stop_script_id = udb.insert_new_entity('custom_script', editor.active_bundle).id
         changed = true
     end
 
     changed = ui.editor.show_linked_entity_picker(effect.data, 'start_script_id', 'custom_script', state, 'Start script') or changed
+    changed = ui.editor.show_linked_entity_picker(effect.data, 'update_script_id', 'custom_script', state, 'Update script') or changed
     changed = ui.editor.show_linked_entity_picker(effect.data, 'stop_script_id', 'custom_script', state, 'Stop script') or changed
 
     return changed

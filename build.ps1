@@ -46,7 +46,7 @@ PrepareFiles -Folder "dd2_content_editor" -FileList (
 )
 Copy-Item -Path modinfo_dd2.ini -Destination "_build/dd2_content_editor/modinfo.ini"
 
-MakeModinfo "quest_editor" "Quest editor" "v0.1.0" "DD2 quest editor addon for Content editor"
+MakeModinfo "quest_editor" "Quest editor" "v0.1.0" "DD2 Content editor quest addon"
 PrepareFiles -Folder "quest_editor" -FileList (
     "reframework/autorun/quest_editor",
     "reframework/autorun/editor_quest.lua",
@@ -55,23 +55,26 @@ PrepareFiles -Folder "quest_editor" -FileList (
     # "natives/stm/appsystem/scene/quest.scn.20"
 )
 
-MakeModinfo "event_editor" "Event editor" $Version "DD2 events editor addon for Content editor"
+MakeModinfo "event_editor" "Event editor" $Version "DD2 Content editor events addon"
 PrepareFiles -Folder "event_editor" -FileList ("reframework/autorun/editor_events.lua")
 
-MakeModinfo "shop_editor" "Shop editor" $Version "DD2 shops editor addon for Content editor"
+MakeModinfo "shop_editor" "Shop editor" $Version "DD2 Content editor shops addon"
 PrepareFiles -Folder "shop_editor" -FileList ("reframework/autorun/editor_shops.lua")
 
-MakeModinfo "param_editor" "Parameter editor" $Version "DD2 human, job parameter editor addon for Content editor"
+MakeModinfo "param_editor" "Parameter editor" $Version "DD2 Content editor human, job parameter addon"
 PrepareFiles -Folder "param_editor" -FileList ("reframework/autorun/editor_human_params.lua")
 
-MakeModinfo "item_editor" "Item editor" $Version "DD2 item editor addon for Content editor"
+MakeModinfo "item_editor" "Item editor" $Version "DD2 Content editor item addon"
 PrepareFiles -Folder "item_editor" -FileList (
     "reframework/autorun/editor_items.lua",
     "reframework/autorun/item_editor"
 )
 
-MakeModinfo "weather_editor" "Weathers editor" $Version "DD2 human weathers editor addon for Content editor"
-PrepareFiles -Folder "weather_editor" -FileList ("reframework/autorun/editor_weathers.lua")
+MakeModinfo "weather_editor" "Weathers editor" $Version "DD2 Content editor weathers addon"
+PrepareFiles -Folder "weather_editor" -FileList (
+    "reframework/autorun/editor_weathers.lua",
+    "reframework/autorun/weather_editor"
+)
 
 Set-Location _build
 & "C:/Program Files/7-Zip/7z.exe" a ../content_editor_full.zip *

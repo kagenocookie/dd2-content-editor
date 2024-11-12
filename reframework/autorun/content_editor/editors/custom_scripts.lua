@@ -36,8 +36,8 @@ udb.register_entity_type('custom_script', {
 
 --- @param script CustomScriptEntity
 --- @return boolean success, any result
-local function try_execute_script(script)
-    local success, result = pcall(script.script_func)
+local function try_execute_script(script, ...)
+    local success, result = pcall(script.script_func, ...)
     return success, result
 end
 

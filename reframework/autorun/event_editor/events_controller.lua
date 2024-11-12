@@ -26,9 +26,10 @@ sdk.hook(
     function (args)
         local this = sdk.to_managed_object(args[2])--[[@as app.SuddenQuestEntity]]
         if this == currentEntity then
-            print('event end', this:get_Key())
-            triggerChange(nil, currentEntity)
+            -- print('event end', this:get_Key())
+            local prev = currentEntity
             currentEntity = nil
+            triggerChange(nil, prev)
         end
     end
 )
@@ -37,10 +38,11 @@ sdk.hook(
     sdk.find_type_definition('app.SuddenQuestEntity'):get_method('setup'),
     function (args)
         local this = sdk.to_managed_object(args[2])--[[@as app.SuddenQuestEntity]]
-        print('event start', this:get_Key())
         if this ~= currentEntity then
-            triggerChange(this, currentEntity)
+            -- print('event start', this:get_Key())
+            local prev = currentEntity
             currentEntity = this
+            triggerChange(this, prev)
         end
     end
 )
@@ -51,6 +53,7 @@ local function add_callback(callback)
 end
 
 local function get_current_event()
+    if currentEntity then return udb.get_entity('event', currentEntity:get_Key()) end
     SuddenQuestManager = SuddenQuestManager or sdk.get_managed_singleton('app.SuddenQuestManager')
     local evt = SuddenQuestManager._CurrentEntity
     return evt and udb.get_entity('event', evt:get_Key())
