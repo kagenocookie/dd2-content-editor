@@ -317,7 +317,7 @@ if core.editor_enabled then
         function (target, id)
             target._UseEffect = id
         end,
-        'Write the lua code that should be executed when this item is used.\nscript_args.from: contains the app.Character that used the item\nscript_args.to: contains the app.Character the item was used on.',
+        'Write the lua code that should be executed when this item is used.\ninput[2].from: contains the app.Character that used the item\ninput[2].to: contains the app.Character the item was used on.',
         true -- show_default_editor
     )
 

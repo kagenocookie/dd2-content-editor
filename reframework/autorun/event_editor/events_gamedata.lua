@@ -37,6 +37,17 @@ local function event_entity_is_synced_with_source_data(entity, data)
         and entity:get_IntervalHour() == data.selectData._IntervalTime._Day * 24.0 + data.selectData._IntervalTime._Hour
 end
 
+---@param eventId integer
+local function reset_event_cooldown(eventId)
+    local entity = get_runtime_entity(eventId)
+    if entity then
+        entity._LastDay = -1
+        entity._LastHour = -1
+        entity._ExecutedDict:Clear()
+        entity._CurrentPhase = 0
+    end
+end
+
 ---@param ent Event
 ---@param contextDataLookup table<integer,EventContext>
 local function upsert_entity(ent, contextDataLookup)
@@ -87,11 +98,7 @@ local function upsert_entity(ent, contextDataLookup)
     end
     ---@diagnostic enable: undefined-field
 
-    if SuddenQuestManager._EntityDict:ContainsKey(id) then
-        SuddenQuestManager._EntityDict[id] = entity
-    else
-        SuddenQuestManager._EntityDict:Add(id, entity)
-    end
+    SuddenQuestManager._EntityDict[id] = entity
 
     return entity
 end
@@ -146,6 +153,7 @@ return {
     refresh_entity = refresh_game_event_entity,
     get_first_context = event_get_first_context,
     get_contexts = event_get_contexts,
+    reset_event_cooldown = reset_event_cooldown,
 
     event_entity_is_synced_with_source_data = event_entity_is_synced_with_source_data,
     event_get_possible_character_ids = event_get_possible_character_ids,

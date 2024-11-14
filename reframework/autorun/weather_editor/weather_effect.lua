@@ -37,7 +37,7 @@ local function handleWeatherChanged(weatherEntity)
 
     if weatherEntity and weatherEntity.scriptedEffects then
         for _, id in ipairs(weatherEntity.scriptedEffects) do
-            effects.start(id, weatherEntity.runtime_instance)
+            effects.start(id, { context = weatherEntity.runtime_instance })
         end
     end
 end

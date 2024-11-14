@@ -40,7 +40,7 @@ local function isWeatherScheduleActive()
     return manager()._WeatherLookData._LookState == 2
 end
 
---- @param immediate boolean|nil
+--- @param immediate boolean|nil Default true
 local function restoreWeatherSchedule(immediate)
     local mgr = manager()
     if mgr._IsBackWorld then
@@ -50,9 +50,7 @@ local function restoreWeatherSchedule(immediate)
         mgr._WeatherLookData._Area = mgr:getNowAreaInside()
         mgr._WeatherLookData._LookState = 2
         if immediate == true or immediate == nil then
-            mgr:changeWeather(true)
-            mgr:changeWeatherLookImmediate(mgr._NowWeatherEnum, mgr._WeatherLookData._Area)
-            mgr._WeatherLookData._LookState = 2
+            mgr:setWeatherImmediate()
         end
     end
 end

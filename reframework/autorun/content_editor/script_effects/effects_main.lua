@@ -3,6 +3,7 @@ if _userdata_DB.script_effects then return _userdata_DB.script_effects end
 
 local udb = require('content_editor.database')
 local utils = require('content_editor.utils')
+local helpers = require('content_editor.helpers')
 
 --- @type table<string, ScriptEffectTypeDefinition>
 local definitions = {}
@@ -16,14 +17,14 @@ local function register_effect_type(definition)
     definitions[definition.trigger_type] = definition
 end
 
-local function get_event_types()
+local function get_effect_types()
     return types
 end
 
 local categories = {'world'}
 local alwaysCategories = {['world'] = function () end}
 
---- @type table<integer, table<string, table[]>> {[effect_id] = {[context] = {data1, data2, ...}}}
+--- @type table<integer, table<EffectContext, EffectData[]>> {[effect_id] = {[context] = {data1, data2, ...}}}
 local active_effects = {}
 
 local _has_update_callback = false
@@ -44,11 +45,11 @@ local function start_update_callback()
             if effect then
                 local def = definitions[effect.trigger_type]
                 if def.update then
-                    for context, dataList in pairs(effectContexts) do
+                    for _, dataList in pairs(effectContexts) do
                         for _, data in ipairs(dataList) do
                             local success, shouldStop = pcall(def.update, effect, data, delta)
                             if not success or shouldStop == true then
-                                stoppedEffects[#stoppedEffects+1] = {effect.id, context}
+                                stoppedEffects[#stoppedEffects+1] = {effect.id, data.context}
                                 if not success then
                                     print('ERROR in script effect update ', effect.id, shouldStop)
                                     log.error('Script effect update error ['..effect.id..']: '..tostring(shouldStop))
@@ -87,26 +88,30 @@ local function add_effect_category(name, alwaysContextProvider)
     end
 end
 
---- @param id integer
---- @param context table|REManagedObject|string A context object to link the event to so we can differentiate the same event being triggered on different objects
---- @param input_data any
-local function start(id, context, input_data)
-    if id == 0 then return end
-    local effect = udb.get_entity('script_effect', id) --[[@as ScriptEffectEntity]]
+--- @param effectId integer
+--- @param data EffectData
+local function start(effectId, data)
+    if effectId == 0 then return end
+    local effect = udb.get_entity('script_effect', effectId) --[[@as ScriptEffectEntity]]
     if not effect then
-        print('ERROR: script effect ', id, 'not found')
+        print('ERROR: script effect ', effectId, 'not found')
         return
     end
 
     local trigger = definitions[effect.trigger_type]
     if trigger then
-        local data = trigger.start(effect, input_data) or {}
+        local newData = trigger.start(effect, data)
+        if newData == nil then
+            newData = data
+        elseif newData ~= data or newData.context ~= data.context then
+            newData.context = data.context
+        end
 
-        active_effects[id] = active_effects[id] or {}
-        local effect_data = active_effects[id]
+        active_effects[effectId] = active_effects[effectId] or {}
+        local effect_data = active_effects[effectId]
 
-        effect_data[context] = effect_data[context] or {}
-        effect_data[context][#effect_data[context]+1] = data
+        effect_data[data.context] = effect_data[data.context] or {}
+        effect_data[data.context][#effect_data[data.context]+1] = newData
         if trigger.update then
             start_update_callback()
         end
@@ -114,7 +119,7 @@ local function start(id, context, input_data)
 end
 
 --- @param id integer
---- @param context table|REManagedObject|string The context object that was used to start the script effect initially
+--- @param context EffectContext The context object that was used to start the script effect initially
 local function stop(id, context)
     local effect = udb.get_entity('script_effect', id) --[[@as ScriptEffectEntity]]
     if not effect then return end
@@ -140,14 +145,72 @@ local function stop(id, context)
     end
 end
 
+local function stop_all_effects()
+    for effectId, effectContexts in pairs(active_effects) do
+        local effect = udb.get_entity('script_effect', effectId) --[[@as ScriptEffectEntity|nil]]
+        -- "continue" please do you know it lua, please, let me continue
+        if effect then
+            local def = definitions[effect.trigger_type]
+            if def.stop then
+                for context, dataList in pairs(effectContexts) do
+                    for _, data in ipairs(dataList) do
+                        pcall(def.stop, effect, data)
+                    end
+                end
+            end
+        end
+    end
+
+    active_effects = {}
+end
+
+helpers.hook_game_load_or_reset(stop_all_effects)
+
+register_effect_type({
+    trigger_type = 'group',
+    category = 'world',
+    start = function (entity, data)
+        for _, subId in ipairs(entity.data.ids or {}) do
+            start(subId, data)
+            data.ids[#data.ids+1] = subId
+        end
+    end,
+    stop = function (entity, data)
+        for _, subId in ipairs(data.ids or {}) do
+            stop(subId, data.context)
+        end
+    end
+})
+
+register_effect_type({
+    trigger_type = 'random',
+    category = 'world',
+    start = function (entity, data)
+        local ids = entity.data.ids or {}
+        local idCount = #ids
+        if idCount == 0 then return {id = -1} end
+        data.id = ids[math.random(1, #ids)]
+        start(data.id, data)
+    end,
+    stop = function (entity, data)
+        if data.id and data.id ~= -1 then
+            stop(data.id, data.context)
+        end
+    end
+})
+
 register_effect_type({
     trigger_type = 'script',
     category = 'world',
-    start = function (entity, ctx)
+    start = function (entity)
         local script = entity.data.start_script_id and udb.get_entity('custom_script', entity.data.start_script_id)
         if script then
-            local success, data = _userdata_DB.custom_scripts.try_execute(script, entity, ctx)
-            if success then return data end
+            local success, data = _userdata_DB.custom_scripts.try_execute(script, entity)
+            if success then
+                return data
+            else
+                print('ERROR: start script failed', data)
+            end
         end
     end,
     update = function (entity, data, deltaTime)
@@ -155,14 +218,20 @@ register_effect_type({
         if script then
             local success, shouldStop = _userdata_DB.custom_scripts.try_execute(script, entity, data, deltaTime)
             if not success or shouldStop then
+                if not success then
+                    print('ERROR: update script failed', shouldStop)
+                end
                 return true
             end
         end
     end,
-    stop = function (entity)
+    stop = function (entity, data)
         local script = entity.data.stop_script_id and udb.get_entity('custom_script', entity.data.stop_script_id)
         if script then
-            _userdata_DB.custom_scripts.try_execute(script, entity, data)
+            local success, error = _userdata_DB.custom_scripts.try_execute(script, entity, data)
+            if not success then
+                print('ERROR: stop script failed', error)
+            end
         end
     end
 })
@@ -171,10 +240,11 @@ _userdata_DB.script_effects = {
     add_effect_category = add_effect_category,
     register_effect_type = register_effect_type,
     get_effect_categories = get_effect_categories,
-    get_event_types = get_event_types,
+    get_effect_types = get_effect_types,
 
     start = start,
     stop = stop,
+    stop_all_effects = stop_all_effects,
 }
 
 return _userdata_DB.script_effects

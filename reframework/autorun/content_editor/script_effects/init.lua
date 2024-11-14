@@ -7,14 +7,20 @@ local core = require('content_editor.core')
 --- @class ScriptEffectTypeDefinition
 --- @field trigger_type string
 --- @field category string
---- @field start fun(entity: ScriptEffectEntity, ctx: any): any data
---- @field stop nil|fun(entity: ScriptEffectEntity, data: any)
---- @field update nil|fun(entity: ScriptEffectEntity, data: any, deltaTime: number): shouldStop: boolean|nil
+--- @field start fun(entity: ScriptEffectEntity, data: EffectData|table): nil|table data
+--- @field stop nil|fun(entity: ScriptEffectEntity, data: EffectData|table)
+--- @field update nil|fun(entity: ScriptEffectEntity, data: EffectData|table, deltaTime: number): shouldStop: boolean|nil
 
 --- @class ScriptEffectEntity : DBEntity
 --- @field trigger_type string
 --- @field category string
 --- @field data table
+
+--- @alias EffectContext table|REManagedObject|string
+
+--- Additional context data for the event, like a target character or similar
+--- @class EffectData : table
+--- @field context EffectContext A context object to link the event to so we can differentiate the same event being triggered on different objects
 
 udb.register_entity_type('script_effect', {
     export = function (instance)

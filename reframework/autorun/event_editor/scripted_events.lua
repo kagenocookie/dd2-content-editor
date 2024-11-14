@@ -11,7 +11,7 @@ ctrl.on_event_changed(function (currentEvent, previousEvent)
     end
     if currentEvent ~= nil then
         for _, effId in ipairs(currentEvent.scriptEffects or {}) do
-            effects.start(effId, currentEvent)
+            effects.start(effId, { context = currentEvent })
         end
     end
 end)

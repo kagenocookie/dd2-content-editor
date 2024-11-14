@@ -506,6 +506,18 @@ local function change_type(object, classname, raw)
     return newObj
 end
 
+--- Hook to whatever the current game has available that lets us now that the game state has reset and any effects should be cleared (loaded, reloaded, died, returned to menu, ...)
+--- @param callback function
+local function hook_game_load_or_reset(callback)
+
+    local method
+    if reframework.get_game_name() == 'dd2' then
+        method = sdk.find_type_definition('app.SaveDataManager'):get_method('loadGame')
+    end
+    if not method then return end
+    sdk.hook(method, callback)
+end
+
 _userdata_DB._ui_utils = {
     create_instance = create_new_instance,
     create_generic_instance = create_generic,
@@ -533,5 +545,6 @@ _userdata_DB._ui_utils = {
     set_field = set_field,
 
     queue_update_func = queue_execute_on_update,
+    hook_game_load_or_reset = hook_game_load_or_reset,
 }
 return _userdata_DB._ui_utils

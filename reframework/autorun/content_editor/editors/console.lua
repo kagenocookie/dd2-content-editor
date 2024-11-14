@@ -352,6 +352,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
             elseif type(func) == 'string' then
                 imgui.text(func)
             else
+                local data
                 if type(cache._eval) == 'function' then
                     success, data = pcall(func)
                 else

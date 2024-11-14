@@ -15,6 +15,10 @@ local type_definitions = require('content_editor.definitions')
 --- @field script string
 --- @field hook_type string
 
+local function preprocess_func(funcStr)
+    return 'local input = {...}\n' .. funcStr
+end
+
 udb.register_entity_type('custom_script', {
     export = function (instance)
         --- @cast instance CustomScriptEntity
@@ -26,7 +30,7 @@ udb.register_entity_type('custom_script', {
         instance = instance or {}
         instance.script = data and data.script or ''
         instance.hook_type = data and data.hook_type or ''
-        instance.script_func = load(instance.script, data and ('_custom_script_' .. data.id) or nil, 't')
+        instance.script_func = load(preprocess_func(instance.script), data and ('_custom_script_' .. data.id) or nil, 't')
         return instance
     end,
     insert_id_range = {100000, 99999900},
@@ -53,10 +57,7 @@ local function define_script_hook(classname, method, script_id_fetcher)
             if scriptId and scriptId ~= -1 then
                 local script = udb.get_entity('custom_script', scriptId)
                 if script and script.script_func then
-                    local bkpA, bkpSA = _G.args, _G.script_args
-                    _G.args, _G.script_args = args, script_args
                     local success, result = pcall(script.script_func, args, script_args)
-                    _G.args, _G.script_args = bkpA, bkpSA
                     if success then
                         thread.get_hook_storage().result = result
                     else
@@ -180,7 +181,7 @@ if core.editor_enabled then
         if changed then script.__tempScriptChange = newscript end
         if script.__tempScriptChange and script.__tempScriptChange ~= script.script then
             if imgui.button('Confirm change') then
-                local compiledFunc = load(script.__tempScriptChange)
+                local compiledFunc = load(preprocess_func(script.__tempScriptChange))
                 if compiledFunc then
                     script.script = script.__tempScriptChange
                     script.script_func = compiledFunc

@@ -41,7 +41,7 @@ local function trigger_enum_dependencies(enumName)
         local deps = enum_deps[enumName]
         if deps then
             for dep_name, dep in pairs(deps) do
-                print('triggering enum dependency', enumName, dep_name)
+                -- print('triggering enum dependency', enumName, dep_name)
                 dep(enum)
             end
         end
@@ -196,7 +196,7 @@ end
 --- @param filter fun(label: string, value: integer): boolean
 --- @return EnumSummary
 local function generate_enum_subset(enum, name, filter)
-    print('generating subset', enum.enumName, name)
+    -- print('generating subset', enum.enumName, name)
     local labelToValue = {}
     for label, value in pairs(enum.labelToValue) do
         if filter(label, value) then
