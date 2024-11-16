@@ -24,7 +24,7 @@ if core.editor_enabled then
             if pos then
                 imgui.indent(8)
                 if imgui.button('Warp to ' .. ctx.label .. ': ' .. pos:ToString()) then
-                    _quest_DB.utils.warp_player(pos)
+                    _userdata_DB.utils_dd2.set_position(_userdata_DB.utils_dd2.get_player(), pos)
                 end
                 imgui.unindent(8)
             end

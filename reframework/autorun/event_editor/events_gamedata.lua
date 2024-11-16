@@ -25,6 +25,10 @@ local function get_runtime_entity(id)
     return nil
 end
 
+local function get_current_runtime_entity()
+    return SuddenQuestManager._CurrentEntity
+end
+
 --- @param entity app.SuddenQuestEntity
 --- @param data Event
 local function event_entity_is_synced_with_source_data(entity, data)
@@ -80,22 +84,9 @@ local function upsert_entity(ent, contextDataLookup)
         end
     end
 
-    if entity._CurrentContextData then
-        local ctx = entity._CurrentContextData._Data
-
-        local enemyList = entity._EnemyGenerateList
-        --- @type (REManagedObject|table)[]
-        local enemyListTable = enemyList:ToArray():get_elements()
-        enemyList:Clear()
-        for _, enemyInfo in pairs(ctx._EnemySettingList) do
-            local inst = utils.first_where(enemyListTable, function (i) return i.ContextData == enemyInfo end)
-            if not inst then
-                inst = sdk.create_instance('app.SuddenQuestEntity.GenerateEnemyInfo'):add_ref()--[[@as app.SuddenQuestEntity.GenerateEnemyInfo]]
-                inst.ContextData = enemyInfo
-            end
-            enemyList:Add(inst)
-        end
-    end
+    -- we don't need to worry about the enemy list
+    -- if the event hasn't started yet, the list will get inited on setupEnemy()
+    -- and if it has, there's no point in changing it anyway
     ---@diagnostic enable: undefined-field
 
     SuddenQuestManager._EntityDict[id] = entity
@@ -150,6 +141,7 @@ return {
     get_first_catalog = get_first_catalog,
 
     get_runtime_entity = get_runtime_entity,
+    get_current_runtime_entity = get_current_runtime_entity,
     refresh_entity = refresh_game_event_entity,
     get_first_context = event_get_first_context,
     get_contexts = event_get_contexts,

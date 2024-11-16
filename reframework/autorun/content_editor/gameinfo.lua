@@ -11,6 +11,18 @@ if ctrl.game_data_is_ready == nil then ctrl.game_data_is_ready = function () ret
 
 if ctrl.setup == nil then ctrl.setup = function () end end
 
+--- Callback will be invoked whenever the game loads up save data (load, reload), but may still be showing a loading screen
+--- @type fun(callback: fun(ingame: true))
+ctrl.on_game_load_or_reload = ctrl.on_game_load_or_reload or nil
+
+--- Callback will be invoked whenever the game loading screen is requested to end (after load, reload), and the basic game setup is finished; should only trigger on full data loads and not scene/cutscene transitions
+--- @type fun(callback: fun(ingame: true))
+ctrl.on_game_after_load = ctrl.on_game_after_load or nil
+
+--- Callback will be invoked whenever the game is unloaded (after death, exiting to main menu, ...)
+--- @type fun(callback: fun(ingame: false))
+ctrl.on_game_unload = ctrl.on_game_unload or nil
+
 if ctrl.version == nil then
     local t_ver = sdk.find_type_definition('via.version')
     if t_ver and t_ver:get_method('getMainRevisionString') then

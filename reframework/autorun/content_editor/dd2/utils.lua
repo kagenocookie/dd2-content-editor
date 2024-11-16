@@ -15,7 +15,8 @@ local function translate_item_name(itemId)
     return id and id:call('get_Name')
 end
 
-local TimeManager = sdk.get_managed_singleton("app.TimeManager")
+local TimeSkipManager = sdk.get_managed_singleton("app.TimeSkipManager") ---@type app.TimeSkipManager
+local TimeManager = sdk.get_managed_singleton("app.TimeManager") ---@type app.TimeManager
 local field_time_getTimeData = sdk.find_type_definition('app.TimeManager'):get_field('_TimeData')
 local method_timeData_day = sdk.find_type_definition('app.TimeManager.TimeData'):get_method('get_InGameDay')
 local method_timeData_seconds = sdk.find_type_definition('app.TimeManager.TimeData'):get_method('get_InGameElapsedDaySeconds')
@@ -51,10 +52,25 @@ local function get_player_party()
     if not player then return {} end
 
     local list = { player }
+---@diagnostic disable-next-line: undefined-field
     local it = PawnManager._PawnCharacterList:GetEnumerator()
     while it:MoveNext() do list[#list+1] = it._current end
     it:Dispose()
     return list
+end
+
+local _pos = ValueType.new(sdk.find_type_definition('via.Position'))--[[@as via.Position]]
+--- @param chara app.Character
+--- @param pos Vector3f|via.vec3|via.Position
+local function set_position(chara, pos)
+    local tr = chara:get_Transform()
+    _pos.x = pos.x
+    _pos.y = pos.y
+    _pos.z = pos.z
+    local now_hr = TimeManager:get_InGameHour()
+    local now_min = TimeManager:get_InGameMinute()
+    local now_day = TimeManager:get_InGameDay()
+    TimeSkipManager:call('requestPlayerWarp', now_hr, now_min, now_day, _pos, tr:get_Rotation(), nil, true, true)
 end
 
 _userdata_DB.utils_dd2 = {
@@ -64,6 +80,7 @@ _userdata_DB.utils_dd2 = {
     get_main_pawn_search_id = get_main_pawn_search_id,
     get_player = get_player,
     get_player_party = get_player_party,
+    set_position = set_position,
 }
 
 return _userdata_DB.utils_dd2

@@ -46,7 +46,7 @@ local function restoreWeatherSchedule(immediate)
     if mgr._IsBackWorld then
         mgr:changeWeatherBackWorld(mgr._BackWorldPhase)
     else
-        -- TODO verify, does getNowAreaInside give us "the weather area we're in" or "which weather should be used in interiors"?
+        -- this method gives us the current WeatherGridAttributeManager.NowArea or if 0, defaults to mWeatherUserData.mWeatherDataList[0].Area
         mgr._WeatherLookData._Area = mgr:getNowAreaInside()
         mgr._WeatherLookData._LookState = 2
         if immediate == true or immediate == nil then

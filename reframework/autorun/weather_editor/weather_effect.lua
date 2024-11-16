@@ -2,6 +2,7 @@ local core = require('content_editor.core')
 local udb = require('content_editor.database')
 local effects = require('content_editor.script_effects')
 local weather_utils = require('weather_editor.weather_utils')
+local helpers = require('content_editor.helpers')
 
 local WeatherManager = sdk.get_managed_singleton('app.WeatherManager') ---@type app.WeatherManager
 effects.register_effect_type({
@@ -70,6 +71,10 @@ sdk.hook(
         return ret
     end
 )
+
+helpers.hook_game_load_or_reset(function (ingame)
+    handleWeatherChanged(ingame and weather_utils.currentWeather() or nil)
+end)
 
 udb.events.on('ready', function ()
     handleWeatherChanged(weather_utils.currentWeather())

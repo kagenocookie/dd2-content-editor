@@ -52,6 +52,14 @@ local utf16_font = imgui.load_font('NotoSansSC-Bold.otf', imgui.get_default_font
     0,
 })
 
+local function set_need_game_restart()
+    internal.need_restart_for_clean_data = true
+end
+
+local function set_need_script_reset()
+    internal.need_script_reset = true
+end
+
 --- @type table<string, WindowDefinition>
 local editor_defs = {
     user = {
@@ -69,7 +77,10 @@ local editor_defs = {
                 config.save()
             end
             imgui_wrappers.tooltip('Optional description that should accompany your mods')
-            imgui_wrappers.setting_checkbox('Debug mode', config.data.editor, 'devmode', config.save, "Show some additional options used for editor development, remove some error handling, add more logging.\nBest left off unless you know what you're doing.")
+            local devmodeChanged = imgui_wrappers.setting_checkbox('Debug mode', config.data.editor, 'devmode', config.save, "Show some additional options used for editor development, remove some error handling, add more logging.\nBest left off unless you know what you're doing.")
+            if devmodeChanged then
+                set_need_script_reset()
+            end
         end
     },
     load_order = {
@@ -79,14 +90,6 @@ local editor_defs = {
 }
 local editor_ids = {''}
 local editor_labels = {'<open new window>'}
-
-local function set_need_game_restart()
-    internal.need_restart_for_clean_data = true
-end
-
-local function set_need_script_reset()
-    internal.need_script_reset = true
-end
 
 --- @class _ActiveEditorTab
 --- @field state EditorState

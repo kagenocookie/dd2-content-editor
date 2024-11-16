@@ -4,6 +4,7 @@ if _userdata_DB._ui_utils then return _userdata_DB._ui_utils end
 local utils = require('content_editor.utils')
 local enums = require('content_editor.enums')
 local generic_types = require("content_editor.generic_types")
+local info = require('content_editor.gameinfo')
 
 local type_settings = require('content_editor.definitions')
 local typecache = require('content_editor.typecache')
@@ -506,16 +507,16 @@ local function change_type(object, classname, raw)
     return newObj
 end
 
---- Hook to whatever the current game has available that lets us now that the game state has reset and any effects should be cleared (loaded, reloaded, died, returned to menu, ...)
---- @param callback function
+--- For games that have support for it, hook to whatever it has available that lets us know that the game state done an ingame<->out of game transition (loaded, reloaded, died, returned to menu, ...)
+--- Can be used to clear any custom gameplay effects
+--- @param callback fun(is_ingame: boolean)
 local function hook_game_load_or_reset(callback)
-
-    local method
-    if reframework.get_game_name() == 'dd2' then
-        method = sdk.find_type_definition('app.SaveDataManager'):get_method('loadGame')
+    if info.on_game_after_load then
+        info.on_game_after_load(callback)
     end
-    if not method then return end
-    sdk.hook(method, callback)
+    if info.on_game_unload then
+        info.on_game_unload(callback)
+    end
 end
 
 _userdata_DB._ui_utils = {

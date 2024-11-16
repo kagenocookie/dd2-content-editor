@@ -149,6 +149,9 @@ editor.define_window('dev_tools', 'Dev tools', function (state)
     end
 
     ui.core.setting_checkbox('Show locations on screen', storage, 'show_locations', editor.persistent_storage.save)
+    if imgui.button('Stop all running custom effects') then
+        _userdata_DB.script_effects.stop_all_effects()
+    end
 end)
 
 local maxDistanceSqr = 50 * 50

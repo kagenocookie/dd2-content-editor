@@ -15,7 +15,7 @@ local sharedInstances = {}
 
 local waitingPrefabs = {} ---@type table<string, true>
 
-local vec3Zero = ValueType.new(sdk.typeof('via.vec3'))--[[@as via.vec3]]
+local vec3Zero = ValueType.new(sdk.find_type_definition('via.vec3'))--[[@as via.vec3]]
 
 re.on_application_entry('UpdateBehavior', function ()
     for path, _ in pairs(waitingPrefabs) do
@@ -83,7 +83,7 @@ end
 --- @return via.GameObject|nil
 local function prefab_instantiate(path, position, onload)
     if not position or type(position) == 'table' then
-        local vec3 = ValueType.new(sdk.typeof('via.vec3'))--[[@as via.vec3]]
+        local vec3 = ValueType.new(sdk.find_type_definition('via.vec3'))--[[@as via.vec3]]
         vec3.x = position and position.x or 0
         vec3.y = position and position.y or 0
         vec3.z = position and position.z or 0

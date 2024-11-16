@@ -165,6 +165,7 @@ local function stop_all_effects()
 end
 
 helpers.hook_game_load_or_reset(stop_all_effects)
+re.on_script_reset(stop_all_effects)
 
 register_effect_type({
     trigger_type = 'group',
