@@ -125,7 +125,15 @@ local function entity_picker(type, state, storage_key, label, filter)
 
     storage_key = storage_key or type
     local current_selected_id = state._selected_entity and state._selected_entity[storage_key] or 0
+    local activeEntityOnly = state._active_only and state._active_only[storage_key]
     local changed, newVal
+    if activeEntityOnly then
+        if filter then
+            filter = (function (entity) return udb.get_entity_bundle(entity) == editor.active_bundle and filter(entity) end)
+        else
+            filter = function (entity) return udb.get_entity_bundle(entity) == editor.active_bundle end
+        end
+    end
     if filter then
         local values = {}
         local options = {}
@@ -143,6 +151,15 @@ local function entity_picker(type, state, storage_key, label, filter)
         changed, newVal, stateFilters[storage_key] = ui.combo_filterable(label or 'Data entity', current_selected_id, options, stateFilters[storage_key] or '', values)
     else
         changed, newVal, stateFilters[storage_key] = ui.filterable_enum_value_picker(label or 'Data entity', current_selected_id, enum, stateFilters[storage_key] or '')
+    end
+    local activeChanged, newActive = imgui.checkbox('Only from active bundle', activeEntityOnly)
+    if activeChanged then
+        if newActive then
+            state._active_only = state._active_only or {}
+            state._active_only[storage_key] = true
+        else
+            state._active_only[storage_key] = nil
+        end
     end
     if changed then
         set_selected_entity_picker_entity(state, storage_key, udb.get_entity(type, newVal))

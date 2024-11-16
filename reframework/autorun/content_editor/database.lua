@@ -873,6 +873,21 @@ local function reload_all_bundles()
 end
 
 --- @param bundleName string
+local function sort_entities_within_bundle(bundleName)
+    local bundle = get_active_bundle_by_name(bundleName)
+    if not bundle then return end
+
+    table.sort(bundle.entities, function (a, b)
+        if a.type == b.type then
+            return a.id < b.id
+        else
+            return a.type < b.type
+        end
+    end)
+    bundle.dirty = true
+end
+
+--- @param bundleName string
 --- @return boolean enabled
 local function get_bundle_enabled(bundleName)
     return get_active_bundle_by_name(bundleName) ~= nil
@@ -1037,6 +1052,7 @@ _userdata_DB.database = {
     reload_all_bundles = reload_all_bundles,
     bundles_enum = bundles_enum,
     bundles_order_list = allBundles,
+    sort_entities_within_bundle = sort_entities_within_bundle,
 
     get_entity = get_entity,
     create_entity = create_entity,

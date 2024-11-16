@@ -166,6 +166,10 @@ return function (state)
         imgui.spacing()
         imgui.begin_rect()
         if imgui.tree_node('Entities in bundle:') then
+            if imgui.button('Sort') then
+                udb.sort_entities_within_bundle(state.selectedBundle)
+            end
+            if imgui.is_item_hovered() then imgui.set_tooltip('Sort all entities in the bundle by type and ID.\nThis assumes none of the entity types require a predefined import order - in which case entities should be reordered manually.') end
             local entityTypes = udb.get_bundle_entity_types(state.selectedBundle)
             table.insert(entityTypes, 1, 'All')
             _, state.bundleEntityType = imgui.combo('Entity type', state.bundleEntityType, entityTypes)
