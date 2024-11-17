@@ -3,6 +3,7 @@ local udb = require('content_editor.database')
 local import_handlers = require('content_editor.import_handlers')
 local enums = require('content_editor.enums')
 local effects = require('content_editor.script_effects')
+local utils = require('content_editor.utils')
 
 local weather_utils = require('weather_editor.weather_utils')
 
@@ -21,10 +22,8 @@ _userdata_DB.utils_dd2.weather = weather_utils
 
 udb.events.on('get_existing_data', function ()
     WeatherManager = WeatherManager or sdk.get_managed_singleton('app.WeatherManager')
-    local data = WeatherManager.mWeatherUserData.mWeatherDataList
-    local it = data:GetEnumerator()
-    while it:MoveNext() do
-        local item = it._current ---@type app.WeatherUserData.WeatherData
+    for item in utils.list_iterator(WeatherManager.mWeatherUserData.mWeatherDataList) do
+        --- @cast item app.WeatherUserData.WeatherData
         local typeId = item.Weather
         local areaId = item.Area
         local id
@@ -58,8 +57,9 @@ udb.register_entity_type('weather', {
         instance.runtime_instance = import_handlers.import('app.WeatherUserData.WeatherData', data.data, instance.runtime_instance)
         instance.area = instance.runtime_instance.Area
         instance.weather_type = instance.runtime_instance.Weather
-        if not (areas[instance.area] and weathers[instance.weather_type]) then
+        if data.id >= 10000 or not (areas[instance.area] and weathers[instance.weather_type]) then
             instance.runtime_instance.Area = data.id
+            instance.area = data.id
         end
         if not WeatherManager.mWeatherUserData.mWeatherDataList:Contains(instance.runtime_instance) then
             WeatherManager.mWeatherUserData.mWeatherDataList:Add(instance.runtime_instance)

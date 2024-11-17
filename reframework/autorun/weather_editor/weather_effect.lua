@@ -8,6 +8,7 @@ local WeatherManager = sdk.get_managed_singleton('app.WeatherManager') ---@type 
 effects.register_effect_type({
     trigger_type = 'weather',
     category = 'world',
+    label = 'Change weather',
     start = function (entity, ctx)
         local id = entity.data.weatherId
         if not id then return nil end
@@ -15,6 +16,28 @@ effects.register_effect_type({
         --- @cast weather WeatherEntity
 
         weather_utils.changeWeather(weather, true)
+    end,
+    stop = function ()
+        weather_utils.restoreWeatherSchedule(true)
+    end,
+})
+
+effects.register_effect_type({
+    trigger_type = 'weather_temp',
+    category = 'world',
+    label = 'Change weather (time limited)',
+    start = function (entity, ctx)
+        local id = entity.data.weatherId
+        if not id then return nil end
+        local weather = udb.get_entity('weather', id)
+        --- @cast weather WeatherEntity
+
+        weather_utils.changeWeather(weather, true)
+        ctx.time = 0
+    end,
+    update = function (entity, data, deltaTime)
+        data.time = data.time + deltaTime
+        return data.time > entity.data.max_time
     end,
     stop = function ()
         weather_utils.restoreWeatherSchedule(true)
@@ -84,7 +107,12 @@ if core.editor_enabled then
     local ui = require('content_editor.ui')
 
     effects.ui.set_ui_hook('weather', function (entity, state)
-        ui.editor.show_linked_entity_picker(entity.data, 'weatherId', 'weather', state, 'Weather data')
-        return changed
+        return ui.editor.show_linked_entity_picker(entity.data, 'weatherId', 'weather', state, 'Weather data')
+    end)
+
+    effects.ui.set_ui_hook('weather_temp', function (entity, state)
+        local changed, newval = imgui.drag_float('Duration (seconds)', entity.data.max_time, 0.1)
+        if changed then entity.data.max_time = newval end
+        return ui.editor.show_linked_entity_picker(entity.data, 'weatherId', 'weather', state, 'Weather data') or changed
     end)
 end
