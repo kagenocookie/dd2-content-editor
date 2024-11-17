@@ -311,20 +311,21 @@ local function table_values(table)
     return out
 end
 
-local function _list_iterator_real(list, state)
-    if state.index >= state.count then return nil, nil end
-    state.index = state.index + 1
-    return state, list[state.index - 1]
-end
-
 --- Iterates through a System.Collections.Generic.List like ipairs()
 --- @param list REManagedObject System.Collections.Generic.List<{typename}>
---- @return fun(): REManagedObject iterator, REManagedObject func, {index: integer, count: integer}|nil state
+--- @return fun(): item: REManagedObject, index: integer
 local function list_iterator(list)
-    local count = list and list--[[@as any]]:get_Count()
----@diagnostic disable-next-line
+---@diagnostic disable
+    local count = list and list.get_Count and list:get_Count()
     if count == nil or count == 0 then return function () end end
-    return _list_iterator_real, list, { index = 0, count = count }
+
+    local index = -1
+    return function ()
+        index = index + 1
+        if index >= count then return end
+        return list[index], index
+    end
+---@diagnostic enable
 end
 
 --- Enumerates through any REManagedObject that has a GetEnumerator() method
