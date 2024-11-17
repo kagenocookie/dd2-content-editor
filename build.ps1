@@ -56,7 +56,10 @@ PrepareFiles -Folder "quest_editor" -FileList (
 )
 
 MakeModinfo "event_editor" "Event editor" $Version "DD2 Content editor events addon"
-PrepareFiles -Folder "event_editor" -FileList ("reframework/autorun/editor_events.lua")
+PrepareFiles -Folder "event_editor" -FileList (
+    "reframework/autorun/editor_events.lua",
+    "reframework/autorun/event_editor"
+)
 
 MakeModinfo "shop_editor" "Shop editor" $Version "DD2 Content editor shops addon"
 PrepareFiles -Folder "shop_editor" -FileList ("reframework/autorun/editor_shops.lua")
