@@ -4,22 +4,14 @@ if _userdata_DB.script_effects then return _userdata_DB.script_effects end
 local udb = require('content_editor.database')
 local utils = require('content_editor.utils')
 local helpers = require('content_editor.helpers')
+local enums = require('content_editor.enums')
+local info = require('content_editor.gameinfo')
 
 --- @type table<string, ScriptEffectTypeDefinition>
 local definitions = {}
 local types = {}
 
---- @param definition ScriptEffectTypeDefinition
-local function register_effect_type(definition)
-    if not definition[definition.trigger_type] then
-        types[#types+1] = definition.trigger_type
-    end
-    definitions[definition.trigger_type] = definition
-end
-
-local function get_effect_types()
-    return types
-end
+local types_enum = enums.get_virtual_enum('_content_editor_custom_effects', {})
 
 local categories = {'world'}
 local alwaysCategories = {['world'] = function () end}
@@ -27,17 +19,34 @@ local alwaysCategories = {['world'] = function () end}
 --- @type table<integer, table<EffectContext, EffectData[]>> {[effect_id] = {[context] = {data1, data2, ...}}}
 local active_effects = {}
 
+--- @param definition ScriptEffectTypeDefinition
+local function register_effect_type(definition)
+    if not definition[definition.trigger_type] then
+        types[#types+1] = definition.trigger_type
+    end
+---@diagnostic disable-next-line: assign-type-mismatch
+    types_enum.labelToValue[definition.label or definition.trigger_type] = definition.trigger_type
+    definitions[definition.trigger_type] = definition
+end
+
+local function get_effect_types()
+    return types_enum
+end
+
+udb.events.on('ready', function ()
+    types_enum.resort()
+end)
+
 local _has_update_callback = false
 local function start_update_callback()
     if _has_update_callback then return end
     _has_update_callback = true
     local last_update_time = os.clock()
-    local TimeManager = sdk.get_managed_singleton('app.TimeManager') ---@type app.TimeManager
     re.on_application_entry('UpdateBehavior', function ()
         local time_now = os.clock()
         local delta = time_now - last_update_time
         last_update_time = time_now
-        if TimeManager:get_IsTimeStop() then return end
+        if not info.is_ingame_unpaused() then return end
         local stoppedEffects = {}
         for effectId, effectContexts in pairs(active_effects) do
             local effect = udb.get_entity('script_effect', effectId) --[[@as ScriptEffectEntity|nil]]
@@ -170,6 +179,7 @@ re.on_script_reset(stop_all_effects)
 register_effect_type({
     trigger_type = 'group',
     category = 'world',
+    label = 'Effect group',
     start = function (entity, data)
         for _, subId in ipairs(entity.data.ids or {}) do
             start(subId, data)
@@ -186,6 +196,7 @@ register_effect_type({
 register_effect_type({
     trigger_type = 'random',
     category = 'world',
+    label = 'Randomly selected effect',
     start = function (entity, data)
         local ids = entity.data.ids or {}
         local idCount = #ids
@@ -203,6 +214,7 @@ register_effect_type({
 register_effect_type({
     trigger_type = 'script',
     category = 'world',
+    label = 'Custom script',
     start = function (entity)
         local script = entity.data.start_script_id and udb.get_entity('custom_script', entity.data.start_script_id)
         if script then

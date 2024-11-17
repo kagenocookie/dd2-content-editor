@@ -5,6 +5,12 @@ local function game_data_is_ready()
     return QuestManager.QuestCatalogDict and QuestManager.QuestCatalogDict:getCount() > 0
 end
 
+local TimeManager = sdk.get_managed_singleton('app.TimeManager') ---@type app.TimeManager
+local MainFlowManager = sdk.get_managed_singleton('app.MainFlowManager') ---@type app.MainFlowManager
+local function is_ingame_unpaused()
+    return MainFlowManager:get_IsInGamePhase() and not TimeManager:get_IsTimeStop()
+end
+
 --- @param callback fun(is_ingame: boolean)
 local function on_game_load_or_reload(callback)
     sdk.hook(
@@ -55,6 +61,7 @@ end
 return {
     setup = setup,
     game_data_is_ready = game_data_is_ready,
+    is_ingame_unpaused = is_ingame_unpaused,
 
     on_game_load_or_reload = on_game_load_or_reload,
     on_game_unload = on_game_unload,

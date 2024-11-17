@@ -23,6 +23,10 @@ ctrl.on_game_after_load = ctrl.on_game_after_load or nil
 --- @type fun(callback: fun(ingame: false))
 ctrl.on_game_unload = ctrl.on_game_unload or nil
 
+--- Check whether the game is unpaused and ingame
+--- @type fun(): boolean
+ctrl.is_ingame_unpaused = ctrl.is_ingame_unpaused or function() return true end
+
 if ctrl.version == nil then
     local t_ver = sdk.find_type_definition('via.version')
     if t_ver and t_ver:get_method('getMainRevisionString') then

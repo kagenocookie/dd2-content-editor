@@ -20,9 +20,9 @@ ui.editor.set_entity_editor('script_effect', function (effect, state)
 
     local effectTypes = main.get_effect_types()
     local typeChanged, newType
-    typeChanged, newType, state.type_filter = ui.core.combo_filterable('Effect type', effect.trigger_type, effectTypes, state.type_filter or '')
+    typeChanged, newType, state.type_filter = ui.core.filterable_enum_value_picker('Effect type', effect--[[@as any]].trigger_type, effectTypes, state.type_filter or '')
     if typeChanged then
-        effect.trigger_type = newType
+        effect--[[@as any]].trigger_type = newType
         effect.data = {}
         state.children = {}
         changed = true
