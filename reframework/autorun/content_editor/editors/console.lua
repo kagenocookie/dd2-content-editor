@@ -138,7 +138,7 @@ local function prepare_exec_func(text)
                     if not typedef then
                         return false, 'Invalid type "' .. t .. '"'
                     end
-                    print('colon2', 'function(item) return ' .. filter:sub(colon2 + 2) .. ' end')
+                    -- print('colon2', 'function(item) return ' .. filter:sub(colon2 + 2) .. ' end')
                     local success, remapper = pcall(load, 'return function(item) return ' .. filter:sub(colon2 + 2) .. ' end', nil, 't')
                     if not success or not remapper then return false, 'load error' .. tostring(remapper) end
 

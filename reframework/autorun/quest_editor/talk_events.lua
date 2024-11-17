@@ -777,7 +777,10 @@ if core.editor_enabled then
                 _NpcTiming = { extensions = { { type = 'parent_field_conditional', field = '_NpcIsUseTiming', value = true } } },
                 _NpcSituationTalkId = { extensions = { { type = 'parent_field_conditional', field = '_NpcIsSetSituationId', value = true } } },
                 _PawnCategoryGroup = { extensions = { { type = 'parent_field_conditional', field = '_UsePawnCategoryGroup', value = true } } },
-            }
+            },
+            toString = function (value, context)
+                return (value--[[@as app.TalkMonologueSelector]])._CategoryName--[[@as string]]
+            end
         },
         ['app.NextNodeCandidate[]'] = {
             toString = function (value) return to_string_expose_single(value, 'app.NextNodeCandidate') end

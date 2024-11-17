@@ -326,6 +326,22 @@ local function _object_to_string_internal(item, classname, context)
     if type(item) == 'userdata' and item.ToString then
         local success, str = pcall(item.call, item, 'ToString()')
         if success then
+            if str == classname then
+                if not typesettings then
+                    typesettings = {}
+                    type_settings.type_settings[classname] = typesettings
+                end
+                local meta = typecache.get(classname)
+                if meta.itemCount == 1 then
+                    local field, class = meta.fields[1][1], meta.fields[1][2]
+                        typesettings.toString = function (value)
+                            return field .. '=' .. _object_to_string_internal(value[field], class, context)
+                        end
+                    return typesettings.toString(item, context)
+                else
+                    typesettings.toString = function () return classname end
+                end
+            end
             return str
         else
             return item:get_type_definition():get_full_name() .. ' [ToString() failed]'
@@ -369,6 +385,40 @@ local function array_to_string(array, separator, arrayClassname, emptyString)
     local str = table.concat(utils.map(items, function (item) return object_to_string(item) end), separator)
     if str == '' then return emptyString or 'empty' end
     return str
+end
+
+--- Get a function that will concatenate all fields for a specific classname using the to_string function
+--- @param classname string
+--- @param whitelistedFlags FieldFlags
+--- @param includeClassname boolean|integer|nil false/0 = no class prefix, true/1/default = base name only, 2 = full namespaced classname
+--- @return fun(target: REManagedObject): string
+local function to_string_concat_fields(classname, whitelistedFlags, includeClassname)
+    whitelistedFlags = whitelistedFlags or typecache.fieldFlags.All
+    local meta = typecache.get(classname)
+    local funcs = {}
+    for _, f in ipairs(meta.fields) do
+        local name = f[1]
+        local fc = f[2]
+        local flags = f[3]
+        if (flags & whitelistedFlags) ~= 0 then
+            funcs[#funcs+1] = function (target)
+                return name .. '=' .. object_to_string(target[name], fc)
+            end
+        end
+    end
+
+    local baseString = includeClassname == 2 and classname
+        or (includeClassname == false or includeClassname == 0) and ''
+        or classname:find('.') and classname:gmatch('%.[^.]+$')():sub(2)
+        or classname
+
+    return function(target)
+        local str = baseString
+        for _, f in ipairs(funcs) do
+            str = str .. (str ~= '' and ' ' or '') .. f(target)
+        end
+        return str
+    end
 end
 
 --- Get all elements of an array-like object (system array, generic list, lua table), in a 1-indexed lua table
@@ -540,6 +590,7 @@ _userdata_DB._ui_utils = {
     to_string = object_to_string,
     context_to_string = context_to_string,
     array_to_string = array_to_string,
+    to_string_concat_fields = to_string_concat_fields,
 
     get_type = get_type,
     get_field = get_field,

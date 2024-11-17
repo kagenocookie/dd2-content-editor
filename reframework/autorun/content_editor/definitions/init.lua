@@ -56,7 +56,7 @@ end
 
 --- Apply the same set of overrides to multiple classes
 --- @param classnames string[]
---- @param settings UserdataEditorSettings|fun(settings: UserdataEditorSettings) Either a direct object or a function that modifies the object. A function would generally be the better choice because otherwise any object instances are shared between all the overridden types.
+--- @param settings UserdataEditorSettings|fun(settings: UserdataEditorSettings, classname: string) Either a direct object or a function that modifies the object. A function would generally be the better choice because otherwise any object instances are shared between all the overridden types.
 local function add_type_overrides_specific(classnames, settings)
     if type(settings) == 'function' then
         for _, cls in ipairs(classnames) do
@@ -66,7 +66,7 @@ local function add_type_overrides_specific(classnames, settings)
                 type_settings[cls] = defs
             end
 
-            settings(defs)
+            settings(defs, cls)
         end
     else
         local list = {}
@@ -79,7 +79,7 @@ end
 
 --- Apply an override to all abstract subtypes of a given class
 --- @param classname string
---- @param settings UserdataEditorSettings|fun(settings: UserdataEditorSettings) Either a direct object or a function that modifies the object. A function would generally be the better choice because otherwise any object instances are shared between all the overridden types.
+--- @param settings UserdataEditorSettings|fun(settings: UserdataEditorSettings, classname: string) Either a direct object or a function that modifies the object. A function would generally be the better choice because otherwise any object instances are shared between all the overridden types.
 local function add_type_overrides_abstract(classname, settings)
     local classnames = type_settings[classname].abstract or {}
     add_type_overrides_specific(classnames, settings)

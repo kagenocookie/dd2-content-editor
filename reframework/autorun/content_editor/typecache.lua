@@ -309,9 +309,14 @@ local function build_typecache(typedef, typecache)
 
             local flags = fieldFlags.AllNullable
             local parentFlag = parentFieldFlags[fieldName]
-            if fieldOverrides and fieldOverrides.import_ignore or (import_whitelist ~= nil and not utils.table_contains(import_whitelist, fieldName)) or (parentFlag and parentFlag & fieldFlags.ImportEnable == 0) then
+            if fieldOverrides and fieldOverrides.import_ignore then
+                flags = flags - fieldFlags.ImportEnable
+            elseif parentFlag then
+                if parentFlag & fieldFlags.ImportEnable == 0 then flags = flags - fieldFlags.ImportEnable end
+            elseif import_whitelist ~= nil and not utils.table_contains(import_whitelist, fieldName) then
                 flags = flags - fieldFlags.ImportEnable
             end
+
             if fieldOverrides and fieldOverrides.ui_ignore then
                 flags = flags - fieldFlags.UIEnable
             elseif (not fieldOverrides or fieldOverrides.ui_ignore ~= true) and parentFlag and (parentFlag & fieldFlags.UIEnable == 0) then
