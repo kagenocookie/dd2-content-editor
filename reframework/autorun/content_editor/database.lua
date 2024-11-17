@@ -116,7 +116,7 @@ local function create_entity(entity, bundleName, _skipResortEnum)
     if not entity.label or entity.label == '' then
         entity.label = entityEnum.valueToDisplayLabels[entity.id]
             or entType.generate_label and entType.generate_label(entity)
-            or entity.type .. ' ' .. tostring(entity.id)
+            or tostring(entity.id) .. ' ' .. entity.type
     end
 
     trackedEntity = {

@@ -11,7 +11,6 @@ local function on_game_load_or_reload(callback)
         sdk.find_type_definition('app.SaveDataManager'):get_method('loadGame'),
         nil,
         function (ret)
-            print('on_game_load_or_reload')
             callback(true)
             return ret
         end
@@ -25,7 +24,7 @@ local function on_game_after_load(callback)
         function (args)
             local loadtype = sdk.to_int64(args[3]) & 0xffffffff
             -- app.GuiDefine.GuiType.Loading = 1
-            if loadtype == 1 then print('on_game_after_load') callback(true) end
+            if loadtype == 1 then callback(true) end
         end
     )
 end
@@ -34,7 +33,7 @@ end
 local function on_game_unload(callback)
     sdk.hook(
         sdk.find_type_definition('app.ui030201'):get_method('Initialize'),
-        function () print('on_game_unload') callback(false) end
+        function () callback(false) end
     )
 end
 
