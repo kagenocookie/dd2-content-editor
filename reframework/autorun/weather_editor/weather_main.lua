@@ -12,7 +12,7 @@ local areas = enums.get_enum('app.WeatherArea').valueToLabel
 
 local WeatherManager = sdk.get_managed_singleton('app.WeatherManager') ---@type app.WeatherManager
 
-_userdata_DB.utils_dd2.weather = weather_utils
+_userdata_DB.utils.dd2.weather = weather_utils
 
 --- @class WeatherEntity : DBEntity
 --- @field area integer

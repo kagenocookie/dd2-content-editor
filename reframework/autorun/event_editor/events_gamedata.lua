@@ -1,7 +1,6 @@
 local udb = require('content_editor.database')
 local utils = require('content_editor.utils')
 local enums = require('content_editor.enums')
-local utils_dd2 = require('content_editor.dd2.utils')
 
 local SuddenQuestManager = sdk.get_managed_singleton('app.SuddenQuestManager') ---@type app.SuddenQuestManager
 local QuestManager = sdk.get_managed_singleton('app.QuestManager') ---@type app.QuestManager
@@ -133,7 +132,7 @@ end
 
 local function event_get_possible_character_names(id)
     local npcIds = event_get_possible_character_ids(id)
-    return utils.map(npcIds, function (npcId) return enums.CharacterID.valueToLabel[npcId] .. ': ' .. tostring(utils_dd2.translate_character_name(npcId)) end)
+    return utils.map(npcIds, function (npcId) return enums.CharacterID.valueToLabel[npcId] .. ': ' .. tostring(utils.dd2.translate_character_name(npcId)) end)
 end
 
 return {

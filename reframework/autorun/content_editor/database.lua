@@ -7,7 +7,6 @@ local internal = require('content_editor._internal')
 local events = require('content_editor.events')
 local typecache = require('content_editor.typecache')
 local enums = require('content_editor.enums')
-local type_settings = require('content_editor.definitions')
 
 ---@type table<DBEntity, EntityData>
 local entity_tracker = {}
@@ -975,7 +974,7 @@ end
 
 local function finish_database_init()
     log.info('Initializing content editor type info...')
-    core.game.setup()
+    events.emit('setup')
     local timestamps = {os.clock()}
     print('Initializing content editor type info...')
     typecache.load()

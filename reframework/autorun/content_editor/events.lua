@@ -4,7 +4,7 @@ if _userdata_DB.events then return _userdata_DB.events end
 ---@type table<string, function[]>
 local events = {}
 
----@alias EventName 'get_existing_data'|'bundles_loaded'|'ready'|'enum_updated'|'bundle_created'|'data_imported'
+---@alias EventName 'get_existing_data'|'bundles_loaded'|'ready'|'enum_updated'|'bundle_created'|'data_imported'|'setup'
 
 ---@param name string
 ---@param fn function

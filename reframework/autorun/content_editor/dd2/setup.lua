@@ -1,3 +1,5 @@
+local events = require('content_editor.events')
+
 -- fallback case for the few people whose REF loads up way too early for whatever reason
 -- in theory, if one of these dynamic dictionaries are set, they should probably all be
 local QuestManager = sdk.get_managed_singleton('app.QuestManager')
@@ -43,23 +45,44 @@ local function on_game_unload(callback)
     )
 end
 
-local function setup()
-    local enums = _userdata_DB.enums
+events.on('setup', function ()
+    local enums = require('content_editor.enums')
     local utils = _userdata_DB.utils
-    local utils_dd2 = _userdata_DB.utils_dd2
-    local CharacterID = enums.get_enum('app.CharacterID')
-    CharacterID.set_display_labels(utils.map(CharacterID.values, function (val) return {val, CharacterID.valueToLabel[val] .. ' : ' .. utils_dd2.translate_character_name(val)} end))
-    enums.create_subset(CharacterID, 'CharacterID_NPC', function (label) return label == 'Invalid' or label:sub(1,3) == 'ch3' and label:len() > 5 end)
+    local sounds = _userdata_DB._sounds
+
+    if _userdata_DB.core.editor_enabled then
+        local CharacterID = enums.get_enum('app.CharacterID')
+        CharacterID.set_display_labels(utils.map(CharacterID.values, function (val) return {val, CharacterID.valueToLabel[val] .. ' : ' .. utils.dd2.translate_character_name(val)} end))
+        enums.create_subset(CharacterID, 'CharacterID_NPC', function (label) return label == 'Invalid' or label:sub(1,3) == 'ch3' and label:len() > 5 end)
+    end
 
     local effects = _userdata_DB.script_effects
     local CharacterManager = sdk.get_managed_singleton('app.CharacterManager')
     effects.add_effect_category('player', function ()
         return CharacterManager:get_ManualPlayer()
     end)
-end
 
+    effects.register_effect_type({
+        effect_type = 'sound_player',
+        label = 'Play sound on player',
+        category = 'player',
+        start = function (entity)
+            if entity.data.trigger_id then
+                sounds.trigger_on_gameobject(entity.data.trigger_id, utils_dd2.get_player():get_GameObject())
+            end
+        end,
+        ui = function (entity)
+            local changed, newsound = imgui.input_text('Sound trigger ID', tostring(entity.data.trigger_id), 1)
+            entity.data.trigger_id = newsound
+            return changed
+        end
+    })
+end)
+
+_userdata_DB.utils.dd2 = require('content_editor.dd2.utils')
+
+--- @type ContentEditorGameController|table
 return {
-    setup = setup,
     game_data_is_ready = game_data_is_ready,
     is_ingame_unpaused = is_ingame_unpaused,
 

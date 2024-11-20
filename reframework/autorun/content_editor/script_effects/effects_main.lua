@@ -5,7 +5,7 @@ local udb = require('content_editor.database')
 local utils = require('content_editor.utils')
 local helpers = require('content_editor.helpers')
 local enums = require('content_editor.enums')
-local info = require('content_editor.gameinfo')
+local core = require('content_editor.core')
 
 --- @type table<string, ScriptEffectTypeDefinition>
 local definitions = {}
@@ -52,7 +52,7 @@ local function start_update_callback()
         local time_now = os.clock()
         local delta = time_now - last_update_time
         last_update_time = time_now
-        if not info.is_ingame_unpaused() then return end
+        if not core.game.is_ingame_unpaused() then return end
         local stoppedEffects = {}
         for effectId, effectContexts in pairs(active_effects) do
             local effect = udb.get_entity('script_effect', effectId) --[[@as ScriptEffectEntity|nil]]

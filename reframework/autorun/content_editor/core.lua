@@ -1,7 +1,7 @@
 if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB.core then return _userdata_DB.core end
 
-local info = require('content_editor.gameinfo')
+local setup = require('content_editor.setup')
 
 local color_statuses = {
     default = 0,
@@ -68,13 +68,14 @@ end
 
 local version = {0, 4, 2}
 
+--- @class ContentEditorCore
 _userdata_DB.core = {
     --- Active mod version {major, minor, patch}
     VERSION = version,
     --- Active mod version string
     VERSION_STR = table.concat(version, '.'),
-    --- Basic game specifics
-    game = info,
+    --- Basic game specific info and hooks
+    game = {}--[[@as any]], ---@type ContentEditorGameController
     --- Base content db path
     _basepath = data_basepath,
     --- Get a color preset
@@ -88,4 +89,6 @@ _userdata_DB.core = {
     --- Whether the content editor part of the mod is enabled and loaded
     editor_enabled = false,
 }
+--- Basic game specifics
+_userdata_DB.core.game = setup(_userdata_DB.core)
 return _userdata_DB.core

@@ -1,10 +1,10 @@
 if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB._ui_utils then return _userdata_DB._ui_utils end
 
+local core = require('content_editor.core')
 local utils = require('content_editor.utils')
 local enums = require('content_editor.enums')
 local generic_types = require("content_editor.generic_types")
-local info = require('content_editor.gameinfo')
 
 local type_settings = require('content_editor.definitions')
 local typecache = require('content_editor.typecache')
@@ -561,11 +561,11 @@ end
 --- Can be used to clear any custom gameplay effects
 --- @param callback fun(is_ingame: boolean)
 local function hook_game_load_or_reset(callback)
-    if info.on_game_after_load then
-        info.on_game_after_load(callback)
+    if core.game.on_game_after_load then
+        core.game.on_game_after_load(callback)
     end
-    if info.on_game_unload then
-        info.on_game_unload(callback)
+    if core.game.on_game_unload then
+        core.game.on_game_unload(callback)
     end
 end
 

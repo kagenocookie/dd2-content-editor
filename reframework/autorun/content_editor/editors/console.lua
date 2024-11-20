@@ -6,7 +6,6 @@ local udb = require('content_editor.database')
 local core = require('content_editor.core')
 local helpers = require('content_editor.helpers')
 local utils = require('content_editor.utils')
-local info = require('content_editor.gameinfo')
 
 local editor = require('content_editor.editor')
 local ui = require('content_editor.ui')
@@ -91,7 +90,7 @@ local goGetName = sdk.find_type_definition('via.GameObject'):get_method('get_Nam
 --- @param name_prefix string|nil
 --- @param remap nil|fun(item: any): any
 local function find_gameobjects(typedef, name_prefix, remap)
-    local scene = info.get_root_scene()
+    local scene = core.game.get_root_scene()
     if not scene then return nil end
     if not typedef then return nil end
 

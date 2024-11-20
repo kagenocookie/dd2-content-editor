@@ -1,6 +1,3 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.utils_dd2 then return _userdata_DB.utils_dd2 end
-
 local getCharaName = sdk.find_type_definition("app.GUIBase"):get_method("getName(app.CharacterID)")
 local function translate_character_name(characterId)
     return getCharaName:call(nil, characterId)
@@ -73,7 +70,7 @@ local function set_position(chara, pos)
     TimeSkipManager:call('requestPlayerWarp', now_hr, now_min, now_day, _pos, tr:get_Rotation(), nil, true, true)
 end
 
-_userdata_DB.utils_dd2 = {
+return {
     translate_character_name = translate_character_name,
     translate_item_name = translate_item_name,
     get_ingame_timestamp = get_ingame_timestamp,
@@ -82,5 +79,3 @@ _userdata_DB.utils_dd2 = {
     get_player_party = get_player_party,
     set_position = set_position,
 }
-
-return _userdata_DB.utils_dd2

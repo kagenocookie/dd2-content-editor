@@ -7,7 +7,6 @@ local effects = require('content_editor.script_effects')
 
 local ui = require('content_editor.ui')
 local editor = require('content_editor.editor')
-local utils_dd2 = require('content_editor.dd2.utils')
 
 local gamedb = require('event_editor.events_gamedata')
 
@@ -19,7 +18,7 @@ local function show_event_context(ctx, entity)
     imgui.begin_rect()
 
     local npcIdStr = enums.get_enum('CharacterID_NPC').valueToLabel[ctx.context._NpcID]
-    local name = utils_dd2.translate_character_name(ctx.context._NpcID)
+    local name = utils.dd2.translate_character_name(ctx.context._NpcID)
     if ui.core.treenode_suffix(tostring(ctx.id), tostring(npcIdStr) .. ' : ' .. name .. '  ' .. (ctx.label or '')) then
         ui.editor.show_entity_metadata(ctx)
 
@@ -84,7 +83,7 @@ local function show_event(event, contextData, uiState)
         local timestampLastExecuted = (runtimeEntity._LastDay * 24 + runtimeEntity._LastHour) * 3600
         local eventIntervalSeconds = runtimeEntity:get_IntervalHour() * 3600
 
-        local timeUntilExecutable = timestampLastExecuted + eventIntervalSeconds - utils_dd2.get_ingame_timestamp()
+        local timeUntilExecutable = timestampLastExecuted + eventIntervalSeconds - utils.dd2.get_ingame_timestamp()
         if timestampLastExecuted > 0 and timeUntilExecutable > 0 then
             imgui.text_colored('Event on cooldown interval', editor.get_color('warning'))
             imgui.same_line()

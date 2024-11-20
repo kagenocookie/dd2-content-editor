@@ -10,7 +10,6 @@ local udb = require('content_editor.database')
 local editor = require('content_editor.editor')
 local helpers = require('content_editor.helpers')
 local import_handlers = require('content_editor.import_handlers')
-local utils_dd2 = require('content_editor.dd2.utils')
 
 local TalkEventManager = sdk.get_managed_singleton('app.TalkEventManager')
 --#region Quests
