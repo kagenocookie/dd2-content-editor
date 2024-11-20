@@ -1,5 +1,5 @@
 if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.__core then return _userdata_DB.__core end
+if _userdata_DB.core then return _userdata_DB.core end
 
 local info = require('content_editor.gameinfo')
 
@@ -68,7 +68,7 @@ end
 
 local version = {0, 4, 2}
 
-_userdata_DB.__core = {
+_userdata_DB.core = {
     --- Active mod version {major, minor, patch}
     VERSION = version,
     --- Active mod version string
@@ -88,4 +88,4 @@ _userdata_DB.__core = {
     --- Whether the content editor part of the mod is enabled and loaded
     editor_enabled = false,
 }
-return _userdata_DB.__core
+return _userdata_DB.core

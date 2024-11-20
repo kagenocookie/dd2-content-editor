@@ -20,15 +20,20 @@ ui.editor.set_entity_editor('script_effect', function (effect, state)
 
     local effectTypes = main.get_effect_types()
     local typeChanged, newType
-    typeChanged, newType, state.type_filter = ui.core.filterable_enum_value_picker('Effect type', effect--[[@as any]].trigger_type, effectTypes, state.type_filter or '')
+    typeChanged, newType, state.type_filter = ui.core.filterable_enum_value_picker('Effect type', effect--[[@as any]].effect_type, effectTypes, state.type_filter or '')
     if typeChanged then
-        effect--[[@as any]].trigger_type = newType
+        effect--[[@as any]].effect_type = newType
         effect.data = {}
         state.children = {}
         changed = true
     end
 
-    local hook_callback = ui_hooks[effect.trigger_type]
+    local hook_callback = ui_hooks[effect.effect_type]
+    if not hook_callback then
+        local def = main._find_definition(effect.effect_type)
+        hook_callback = def and def.ui--[[@as any]]
+        ui_hooks[effect.effect_type] = hook_callback
+    end
     if not hook_callback then
         imgui.text('Script effect has no UI')
     else
@@ -50,7 +55,7 @@ end
 
 editor.define_window('script_effects', 'Script Effects', function (state)
     if editor.active_bundle and imgui.button('Create new') then
-        local newScript = udb.insert_new_entity('script_effect', editor.active_bundle, { trigger_type = 'script' })
+        local newScript = udb.insert_new_entity('script_effect', editor.active_bundle, { effect_type = 'script' })
         ui.editor.set_selected_entity_picker_entity(state, 'script_effect', newScript)
     end
 

@@ -6,7 +6,7 @@ local helpers = require('content_editor.helpers')
 
 local WeatherManager = sdk.get_managed_singleton('app.WeatherManager') ---@type app.WeatherManager
 effects.register_effect_type({
-    trigger_type = 'weather',
+    effect_type = 'weather',
     category = 'world',
     label = 'Change weather',
     start = function (entity, ctx)
@@ -23,7 +23,7 @@ effects.register_effect_type({
 })
 
 effects.register_effect_type({
-    trigger_type = 'weather_temp',
+    effect_type = 'weather_temp',
     category = 'world',
     label = 'Change weather (time limited)',
     start = function (entity, ctx)

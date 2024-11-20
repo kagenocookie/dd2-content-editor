@@ -21,12 +21,18 @@ local active_effects = {}
 
 --- @param definition ScriptEffectTypeDefinition
 local function register_effect_type(definition)
-    if not definition[definition.trigger_type] then
-        types[#types+1] = definition.trigger_type
+    if not definition[definition.effect_type] then
+        types[#types+1] = definition.effect_type
     end
 ---@diagnostic disable-next-line: assign-type-mismatch
-    types_enum.labelToValue[definition.label or definition.trigger_type] = definition.trigger_type
-    definitions[definition.trigger_type] = definition
+    types_enum.labelToValue[definition.label or definition.effect_type] = definition.effect_type
+    definitions[definition.effect_type] = definition
+end
+
+--- @param effect_type string
+--- @return ScriptEffectTypeDefinition|nil
+local function find_definition(effect_type)
+    return definitions[effect_type]
 end
 
 local function get_effect_types()
@@ -52,7 +58,7 @@ local function start_update_callback()
             local effect = udb.get_entity('script_effect', effectId) --[[@as ScriptEffectEntity|nil]]
             -- "continue" please do you know it lua, please, let me continue
             if effect then
-                local def = definitions[effect.trigger_type]
+                local def = definitions[effect.effect_type]
                 if def.update then
                     for _, dataList in pairs(effectContexts) do
                         for _, data in ipairs(dataList) do
@@ -107,7 +113,7 @@ local function start(effectId, data)
         return
     end
 
-    local trigger = definitions[effect.trigger_type]
+    local trigger = definitions[effect.effect_type]
     if trigger then
         local newData = trigger.start(effect, data)
         if newData == nil then
@@ -136,7 +142,7 @@ local function stop(id, context)
     local effect_data = active_effects[id]
     local effect_context = effect_data and effect_data[context]
     if effect_context and #effect_context > 0 then
-        local trigger = definitions[effect.trigger_type]
+        local trigger = definitions[effect.effect_type]
         local idx = #effect_context
         if trigger.stop then
             trigger.stop(effect, effect_context[idx])
@@ -150,7 +156,7 @@ local function stop(id, context)
             table.remove(effect_context, idx)
         end
     else
-        print('WARNING: attempted to stop inactive script event', effect.trigger_type, id, effect_context)
+        print('WARNING: attempted to stop inactive script event', effect.effect_type, id, effect_context)
     end
 end
 
@@ -159,7 +165,7 @@ local function stop_all_effects()
         local effect = udb.get_entity('script_effect', effectId) --[[@as ScriptEffectEntity|nil]]
         -- "continue" please do you know it lua, please, let me continue
         if effect then
-            local def = definitions[effect.trigger_type]
+            local def = definitions[effect.effect_type]
             if def.stop then
                 for context, dataList in pairs(effectContexts) do
                     for _, data in ipairs(dataList) do
@@ -177,7 +183,7 @@ helpers.hook_game_load_or_reset(stop_all_effects)
 re.on_script_reset(stop_all_effects)
 
 register_effect_type({
-    trigger_type = 'group',
+    effect_type = 'group',
     category = 'world',
     label = 'Effect group',
     start = function (entity, data)
@@ -194,7 +200,7 @@ register_effect_type({
 })
 
 register_effect_type({
-    trigger_type = 'random',
+    effect_type = 'random',
     category = 'world',
     label = 'Randomly selected effect',
     start = function (entity, data)
@@ -212,7 +218,7 @@ register_effect_type({
 })
 
 register_effect_type({
-    trigger_type = 'script',
+    effect_type = 'script',
     category = 'world',
     label = 'Custom script',
     start = function (entity)
@@ -250,6 +256,8 @@ register_effect_type({
 })
 
 _userdata_DB.script_effects = {
+    _find_definition = find_definition,
+
     add_effect_category = add_effect_category,
     register_effect_type = register_effect_type,
     get_effect_categories = get_effect_categories,
