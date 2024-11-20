@@ -61,7 +61,7 @@ udb.register_entity_type('shop', {
         --- @cast instance ItemShopData
         -- don't delete, also don't create new shops since we have no use for new ones until we can actually put them somewhere
         -- ItemManager.ItemShopData = helpers.system_array_remove(ItemManager.ItemShopData, instance.runtime_instance, 'app.ItemShopParam')
-        return 'forget'
+        return 'not_deletable'
     end,
     generate_label = function (entity)
         --- @cast entity ItemShopData
