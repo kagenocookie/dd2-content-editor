@@ -2,17 +2,6 @@ if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB.utils then return _userdata_DB.utils end
 
 local MessageManager = sdk.get_managed_singleton('app.MessageManager')
-local CharacterManager = sdk.get_managed_singleton('app.CharacterManager')
-
---- @param str string
---- @param substr string
-local function str_starts_with(str, substr)
-    if str == nil then
-        print('cannot check starts with, str is nil', str, substr)
-        return false
-    end
-    return string.sub(str, 1, #substr) == substr
-end
 
 --- @param n number
 --- @param decimals integer|nil
@@ -356,21 +345,6 @@ local function generic_list_to_itable(list)
 end
 
 ---@param typename string
----@param source REManagedObject An existing instance of a list, because REF doesn't support creating generic instances
----@param items table
----@return REManagedObject System.Collections.Generic.List<{typename}>
-local function create_generic_list(typename, source, items)
-    local arr = sdk.create_managed_array(typename, #items):add_ref()
-    for i, item in ipairs(items) do
-        arr:set_Item(i, item)
-    end
-    local copy = source:MemberwiseClone():add_ref()
-    copy._items = arr
-    copy._size = #items
-    return copy
-end
-
----@param typename string
 ---@param items table
 ---@return SystemArray
 local function create_array(typename, items)
@@ -555,7 +529,7 @@ local function translate_message_guid(messageGuid, args)
     end
     print("WARNING: function doesn't support args yet.")
     args = {}
-    return messageGuid:ToString()
+    return messageGuid:ToString()--[[@as string]]
     -- local arr = sdk.create_managed_array('System.Object', #args)
     -- local guiManager = sdk.get_managed_singleton('app.GuiManager')
     -- return guiManager:call('get_Dialog'):call('getFormatMsg', messageGuid, arr)
@@ -684,7 +658,6 @@ _userdata_DB.utils = {
     string_join = string_join,
     get_irl_timestamp = get_irl_timestamp,
 
-    str_starts_with = str_starts_with,
     float_round = float_round,
     chance = chance,
 

@@ -78,6 +78,19 @@ local function create_array(elementClassname, length, items)
     return array--[[@as SystemArray]]
 end
 
+---@param list_classname string Classname - e.g. System.Collections.Generic.List`1<System.String>
+---@param items any[]
+---@return nil|REManagedObject System.Collections.Generic.List<{typename}>
+local function create_generic_list(list_classname, items)
+    local list = create_generic(list_classname)
+    if not list then return nil end
+
+    for _, item in ipairs(items) do
+        list--[[@as any]]:Add(item)
+    end
+    return list
+end
+
 --- @param org_array SystemArray
 --- @param appended_items REManagedObject[]
 --- @param elementType string|nil
@@ -572,6 +585,7 @@ end
 _userdata_DB._ui_utils = {
     create_instance = create_new_instance,
     create_generic_instance = create_generic,
+    create_generic_list = create_generic_list,
 
     is_integer_type = function (classname) return integer_types[classname] end,
     is_float_type = function (classname) return float_types[classname] end,

@@ -1,8 +1,6 @@
 if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
 if _userdata_DB.core then return _userdata_DB.core end
 
-local setup = require('content_editor.setup')
-
 local color_statuses = {
     default = 0,
     disabled = 1,
@@ -66,7 +64,7 @@ local function get_glob_regex(type)
     return path
 end
 
-local version = {0, 4, 2}
+local version = {0, 5, 0}
 
 --- @class ContentEditorCore
 _userdata_DB.core = {
@@ -89,6 +87,8 @@ _userdata_DB.core = {
     --- Whether the content editor part of the mod is enabled and loaded
     editor_enabled = false,
 }
+
+require('content_editor.utils')
 --- Basic game specifics
-_userdata_DB.core.game = setup(_userdata_DB.core)
+_userdata_DB.core.game = require('content_editor.setup')
 return _userdata_DB.core

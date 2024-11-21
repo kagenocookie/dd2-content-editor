@@ -28,8 +28,6 @@ A proper release will be made once I feel the mod is stable and meaningful enoug
 - activate the individual mods you want to enable
 - place some bundle json files into the GAMEDIR/reframework/data/usercontent/bundles folder
 
-When first launching (and whenever the game version or content addons change), the game will freeze up for a bit in order to build up a nice friendly cache of all the object types that are used by the mod so don't worry if the game becomes unresponsive the first time or after updates. Last I checked, this takes about 25s on my machine. Subsequent launches should be fast since it's just fetching the cached data.
-
 ## Current editor features
 - All custom data is stored in bundle json files that may contain any number of different entity types
 - Full data JSON serialization support - as long as a content addon knows where to store relevant data
@@ -37,10 +35,11 @@ When first launching (and whenever the game version or content addons change), t
 - General: Support for custom lua scripts to be executed on supported objects
 - General: Modify/override any translation strings (message guids)
 
-## Mod development setup
+## Content editor development setup
 - clone the repository
-- symlink the folders and files in reframework/autorun into your game's reframework/autorun folder (or copy the manually when changing, or have it stored directly in the gamedir (please don't))
-- copy the core usercontent files from the mod into your game's data/usercontent/ directory
+- symlink `content_editor/`, `content_editor.lua` and `<gamename>/editors/` into your game's reframework/autorun folder, as well as the individual game specific editors into the root autorun folder
+    - The expected structure would be `autorun/content_editor/*`, `autorun/editors/*`, `autorun/editor_items.lua`, ...
+- copy the core usercontent files from the mod into your game's data/usercontent/ directory (not symlinked so you can still have non-core addons and presets installed)
 - ideally, install the LuaLS extension by sumneko
 - for proper game type references, setup the `Lua.workspace.library` workspace setting if using vscode, or whatever equivalent your IDE of choice supports, with the output of e.g. https://github.com/kagenocookie/REFDumpFormatter
 
