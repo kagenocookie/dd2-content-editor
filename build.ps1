@@ -1,3 +1,5 @@
+param([String]$Version="v0.6.0", [Int32]$injectVersion = 0)
+
 function PrepareFiles {
     param (
         [string] $BaseSourceFolder,
@@ -43,7 +45,12 @@ function MakeModinfo {
     ((Get-Content $outpath) -join "`n") + "`n" | Set-Content -NoNewline $outpath
 }
 
-$Version = "v1.0.0"
+if ($injectVersion) {
+    $versionParts = $Version.Substring(1).Split('.')
+    $versionTable = Join-String -Separator ', ' -InputObject $versionParts
+    $versionedFile = ((Get-Content 'reframework/autorun/content_editor/core.lua') -replace 'local version = {([^}]+)}', "local version = {$versionTable}" -join "`n") + "`n"
+    Out-File -FilePath 'reframework/autorun/content_editor/core.lua' -InputObject $versionedFile -NoNewline
+}
 
 # core game-agnostic zip
 PrepareFiles -Folder "content_editor" -FileList (
@@ -67,7 +74,7 @@ PrepareFiles -Folder "content_editor/reframework/data/usercontent" -FileList (
 )
 
 
-MakeModinfo "quest_editor" "Quest editor" "v0.1.0" "DD2 Content editor quest addon"
+MakeModinfo "quest_editor" "Quest editor" "v0.1.0" "(WIP) DD2 Content editor quests addon"
 PrepareFiles -Folder "quest_editor/reframework/autorun" -FileList (
     "dd2/editors/|editor_quest.lua",
     "dd2/|editors/quests"
