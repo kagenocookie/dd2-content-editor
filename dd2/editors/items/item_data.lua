@@ -19,6 +19,7 @@ local prefabs = require('content_editor.prefabs')
 --- @field description string|nil
 --- @field icon_path string|nil
 --- @field icon_rect ItemUVSettings|nil
+--- @field enhance app.ArmorEnhanceParam[]|app.WeaponEnhanceParam[]|nil
 --- @field _texture via.render.TextureResourceHolder|nil
 --- @field _textureContainer via.GameObject|nil
 
@@ -34,12 +35,13 @@ local ItemUseAttrBits = enums.get_enum('app.ItemUseAttrBits')
 
 local custom_item_id_min = 30000
 
-local function register_entity(id, type, runtime_instance)
+local function register_entity(id, type, runtime_instance, enhance)
     --- @type ItemDataEntity
     local entity = {
         id = id,
         type = type,
         runtime_instance = runtime_instance,
+        enhance = enhance,
     }
     udb.create_entity(entity, nil, true)
     udb.mark_entity_dirty(entity, false)
@@ -51,13 +53,17 @@ local get_item_desc = sdk.find_type_definition('app.GUIBase'):get_method('getElf
 
 udb.events.on('get_existing_data', function ()
     for item in utils.enumerate(ItemManager._ItemDataDict) do
-    -- local enumerator = ItemManager._ItemDataDict:GetEnumerator()
-    -- while enumerator:MoveNext() do
-    --     local item = enumerator._current
         if item.value._Id then
-            register_entity(item.value._Id, 'item_data', item.value)
+            local itemType = (item.value--[[@as app.ItemCommonParam]]):get_DataType()
+            local enhance
+            if itemType == 2 then
+                enhance = ItemManager._WeaponEnhanceDict:ContainsKey(item.value._Id) and ItemManager._WeaponEnhanceDict[item.value._Id] or nil
+            elseif itemType == 3 then
+                enhance = ItemManager._ArmorEnhanceDict:ContainsKey(item.value._Id) and ItemManager._ArmorEnhanceDict[item.value._Id] or nil
+            end
+            register_entity(item.value._Id, 'item_data', item.value, enhance)
         else
-            print('Missing id', item, item.value, item:get_type_definition():get_full_name())
+            print('Missing item id', item, item.value, item:get_type_definition():get_full_name())
         end
     end
 end)
@@ -70,7 +76,8 @@ udb.register_entity_type('item_data', {
             description = instance.description,
             icon_path = instance.icon_path,
             icon_rect = instance.icon_rect,
-            data = import_handlers.export(instance.runtime_instance, 'app.ItemCommonParam')
+            data = import_handlers.export(instance.runtime_instance, 'app.ItemCommonParam'),
+            enhance = instance.enhance and import_handlers.export(instance.enhance) or nil,
         }
     end,
     import = function (data, instance)
@@ -90,6 +97,15 @@ udb.register_entity_type('item_data', {
         end
         if instance.runtime_instance and not ItemManager._ItemDataDict:ContainsKey(data.id) then
             ItemManager._ItemDataDict[data.id] = instance.runtime_instance
+        end
+        if data.enhance then
+            if instance.runtime_instance:get_DataType() == 2 then
+                instance.enhance = import_handlers.import('app.WeaponEnhanceParam[]', data.enhance, instance.enhance)
+                if instance.enhance then ItemManager._WeaponEnhanceDict[data.id] = instance.enhance end
+            else
+                instance.enhance = import_handlers.import('app.ArmorEnhanceParam[]', data.enhance, instance.enhance)
+                if instance.enhance then ItemManager._ArmorEnhanceDict[data.id] = instance.enhance end
+            end
         end
         -- local dataType = instance.runtime_instance:get_DataType()
         -- if dataType == 2 or dataType == 3 then
@@ -373,6 +389,28 @@ if core.editor_enabled then
                 _BlowResistRate = { label = 'BlowResistRate (Knockdown)' }
             },
         },
+        ['app.ArmorEnhanceParam'] = {
+            fieldOrder = {'_Type', '_EnhanceNo', '_NeedMoney', '_NeedItemId0', '_NeedItemNum0', '_NeedItemId1', '_NeedItemNum1'},
+            fields = {
+                _NeedItemId0 = { uiHandler = ui.handlers.common.enum(udb.get_entity_enum('item_data')) },
+                _NeedItemId1 = { uiHandler = ui.handlers.common.enum(udb.get_entity_enum('item_data')) },
+            },
+            toString = function (val)
+                ---@cast val app.ArmorEnhanceParam
+                return enums.get_enum('app.EnhanceType').get_label(val._Type) .. ' ' .. tostring(val._EnhanceNo)
+            end
+        },
+        ['app.WeaponEnhanceParam'] = {
+            fieldOrder = {'_Type', '_EnhanceNo', '_NeedMoney', '_NeedItemId0', '_NeedItemNum0', '_NeedItemId1', '_NeedItemNum1'},
+            fields = {
+                _NeedItemId0 = { uiHandler = ui.handlers.common.enum(udb.get_entity_enum('item_data')) },
+                _NeedItemId1 = { uiHandler = ui.handlers.common.enum(udb.get_entity_enum('item_data')) },
+            },
+            toString = function (val)
+                ---@cast val app.WeaponEnhanceParam
+                return enums.get_enum('app.EnhanceType').get_label(val._Type) .. ' ' .. tostring(val._EnhanceNo)
+            end,
+        },
     })
 
     ui.handlers.register_extension('item_instance_type_fixer', function (handler)
@@ -455,8 +493,53 @@ if core.editor_enabled then
 
         imgui.spacing()
 
-        return ui.handlers.show_editable(item, 'runtime_instance', item) or fieldsChanged
-        -- ui.handlers.show_editable(item, 'enhance', item)
+        local itemType = item.runtime_instance:get_DataType()
+        if itemType == 2 or itemType == 3 then
+            state.tab = select(2, ui.core.tabs({ 'Basic data', 'Enhance params' }, state.tab or 0))
+            if state.tab == 2 then
+                if not item.enhance then
+                    if imgui.button('Create') then
+                        local preset = _userdata_DB.editor.presets.get_preset_data('item_enhance', itemType == 2 and 'weapon' or 'armor')
+                        local enhanceClass = itemType == 2 and 'app.WeaponEnhanceParam' or 'app.ArmorEnhanceParam'
+                        if preset then
+                            item.enhance = import_handlers.import(enhanceClass .. '[]', preset)
+                            for i = 0, 12 do item.enhance[i]._ItemId = item.id end
+                        else
+                            item.enhance = sdk.create_managed_array(enhanceClass, 13)
+                            for i = 0, 12 do
+                                item.enhance[i] = import_handlers.import(enhanceClass, {
+                                    _Type = i // 3,
+                                    _EnhanceNo = i % 3,
+                                    _ItemId = item.id,
+                                })
+                            end
+                        end
+
+                        if itemType == 2 then
+                            ItemManager._WeaponEnhanceDict[item.id] = item.enhance
+                        else
+                            ItemManager._ArmorEnhanceDict[item.id] = item.enhance
+                        end
+                        udb.mark_entity_dirty(item)
+                    end
+                else
+                    if imgui.button('Remove') then
+                        if itemType == 2 then
+                            ItemManager._WeaponEnhanceDict:Remove(item.id)
+                        else
+                            ItemManager._ArmorEnhanceDict:Remove(item.id)
+                        end
+                        item.enhance = nil
+                        udb.mark_entity_dirty(item)
+                    end
+                end
+                return ui.handlers.show_editable(item, 'enhance', item) or fieldsChanged
+            else
+                return ui.handlers.show_editable(item, 'runtime_instance', item) or fieldsChanged
+            end
+        else
+            return ui.handlers.show_editable(item, 'runtime_instance', item) or fieldsChanged
+        end
     end)
 
     editor.define_window('item_data', 'Items', function (state)

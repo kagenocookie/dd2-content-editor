@@ -302,6 +302,9 @@ local function register(register_extension)
         local draw_callback = data.draw ---@type fun(entity: DBEntity, context: UIContainer)
         local entity_getter = data.getter --- @type nil|fun(context: UIContainer): entity: DBEntity|nil, extra: any
         local labeler = data.labeler --- @type nil|fun(entity: DBEntity, context: UIContainer): string
+        if not draw_callback then
+            draw_callback = _userdata_DB.ui.editor.get_entity_editor_func(entity_type)
+        end
 
         --- @type UIHandler
         return function (ctx)

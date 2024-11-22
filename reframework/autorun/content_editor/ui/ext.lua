@@ -309,6 +309,12 @@ local function show_entity_editor(entity, state, expandTreeLabel)
     end
 end
 
+--- @param entityType string
+--- @return fun(entity: DBEntity, state: table):(changed: boolean)
+local function get_entity_editor_func(entityType)
+    return entity_editors[entityType]
+end
+
 --- @param container table The object that should contain the ID of the referenced entity
 --- @param idField string|integer
 --- @param linkedEntityType string
@@ -392,6 +398,7 @@ _userdata_DB._ui_ext = {
 
     set_entity_editor = set_entity_editor,
     show_entity_editor = show_entity_editor,
+    get_entity_editor_func = get_entity_editor_func,
     show_linked_entity_picker = show_linked_entity_picker,
     show_linked_entity_list = show_linked_entity_list,
 }
