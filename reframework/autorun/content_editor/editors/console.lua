@@ -1,5 +1,5 @@
-if _userdata_DB == nil then _userdata_DB = {} end
-if _userdata_DB.console then return _userdata_DB.console end
+if usercontent == nil then usercontent = {} end
+if usercontent.console then return usercontent.console end
 
 
 local udb = require('content_editor.database')
@@ -48,7 +48,7 @@ end
 
 udb.events.on('ready', function ()
     -- clear open entries from all console windows
-    local windows = _userdata_DB.__internal.config.data.editor.windows
+    local windows = usercontent.__internal.config.data.editor.windows
     for _, state in pairs(windows) do
         if state.name == 'data_viewer' and state.open_entries and not state.keep_results then
             state.open_entries = nil
@@ -196,12 +196,12 @@ editor.define_window('data_viewer', 'Data console', function (state)
     local changed
     changed, state.keep_results = imgui.checkbox('Keep results', state.keep_results)
     if imgui.is_item_hovered() then imgui.set_tooltip('If you want all data results to stay between game restarts and script resets') end
-    if changed then _userdata_DB.__internal.config.save() end
+    if changed then usercontent.__internal.config.save() end
 
     imgui.same_line()
     changed, state.multiline = imgui.checkbox('Multiline', state.multiline)
     if imgui.is_item_hovered() then imgui.set_tooltip("Allow entering multiple lines. To get an actual value result, return that value.") end
-    if changed then _userdata_DB.__internal.config.save() end
+    if changed then usercontent.__internal.config.save() end
 
     if state.input and state.input ~= '' and confirm then
         add_to_exec_list(state, state.input)
@@ -319,7 +319,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
         imgui.push_id(entry.id)
         if imgui.button('X') then
             table.remove(state.open_entries, idx)
-            _userdata_DB.__internal.config.save()
+            usercontent.__internal.config.save()
             imgui.pop_id()
             break
         end
@@ -383,6 +383,6 @@ editor.define_window('data_viewer', 'Data console', function (state)
     end
 end)
 
-_userdata_DB.console = {
+usercontent.console = {
 }
-return _userdata_DB.console
+return usercontent.console

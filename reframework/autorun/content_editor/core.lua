@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.core then return _userdata_DB.core end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.core then return usercontent.core end
 
 local color_statuses = {
     default = 0,
@@ -67,7 +67,7 @@ end
 local version = {0, 5, 0}
 
 --- @class ContentEditorCore
-_userdata_DB.core = {
+usercontent.core = {
     --- Active mod version {major, minor, patch}
     VERSION = version,
     --- Active mod version string
@@ -90,5 +90,5 @@ _userdata_DB.core = {
 
 require('content_editor.utils')
 --- Basic game specifics
-_userdata_DB.core.game = require('content_editor.setup')
-return _userdata_DB.core
+usercontent.core.game = require('content_editor.setup')
+return usercontent.core

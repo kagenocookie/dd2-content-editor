@@ -199,7 +199,7 @@ local function register(register_extension)
                 end
                 ctx.data._ref_userdata = ctx.data._ref_userdata or sdk.create_userdata('app.AISituationTaskEntity', value)
                 if ctx.data._ref_userdata and ui.treenode_tooltip('Data reference', "Preview of the object pointed to by the current path. Any changes will not get saved.") then
-                    _userdata_DB._ui_handlers.show_readonly(ctx.data._ref_userdata)
+                    usercontent._ui_handlers.show_readonly(ctx.data._ref_userdata)
                     imgui.tree_pop()
                 end
                 if allowNew then
@@ -238,7 +238,7 @@ local function register(register_extension)
                 end
                 if allowNew then
                     if imgui.button('Create new') then
-                        ctx.set(isRaw and {} or _userdata_DB._ui_utils.create_instance(classname or ctx.data.classname))
+                        ctx.set(isRaw and {} or usercontent._ui_utils.create_instance(classname or ctx.data.classname))
                         ctx.data.userdata_picker = ''
                         changed = true
                     end
@@ -274,7 +274,7 @@ local function register(register_extension)
 
                 ctx.data._ref_userdata = ctx.data._ref_userdata or sdk.create_userdata('via.UserData', value)
                 if ctx.data._ref_userdata and ui.treenode_tooltip('Data reference', "Preview of the object pointed to by the current path. Changes will not get saved.") then
-                    _userdata_DB._ui_handlers.show_readonly(ctx.data._ref_userdata)
+                    usercontent._ui_handlers.show_readonly(ctx.data._ref_userdata)
                     imgui.tree_pop()
                 end
                 return changed
@@ -303,7 +303,7 @@ local function register(register_extension)
         local entity_getter = data.getter --- @type nil|fun(context: UIContainer): entity: DBEntity|nil, extra: any
         local labeler = data.labeler --- @type nil|fun(entity: DBEntity, context: UIContainer): string
         if not draw_callback then
-            draw_callback = _userdata_DB.ui.editor.get_entity_editor_func(entity_type)
+            draw_callback = usercontent.ui.editor.get_entity_editor_func(entity_type)
         end
 
         --- @type UIHandler
@@ -320,7 +320,7 @@ local function register(register_extension)
                 local id = type(val) == 'userdata' and val:ToString() or 'ID ' .. tostring(val)
                 imgui.text_colored('Linked entity not found: ' .. entity_type .. ' (from  ' .. id .. ')', core.get_color('danger'))
             else
-                local label = labeler and labeler(entity, ctx) or 'Linked ' .. entity.type .. ' ' .. entity.id .. ': ' .. tostring(entity.label or _userdata_DB.database.generate_entity_label(entity))
+                local label = labeler and labeler(entity, ctx) or 'Linked ' .. entity.type .. ' ' .. entity.id .. ': ' .. tostring(entity.label or usercontent.database.generate_entity_label(entity))
                 imgui.push_style_color(0, core.get_color('info'))
                 local show = imgui.tree_node(label)
                 imgui.pop_style_color(1)
@@ -345,15 +345,15 @@ local function register(register_extension)
                 if childCtx == nil then
                     local getter = 'get_' .. prop
                     local propType = sdk.find_type_definition(ctx.data.classname):get_method(getter):get_return_type():get_full_name()
-                    childCtx = _userdata_DB._ui_handlers._internal.create_field_editor(
+                    childCtx = usercontent._ui_handlers._internal.create_field_editor(
                         ctx,
                         ctx.data.classname,
                         getter,
                         propType,
                         prop .. '/Readonly',
-                        _userdata_DB._ui_handlers._internal.accessors.getter,
+                        usercontent._ui_handlers._internal.accessors.getter,
                         getter_settings)
-                    childCtx.ui = _userdata_DB._ui_handlers._internal.apply_overrides(childCtx.ui, ctx.data.classname, "__element", propType)
+                    childCtx.ui = usercontent._ui_handlers._internal.apply_overrides(childCtx.ui, ctx.data.classname, "__element", propType)
                 end
                 childCtx:ui()
             end

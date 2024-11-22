@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.editor then return _userdata_DB.editor end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.editor then return usercontent.editor end
 
 local core = require('content_editor.core')
 local internal = require('content_editor._internal')
@@ -183,16 +183,16 @@ end
 define_window('bundles', 'Data bundles', require('content_editor.editors.data_bundles'))
 
 define_window('save_button', 'Save button', function ()
-    if _userdata_DB.editor.active_bundle then
+    if usercontent.editor.active_bundle then
         if imgui.button('Save') then
-            _userdata_DB.database.save_bundle(_userdata_DB.editor.active_bundle)
+            usercontent.database.save_bundle(usercontent.editor.active_bundle)
         end
-        if _userdata_DB.database.bundle_has_unsaved_changes(_userdata_DB.editor.active_bundle) then
+        if usercontent.database.bundle_has_unsaved_changes(usercontent.editor.active_bundle) then
             imgui.same_line()
             imgui.text_colored('*', core.get_color('danger'))
         end
         imgui.same_line()
-        imgui.text('Bundle: ' .. _userdata_DB.editor.active_bundle)
+        imgui.text('Bundle: ' .. usercontent.editor.active_bundle)
     else
         imgui.text('No active bundle')
     end
@@ -256,7 +256,7 @@ local function draw_editor()
     if changed then
         if newbundle == '' or newbundle == udb.bundles_enum.valueToLabel[0] then newbundle = nil end
         config.data.editor.active_bundle = newbundle
-        _userdata_DB.editor.active_bundle = newbundle
+        usercontent.editor.active_bundle = newbundle
         config.save()
     end
     imgui_wrappers.tooltip("The bundle that you're currently editing.\nAll new entities will be stored in this bundle.")
@@ -326,7 +326,7 @@ re.on_frame(function ()
     end
 end)
 
-_userdata_DB.editor = {
+usercontent.editor = {
     define_window = define_window,
     add_editor_tab = add_editor_tab,
     open_editor_window = open_editor_window,
@@ -348,4 +348,4 @@ _userdata_DB.editor = {
     },
 }
 
-return _userdata_DB.editor
+return usercontent.editor

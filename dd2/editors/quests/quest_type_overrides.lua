@@ -24,7 +24,7 @@ if core.editor_enabled then
             if pos then
                 imgui.indent(8)
                 if imgui.button('Warp to ' .. ctx.label .. ': ' .. pos:ToString()) then
-                    _userdata_DB.utils.dd2.set_position(_userdata_DB.utils.dd2.get_player(), pos)
+                    utils.dd2.set_position(utils.dd2.get_player(), pos)
                 end
                 imgui.unindent(8)
             end
@@ -230,7 +230,7 @@ if core.editor_enabled then
 
     --- @param processor QuestProcessorData
     local function draw_quest_processor(processor)
-        _userdata_DB._ui_ext.show_save_settings(processor)
+        ui.editor.show_save_settings(processor)
         _quest_DB.quest_processors.show_quest_processor(processor)
     end
     local function draw_quest_var(quest, ctx)
@@ -446,7 +446,7 @@ if core.editor_enabled then
                 _Distance = { uiHandler = ui.handlers.common.preset.float_0_200 },
                 _RequestID = {
                     extensions = {
-                        { type = 'linked_entity', entity_type = 'domain_query_generate_table', draw = function (entity) _userdata_DB._ui_handlers.show_readonly(entity.table, entity) end }
+                        { type = 'linked_entity', entity_type = 'domain_query_generate_table', draw = function (entity) ui.handlers.show_readonly(entity.table, entity) end }
                     }
                 },
             }
@@ -842,7 +842,7 @@ if core.editor_enabled then
         ['app.quest.condition.CheckScenarioParam'] = {
             toString = function (item)
                 local op = item._Logic == 0 and ' == ' or ' != '
-                return 'Scenario ' .. _userdata_DB.database.get_entity_enum('quest').get_label(item._QuestID) .. op .. item._ResultNo
+                return 'Scenario ' .. udb.get_entity_enum('quest').get_label(item._QuestID) .. op .. item._ResultNo
             end
         },
         ['app.quest.condition.CheckNPCHolderType'] = { toString = function (item) return helpers.to_string(item.Param, 'app.quest.condition.CheckNPCHolderTypeParam') end },

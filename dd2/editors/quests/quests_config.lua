@@ -25,7 +25,7 @@ local function load_config()
         config.draw_status_as_window = f.draw_status_as_window or false
 
         utils.merge_into_table(f.devtools, config.devtools)
-        _userdata_DB.__internal.emit('_quests_loadconfig')
+        usercontent.__internal.emit('_quests_loadconfig')
     end
 end
 

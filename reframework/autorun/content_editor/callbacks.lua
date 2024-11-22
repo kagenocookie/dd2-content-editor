@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.callbacks then return _userdata_DB.callbacks end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.callbacks then return usercontent.callbacks end
 
 local hooked_callbacks = {}
 local active_hooks = {}
@@ -17,7 +17,7 @@ local function add_hook(callback, hook)
     if counter == nil then
         counter = 0
         local finishedCallbacks = {}
-        local debug = _userdata_DB.__internal.config.data.editor.devmode
+        local debug = usercontent.__internal.config.data.editor.devmode
         active_hooks[callback] = {}
         hookContainer = active_hooks[callback]
 
@@ -118,7 +118,7 @@ local function cancel_hook(callback, hookId)
     end
 end
 
-_userdata_DB.callbacks = {
+usercontent.callbacks = {
     hook = add_hook,
     hook_once = hook_once,
     hook_delay = hook_delay,
@@ -126,4 +126,4 @@ _userdata_DB.callbacks = {
     hook_interval = hook_interval,
     cancel_hook = cancel_hook,
 }
-return _userdata_DB.callbacks
+return usercontent.callbacks

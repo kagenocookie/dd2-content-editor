@@ -1,5 +1,5 @@
-if _userdata_DB == nil then _userdata_DB = {} end
-if _userdata_DB.custom_scripts then return _userdata_DB.custom_scripts end
+if usercontent == nil then usercontent = {} end
+if usercontent.custom_scripts then return usercontent.custom_scripts end
 
 local udb = require('content_editor.database')
 local core = require('content_editor.core')
@@ -96,7 +96,7 @@ local function define_script_hook_editor_override(classname, script_id_fetcher, 
     })
 end
 
-_userdata_DB.custom_scripts = {
+usercontent.custom_scripts = {
     define_script_hook = define_script_hook,
     define_script_hook_editor_override = define_script_hook_editor_override,
     try_execute = try_execute_script,
@@ -135,7 +135,7 @@ if core.editor_enabled then
                 --- @cast script CustomScriptEntity|nil
                 if script then
                     imgui.indent(8)
-                    _userdata_DB.custom_scripts.draw_script_editor(script)
+                    usercontent.custom_scripts.draw_script_editor(script)
                     if helpstring then imgui.text_colored(helpstring, core.get_color('info')) end
                     imgui.unindent(8)
                 else
@@ -241,4 +241,4 @@ if core.editor_enabled then
     editor.add_editor_tab('scripts')
 end
 
-return _userdata_DB.custom_scripts
+return usercontent.custom_scripts

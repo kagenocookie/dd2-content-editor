@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.__internal and _userdata_DB.__internal.presets then return _userdata_DB.__internal.presets end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.__internal and usercontent.__internal.presets then return usercontent.__internal.presets end
 
 local core = require('content_editor.core')
 local utils = require('content_editor.utils')
@@ -75,10 +75,10 @@ end
 
 refresh_available_presets()
 
-_userdata_DB.__internal.presets = {
+usercontent.__internal.presets = {
     refresh = refresh_available_presets,
     get_names = get_preset_names,
     get_presets = get_preset_list,
     get_preset_data = get_preset_data,
 }
-return _userdata_DB.__internal.presets
+return usercontent.__internal.presets

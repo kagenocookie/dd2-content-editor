@@ -214,7 +214,7 @@ local function resource_holder(resourceClassname)
         end
         if context.data.newpath and context.data.newpath ~= curpath then
             if imgui.button('Change') then
-                importer = importer or _userdata_DB.import_handlers.common.resource(resourceClassname).import
+                importer = importer or usercontent.import_handlers.common.resource(resourceClassname).import
                 local newres = importer(context.data.newpath, nil)
                 if newres then
                     context.set(newres)
@@ -318,7 +318,7 @@ local function create_nullable_value_type(valueClassname, valueFieldHandler)
         function (context, toggled)
             local val = context.get()
             if toggled then
-                local newval = _userdata_DB._ui_utils.create_instance(valueClassname)
+                local newval = usercontent._ui_utils.create_instance(valueClassname)
                 val._HasValue = true
                 val._Value = newval
                 context.set(val)

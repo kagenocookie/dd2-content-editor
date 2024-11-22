@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB._ui_wrappers then return _userdata_DB._ui_wrappers end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent._ui_wrappers then return usercontent._ui_wrappers end
 
 local utils = require('content_editor.utils')
 
@@ -272,7 +272,7 @@ local function imgui_tabs(tabs, selectedTabIndex)
     return changed, selectedTabIndex
 end
 
-_userdata_DB._ui_wrappers = {
+usercontent._ui_wrappers = {
     DEFAULT_WIDTH = DEFAULT_WIDTH,
 
     table_to_imgui = table_to_imgui,
@@ -293,4 +293,4 @@ _userdata_DB._ui_wrappers = {
     setting_text = setting_text,
 }
 
-return _userdata_DB._ui_wrappers
+return usercontent._ui_wrappers

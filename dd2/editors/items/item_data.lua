@@ -499,7 +499,7 @@ if core.editor_enabled then
             if state.tab == 2 then
                 if not item.enhance then
                     if imgui.button('Create') then
-                        local preset = _userdata_DB.editor.presets.get_preset_data('item_enhance', itemType == 2 and 'weapon' or 'armor')
+                        local preset = usercontent.editor.presets.get_preset_data('item_enhance', itemType == 2 and 'weapon' or 'armor')
                         local enhanceClass = itemType == 2 and 'app.WeaponEnhanceParam' or 'app.ArmorEnhanceParam'
                         if preset then
                             item.enhance = import_handlers.import(enhanceClass .. '[]', preset)

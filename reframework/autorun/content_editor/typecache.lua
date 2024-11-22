@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB._typecache then return _userdata_DB._typecache end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent._typecache then return usercontent._typecache end
 
 --- @class TypeCacheData
 --- @field type HandlerType
@@ -421,7 +421,7 @@ local function process_rsz()
     if not rszData then print('rsz data not found') return end
 
     -- force clean data in the rsz json for this
-    _userdata_DB.editor.set_need_script_reset()
+    usercontent.editor.set_need_script_reset()
     cache = {}
     type_definitions.type_settings = {}
 
@@ -511,7 +511,7 @@ local function process_rsz()
     fs.write(outfn, outjson)
 end
 
-_userdata_DB._typecache = {
+usercontent._typecache = {
     get = get_typecache_entry,
     load = load_type_cache,
     clear = clear_type_cache,
@@ -523,4 +523,4 @@ _userdata_DB._typecache = {
     handlerTypes = handlerType,
     fieldFlags = fieldFlags,
 }
-return _userdata_DB._typecache
+return usercontent._typecache

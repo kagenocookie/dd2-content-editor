@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB._ui_utils then return _userdata_DB._ui_utils end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent._ui_utils then return usercontent._ui_utils end
 
 local core = require('content_editor.core')
 local utils = require('content_editor.utils')
@@ -533,7 +533,7 @@ local function clone_object(object, classname, raw)
     classname = classname or get_type(object)
     if classname == nil then return nil end
 
-    local handler = _userdata_DB.import_handlers.get_handler(classname)
+    local handler = usercontent.import_handlers.get_handler(classname)
     if handler == nil then return nil end
 
     local data = handler.export(object, nil, { raw = true })
@@ -559,10 +559,10 @@ local function change_type(object, classname, raw)
     classname = classname or get_type(object)
     if classname == nil then return nil end
 
-    local handler = _userdata_DB.import_handlers.get_handler(classname)
+    local handler = usercontent.import_handlers.get_handler(classname)
     if handler == nil then return nil end
 
-    local raw_data = _userdata_DB.import_handlers.export(object)
+    local raw_data = usercontent.import_handlers.export(object)
     local newObj = handler.import(raw_data)
     if raw then
         newObj = handler.export(object, nil, { raw = true })
@@ -582,7 +582,7 @@ local function hook_game_load_or_reset(callback)
     end
 end
 
-_userdata_DB._ui_utils = {
+usercontent._ui_utils = {
     create_instance = create_new_instance,
     create_generic_instance = create_generic,
     create_generic_list = create_generic_list,
@@ -613,4 +613,4 @@ _userdata_DB._ui_utils = {
     queue_update_func = queue_execute_on_update,
     hook_game_load_or_reset = hook_game_load_or_reset,
 }
-return _userdata_DB._ui_utils
+return usercontent._ui_utils

@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB._ui_ext then return _userdata_DB._ui_ext end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent._ui_ext then return usercontent._ui_ext end
 
 local udb = require('content_editor.database')
 local editor = require('content_editor.editor')
@@ -324,9 +324,9 @@ end
 local function show_linked_entity_picker(container, idField, linkedEntityType, state, label)
     local initialSelected = container[idField] and udb.get_entity(linkedEntityType, container[idField]) or nil
     if initialSelected then
-        _userdata_DB.ui.editor.set_selected_entity_picker_entity(state, idField, initialSelected)
+        usercontent.ui.editor.set_selected_entity_picker_entity(state, idField, initialSelected)
     end
-    local selectedEntity, changed = _userdata_DB.ui.editor.entity_picker(linkedEntityType, state, idField, label)
+    local selectedEntity, changed = usercontent.ui.editor.entity_picker(linkedEntityType, state, idField, label)
     if changed then
         container[idField] = selectedEntity and selectedEntity.id or nil
     end
@@ -349,7 +349,7 @@ local function show_linked_entity_list(entity, list_container, list_property, li
     local list = list_container[list_property] ---@type integer[]|nil
     if imgui.tree_node(label) then
         if list then
-            local state = stateContainer[entity] or _userdata_DB.ui.context.create_root(entity, nil, label, label .. entity.type .. entity.id)
+            local state = stateContainer[entity] or usercontent.ui.context.create_root(entity, nil, label, label .. entity.type .. entity.id)
             stateContainer[entity] = state
 
             for linkedIndex, linkedId in ipairs(list) do
@@ -365,11 +365,11 @@ local function show_linked_entity_list(entity, list_container, list_property, li
                 local linked = udb.get_entity(linked_type, linkedId)--[[@as ScriptEffectEntity|nil]]
                 if linked then
                     if imgui.tree_node(linkedIndex .. '. ' .. linked.label) then
-                        changed = _userdata_DB.ui.editor.show_linked_entity_picker(list, linkedIndex, linked_type, state) or changed
+                        changed = usercontent.ui.editor.show_linked_entity_picker(list, linkedIndex, linked_type, state) or changed
                         imgui.tree_pop()
                     end
                 else
-                    changed = _userdata_DB.ui.editor.show_linked_entity_picker(list, linkedIndex, linked_type, state) or changed
+                    changed = usercontent.ui.editor.show_linked_entity_picker(list, linkedIndex, linked_type, state) or changed
                 end
                 imgui.pop_id()
             end
@@ -387,7 +387,7 @@ local function show_linked_entity_list(entity, list_container, list_property, li
     return changed
 end
 
-_userdata_DB._ui_ext = {
+usercontent._ui_ext = {
     show_entity_metadata = show_entity_metadata,
     show_save_settings = show_save_settings,
     entity_picker = entity_picker,
@@ -403,4 +403,4 @@ _userdata_DB._ui_ext = {
     show_linked_entity_list = show_linked_entity_list,
 }
 
-return _userdata_DB._ui_ext
+return usercontent._ui_ext

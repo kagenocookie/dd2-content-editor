@@ -47,16 +47,16 @@ end
 
 events.on('setup', function ()
     local enums = require('content_editor.enums')
-    local utils = _userdata_DB.utils
-    local sounds = _userdata_DB._sounds
+    local utils = usercontent.utils
+    local sounds = usercontent._sounds
 
-    if _userdata_DB.core.editor_enabled then
+    if usercontent.core.editor_enabled then
         local CharacterID = enums.get_enum('app.CharacterID')
         CharacterID.set_display_labels(utils.map(CharacterID.values, function (val) return {val, CharacterID.valueToLabel[val] .. ' : ' .. utils.dd2.translate_character_name(val)} end))
         enums.create_subset(CharacterID, 'CharacterID_NPC', function (label) return label == 'Invalid' or label:sub(1,3) == 'ch3' and label:len() > 5 end)
     end
 
-    local effects = _userdata_DB.script_effects
+    local effects = usercontent.script_effects
     local CharacterManager = sdk.get_managed_singleton('app.CharacterManager')
     effects.add_effect_category('player', function ()
         return CharacterManager:get_ManualPlayer()
@@ -79,7 +79,7 @@ events.on('setup', function ()
     })
 end)
 
-_userdata_DB.utils.dd2 = require('editors.core.utils')
+usercontent.utils.dd2 = require('editors.core.utils')
 require('editors.core.definitions')
 
 --- @type ContentEditorGameController|table

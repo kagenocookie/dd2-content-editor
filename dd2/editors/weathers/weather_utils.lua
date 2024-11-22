@@ -24,9 +24,9 @@ local function currentWeather()
     local mgr = manager()
 
     if isBasegameWeather(mgr._NowArea) then
-        return _userdata_DB.database.get_entity('weather', mgr._NowArea * 100 + WeatherManager._NowWeatherEnum)--[[@as WeatherEntity]]
+        return usercontent.database.get_entity('weather', mgr._NowArea * 100 + WeatherManager._NowWeatherEnum)--[[@as WeatherEntity]]
     else
-        return _userdata_DB.database.get_entity('weather', mgr._NowArea)--[[@as WeatherEntity]]
+        return usercontent.database.get_entity('weather', mgr._NowArea)--[[@as WeatherEntity]]
     end
 end
 

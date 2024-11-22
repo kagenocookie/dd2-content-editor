@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.prefabs and _userdata_DB.prefabs.presets then return _userdata_DB.prefabs.presets end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.prefabs and usercontent.prefabs.presets then return usercontent.prefabs.presets end
 
 -- this may not be thread safe?
 
@@ -133,10 +133,10 @@ local function prefab_instantiate_shared(path, onload)
     end
 end
 
-_userdata_DB.prefabs = {
+usercontent.prefabs = {
     load = load_prefab,
     get_loaded = get_loaded_prefab,
     instantiate = prefab_instantiate,
     instantiate_shared = prefab_instantiate_shared,
 }
-return _userdata_DB.prefabs
+return usercontent.prefabs

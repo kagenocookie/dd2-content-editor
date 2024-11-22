@@ -78,14 +78,14 @@ return function (state)
                 udb.rename_bundle(state.selectedBundle, state.bundleRename)
                 if config.data.editor.active_bundle == state.selectedBundle then
                     config.data.editor.active_bundle = state.bundleRename
-                    _userdata_DB.editor.active_bundle = state.bundleRename
+                    usercontent.editor.active_bundle = state.bundleRename
                     config.save()
                 end
                 state.selectedBundle = state.bundleRename
             end
         end
         if config.data.editor.active_bundle ~= state.selectedBundle and imgui.button('Make active') then
-            _userdata_DB.editor.active_bundle = state.selectedBundle
+            usercontent.editor.active_bundle = state.selectedBundle
             config.data.editor.active_bundle = state.selectedBundle
             config.save()
         end
@@ -209,7 +209,7 @@ return function (state)
                 udb.delete_bundle(state.selectedBundle)
                 state.selectedBundle = nil
                 config.data.editor.active_bundle = nil
-                _userdata_DB.editor.active_bundle = nil
+                usercontent.editor.active_bundle = nil
                 config.save()
             end
         end

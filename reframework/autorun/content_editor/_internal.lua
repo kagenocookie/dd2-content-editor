@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.__internal and _userdata_DB.__internal.config then return _userdata_DB.__internal end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.__internal and usercontent.__internal.config then return usercontent.__internal end
 
 require('content_editor.events')
 local core = require('content_editor.core')
@@ -67,7 +67,7 @@ local function load_config()
         if f.bundle_order then config.bundle_order = f.bundle_order end
         utils.table_assign(config.editor, f.editor or {})
 
-        _userdata_DB.__internal.emit('_loadConfig', config)
+        usercontent.__internal.emit('_loadConfig', config)
     end
 end
 
@@ -76,7 +76,7 @@ local function save_config()
 end
 
 load_config()
-_userdata_DB.__internal.config = {
+usercontent.__internal.config = {
     data = config,
     save = save_config,
     load = load_config,
@@ -88,4 +88,4 @@ _userdata_DB.__internal.config = {
 }
 
 core.editor_enabled = config.editor.enabled
-return _userdata_DB.__internal
+return usercontent.__internal

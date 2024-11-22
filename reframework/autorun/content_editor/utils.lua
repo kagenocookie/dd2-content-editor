@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.utils then return _userdata_DB.utils end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.utils then return usercontent.utils end
 
 local MessageManager = sdk.get_managed_singleton('app.MessageManager')
 
@@ -653,7 +653,7 @@ local function enumerator_to_table(enumerator)
     return list
 end
 
-_userdata_DB.utils = {
+usercontent.utils = {
     log = log_all,
     string_join = string_join,
     get_irl_timestamp = get_irl_timestamp,
@@ -718,4 +718,4 @@ _userdata_DB.utils = {
     folder_get_children = folder_get_children,
 }
 
-return _userdata_DB.utils
+return usercontent.utils

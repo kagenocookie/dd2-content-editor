@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB._definitions then return _userdata_DB._definitions end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.definitions then return usercontent.definitions end
 
 local common = require('content_editor.ui.common')
 
@@ -64,7 +64,7 @@ local function add_type_overrides(overrides_id, settings)
     if type(overrides_id) == 'string' and overrides_id ~= '' then
         overrides[#overrides+1] = overrides_id
         table.sort(overrides)
-        _userdata_DB._definitions._hash = table.concat(overrides, ' ')
+        usercontent.definitions._hash = table.concat(overrides, ' ')
     end
 
     for containerClass, classSettings in pairs(settings) do
@@ -121,7 +121,7 @@ if rszTypes then
     add_type_overrides('', rszTypes)
 end
 
-_userdata_DB._definitions = {
+usercontent.definitions = {
     type_settings = type_settings,
     override = add_type_overrides,
     override_specific = add_type_overrides_specific,
@@ -130,4 +130,4 @@ _userdata_DB._definitions = {
     get = get_type_overrides,
     _hash = '',
 }
-return _userdata_DB._definitions
+return usercontent.definitions

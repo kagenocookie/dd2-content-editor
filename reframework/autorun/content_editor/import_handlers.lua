@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.import_handlers then return _userdata_DB.import_handlers end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.import_handlers then return usercontent.import_handlers end
 
 local utils = require('content_editor.utils')
 local type_settings = require('content_editor.definitions')
@@ -356,7 +356,7 @@ importer_factories = {
     end,
 
     [typecache.handlerTypes.dictionary] = function (meta, fullname)
-        local typedef = _userdata_DB.generics.typedef(fullname)
+        local typedef = usercontent.generics.typedef(fullname)
         if not typedef then return import_export_ignore end
         local keyMeta = typecache.get(meta.keyType)
 
@@ -612,7 +612,7 @@ local function get_exported_array(table, classname)
     return list
 end
 
-_userdata_DB.import_handlers = {
+usercontent.import_handlers = {
     get_handler = get_handler,
     export = get_exported,
     export_table = get_exported_array,
@@ -624,4 +624,4 @@ _userdata_DB.import_handlers = {
     }
 }
 
-return _userdata_DB.import_handlers
+return usercontent.import_handlers

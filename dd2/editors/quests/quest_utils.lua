@@ -78,7 +78,7 @@ local function hook_suddenquest_ignore_sentiment() -- there is no sentiment cond
 end
 --#endregion
 
-_userdata_DB.__internal.on('_quests_loadconfig', function ()
+usercontent.__internal.on('_quests_loadconfig', function ()
     hook_suddenquest_ignore_timeofday()
     hook_suddenquest_ignore_level()
     hook_suddenquest_ignore_sentiment()

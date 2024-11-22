@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB._ui_handlers then return _userdata_DB._ui_handlers end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent._ui_handlers then return usercontent._ui_handlers end
 
 local core = require('content_editor.core')
 local utils = require('content_editor.utils')
@@ -130,7 +130,7 @@ object_handlers['via.GameObject'] = function (context)
         for i, comp in ipairs(comps) do
             context.data.compdata[i] = context.data.compdata[i] or {}
             local compType = comp:get_type_definition()
-            _userdata_DB._ui_handlers.show_nested(comp, context, compType:get_name(), compType:get_full_name(), true)
+            usercontent._ui_handlers.show_nested(comp, context, compType:get_name(), compType:get_full_name(), true)
         end
         imgui.tree_pop()
     end
@@ -147,7 +147,7 @@ object_handlers['via.Transform'] = function (context)
     if imgui.tree_node('GameObject') then
         local go = transform:get_GameObject()
         if go then
-            _userdata_DB._ui_handlers.show_nested(go, context, 'gameObject', 'via.GameObject')
+            usercontent._ui_handlers.show_nested(go, context, 'gameObject', 'via.GameObject')
         else
             imgui.text('GameObject is null')
         end
@@ -157,7 +157,7 @@ object_handlers['via.Transform'] = function (context)
     local parent = transform:get_Parent()
     if parent then
         if ui.treenode_suffix('Parent', parent:ToString()--[[@as string]]) then
-            _userdata_DB._ui_handlers.show_nested(parent, context, 'parent', 'via.Transform')
+            usercontent._ui_handlers.show_nested(parent, context, 'parent', 'via.Transform')
             imgui.tree_pop()
         end
     end
@@ -177,7 +177,7 @@ object_handlers['via.Transform'] = function (context)
         children = context.data.children
 
         for i, child in ipairs(children) do
-            _userdata_DB._ui_handlers.show_nested(child, context, i, 'via.Transform', true)
+            usercontent._ui_handlers.show_nested(child, context, i, 'via.Transform', true)
         end
         imgui.tree_pop()
     end
@@ -1051,7 +1051,7 @@ local function show_entity_ui_nullable(owner, containerField, field, label, cont
     return false
 end
 
-_userdata_DB._ui_handlers = {
+usercontent._ui_handlers = {
     value_handlers = value_type_handler_defs,
 
     show = show_entity_ui,
@@ -1076,4 +1076,4 @@ _userdata_DB._ui_handlers = {
         },
     },
 }
-return _userdata_DB._ui_handlers
+return usercontent._ui_handlers

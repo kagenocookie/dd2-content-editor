@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.events then return _userdata_DB.events end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.events then return usercontent.events end
 
 ---@type table<string, function[]>
 local events = {}
@@ -35,7 +35,7 @@ local function emit_event(name, ...)
     local store = events[name]
     if not store then return end
 
-    local devmode = _userdata_DB.__internal.config.data.editor.devmode
+    local devmode = usercontent.__internal.config.data.editor.devmode
     for i, cb in ipairs(store) do
         if devmode then
             log.info('Invoking event listener ' .. name .. ' #' .. tostring(i))
@@ -78,13 +78,13 @@ local function remove_event_internal(name, fn) remove_event(name, fn) end
 ---@param name string
 local function emit_event_internal(name, ...) emit_event(name, ...) end
 
-_userdata_DB.events = {
+usercontent.events = {
     on = register_event_ext,
     off = remove_event_ext,
     emit = emit_event_ext,
 }
-_userdata_DB.__internal = _userdata_DB.__internal or {}
-_userdata_DB.__internal.emit = emit_event_internal
-_userdata_DB.__internal.on = register_event_internal
-_userdata_DB.__internal.off = remove_event_internal
-return _userdata_DB.events
+usercontent.__internal = usercontent.__internal or {}
+usercontent.__internal.emit = emit_event_internal
+usercontent.__internal.on = register_event_internal
+usercontent.__internal.off = remove_event_internal
+return usercontent.events

@@ -1,6 +1,6 @@
 --- @param udb UserdataDB
 return function (udb)
-    if type(_userdata_DB) == "nil" then _userdata_DB = {} end
+    if type(usercontent) == "nil" then usercontent = {} end
 
     return function ()
         for idx, bundle in ipairs(udb.bundles_order_list) do
@@ -18,10 +18,10 @@ return function (udb)
             end
             imgui.same_line()
             if imgui.button('?') then
-                if _userdata_DB._loadOrderWindow == bundle.name then
-                    _userdata_DB._loadOrderWindow = nil
+                if usercontent._loadOrderWindow == bundle.name then
+                    usercontent._loadOrderWindow = nil
                 else
-                    _userdata_DB._loadOrderWindow = bundle.name
+                    usercontent._loadOrderWindow = bundle.name
                 end
             end
             if imgui.is_item_hovered() then
@@ -34,7 +34,7 @@ return function (udb)
             end
             imgui.same_line()
             imgui.text(tostring(idx) .. '. ' .. bundle.name)
-            if _userdata_DB._loadOrderWindow == bundle.name then
+            if usercontent._loadOrderWindow == bundle.name then
                 imgui.input_text_multiline('Description', bundle.description, 10)
             end
             imgui.pop_id()

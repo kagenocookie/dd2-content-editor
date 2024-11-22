@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB._devtools then return _userdata_DB._devtools end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent._devtools then return usercontent._devtools end
 
 local core = require('content_editor.core')
 if not core.editor_enabled then return end
@@ -150,7 +150,7 @@ editor.define_window('dev_tools', 'Dev tools', function (state)
 
     ui.core.setting_checkbox('Show locations on screen', storage, 'show_locations', editor.persistent_storage.save)
     if imgui.button('Stop all running custom effects') then
-        _userdata_DB.script_effects.stop_all_effects()
+        usercontent.script_effects.stop_all_effects()
     end
 end)
 
@@ -175,8 +175,8 @@ re.on_frame(function ()
 end)
 --#endregion
 
-_userdata_DB._devtools = {
+usercontent._devtools = {
     warp_player = warp_player,
     give_item = give_item,
 }
-return _userdata_DB._devtools
+return usercontent._devtools

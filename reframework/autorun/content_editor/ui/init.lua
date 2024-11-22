@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.ui then return _userdata_DB.ui end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.ui then return usercontent.ui end
 
 local core = require('content_editor.core')
 if not core.editor_enabled then
@@ -11,10 +11,10 @@ local ext = require('content_editor.ui.ext')
 local handlers = require('content_editor.ui.handlers')
 local context = require('content_editor.ui.context')
 
-_userdata_DB.ui = {
+usercontent.ui = {
     core = ui_core,
     editor = ext,
     handlers = handlers,
     context = context,
 }
-return _userdata_DB.ui
+return usercontent.ui

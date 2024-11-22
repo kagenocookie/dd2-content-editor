@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.database then return _userdata_DB.database end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.database then return usercontent.database end
 
 local core = require('content_editor.core')
 local utils = require('content_editor.utils')
@@ -511,7 +511,7 @@ end
 local function set_active_bundle(name)
     if get_bundle_by_name(name) then
         internal.config.data.editor.active_bundle = name
-        _userdata_DB.editor.active_bundle = name
+        usercontent.editor.active_bundle = name
         internal.config.save()
     end
 end
@@ -1028,7 +1028,7 @@ re.on_application_entry('UpdateBehavior', function ()
 end)
 
 --- @class UserdataDB
-_userdata_DB.database = {
+usercontent.database = {
     is_ready = function () return db_ready end,
 
     get_entity_types = get_entity_types,
@@ -1080,7 +1080,7 @@ _userdata_DB.database = {
     events = events,
 }
 
-local load_order_handler = require('content_editor._load_order_handler')(_userdata_DB.database)
+local load_order_handler = require('content_editor._load_order_handler')(usercontent.database)
 re.on_draw_ui(function ()
     if imgui.tree_node('Content database') then
         imgui.text('Version: ' .. table.concat(core.VERSION, '.'))
@@ -1113,4 +1113,4 @@ re.on_draw_ui(function ()
     end
 end)
 
-return _userdata_DB.database
+return usercontent.database

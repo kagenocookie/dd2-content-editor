@@ -1,5 +1,5 @@
-if _userdata_DB == nil then _userdata_DB = {} end
-if _userdata_DB.messages then return _userdata_DB.messages end
+if usercontent == nil then usercontent = {} end
+if usercontent.messages then return usercontent.messages end
 
 local udb = require('content_editor.database')
 
@@ -404,9 +404,9 @@ if core.editor_enabled then
     editor.add_editor_tab('messages')
 end
 
-_userdata_DB.messages = {
+usercontent.messages = {
     create_new_message_group = create_new_message_group,
     create_new_message = create_new_message,
     add_message_override = add_message_override,
 }
-return _userdata_DB.messages
+return usercontent.messages

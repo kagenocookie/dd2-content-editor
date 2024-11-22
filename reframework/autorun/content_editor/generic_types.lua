@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.generics then return _userdata_DB.generics end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.generics then return usercontent.generics end
 
 --- Generic arrays and type definitions have stupid full-namespaced type names like
 --- System.Collections.Generic.Dictionary`2.Entry[[via.effect.ProviderData, System, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[ ...][]
@@ -116,9 +116,9 @@ local function add_generic_typedef(classname, runtimeType)
     generic_runtime_types[classname] = runtimeType
 end
 
-_userdata_DB.generics = {
+usercontent.generics = {
     get_clean_generic_classname = clean_generic_type_definition_name,
     typedef = get_generic_typedef,
     add = add_generic_typedef,
 }
-return _userdata_DB.generics
+return usercontent.generics

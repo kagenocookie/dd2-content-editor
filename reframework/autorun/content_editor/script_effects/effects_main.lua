@@ -1,5 +1,5 @@
-if _userdata_DB == nil then _userdata_DB = {} end
-if _userdata_DB.script_effects then return _userdata_DB.script_effects end
+if usercontent == nil then usercontent = {} end
+if usercontent.script_effects then return usercontent.script_effects end
 
 local udb = require('content_editor.database')
 local utils = require('content_editor.utils')
@@ -77,7 +77,7 @@ local function start_update_callback()
         end
 
         for _, indexAndCtx in ipairs(stoppedEffects) do
-            _userdata_DB.script_effects.stop(indexAndCtx[1], indexAndCtx[2])
+            usercontent.script_effects.stop(indexAndCtx[1], indexAndCtx[2])
         end
     end)
 end
@@ -224,7 +224,7 @@ register_effect_type({
     start = function (entity)
         local script = entity.data.start_script_id and udb.get_entity('custom_script', entity.data.start_script_id)
         if script then
-            local success, data = _userdata_DB.custom_scripts.try_execute(script, entity)
+            local success, data = usercontent.custom_scripts.try_execute(script, entity)
             if success then
                 return data
             else
@@ -235,7 +235,7 @@ register_effect_type({
     update = function (entity, data, deltaTime)
         local script = entity.data.update_script_id and udb.get_entity('custom_script', entity.data.update_script_id)
         if script then
-            local success, shouldStop = _userdata_DB.custom_scripts.try_execute(script, entity, data, deltaTime)
+            local success, shouldStop = usercontent.custom_scripts.try_execute(script, entity, data, deltaTime)
             if not success or shouldStop then
                 if not success then
                     print('ERROR: update script failed', shouldStop)
@@ -247,7 +247,7 @@ register_effect_type({
     stop = function (entity, data)
         local script = entity.data.stop_script_id and udb.get_entity('custom_script', entity.data.stop_script_id)
         if script then
-            local success, error = _userdata_DB.custom_scripts.try_execute(script, entity, data)
+            local success, error = usercontent.custom_scripts.try_execute(script, entity, data)
             if not success then
                 print('ERROR: stop script failed', error)
             end
@@ -255,7 +255,7 @@ register_effect_type({
     end
 })
 
-_userdata_DB.script_effects = {
+usercontent.script_effects = {
     _find_definition = find_definition,
 
     add_effect_category = add_effect_category,
@@ -268,4 +268,4 @@ _userdata_DB.script_effects = {
     stop_all_effects = stop_all_effects,
 }
 
-return _userdata_DB.script_effects
+return usercontent.script_effects

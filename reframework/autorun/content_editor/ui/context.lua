@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB._ui_contexts then return _userdata_DB._ui_contexts end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent._ui_contexts then return usercontent._ui_contexts end
 
 -- The idea here is that we use additional dynamic objects to store UI metadata in parallel to the actual objects
 -- This lets us easily keep UI state without having to rely on some magic string logic
@@ -223,7 +223,7 @@ local function debug_view(root_owner)
     debug_view_ctx(tostring(root_owner), ctx)
 end
 
-_userdata_DB._ui_contexts = {
+usercontent._ui_contexts = {
     create_root = create_root,
     create_child = create_child,
     get_or_create_child = get_or_create_child,
@@ -239,4 +239,4 @@ _userdata_DB._ui_contexts = {
     debug_view = debug_view,
 }
 
-return _userdata_DB._ui_contexts
+return usercontent._ui_contexts

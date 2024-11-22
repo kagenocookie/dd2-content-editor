@@ -1,5 +1,5 @@
-if type(_userdata_DB) == 'nil' then _userdata_DB = {} end
-if _userdata_DB.enums then return _userdata_DB.enums end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent.enums then return usercontent.enums end
 
 local core = require('content_editor.core')
 local events = require('content_editor.events')
@@ -412,7 +412,7 @@ local function override_enum(name, enum)
     -- defaultEnum.values = enum.values
 end
 
-_userdata_DB.enums = {
+usercontent.enums = {
     all = enumsContainer,
 
     get_enum = get_or_generate_enum,
@@ -430,4 +430,4 @@ _userdata_DB.enums = {
     create_subset = generate_enum_subset,
 }
 
-return _userdata_DB.enums
+return usercontent.enums
