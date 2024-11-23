@@ -81,6 +81,14 @@ local editor_defs = {
             if devmodeChanged then
                 set_need_script_reset()
             end
+
+            if imgui.tree_node('Data dumps') then
+                if imgui.button('Dump enums: ' .. core._basepath .. 'dump/enums/*.json') then
+                    enums.dump_all_enums()
+                end
+
+                imgui.tree_pop()
+            end
         end
     },
     load_order = {
@@ -221,7 +229,7 @@ local function draw_editor()
     if imgui.button('Refresh database') then
         udb.reload_all_bundles()
     end
-    imgui_wrappers.tooltip('This will reload all DB files from disk and re-import them into the game. Any unsaved changes will be lost.\nNot fully tested yet, may not work as expected - Reset scripts can be more reliable.')
+    imgui_wrappers.tooltip('This will reload all data bundles from disk and re-import them into the game. \nAny unsaved changes will be lost. In case of issues, reset scripts can be more reliable.')
 
     if config.data.editor.devmode then
         imgui.same_line()
@@ -239,14 +247,6 @@ local function draw_editor()
             typecache.process_rsz_data()
         end
         if imgui.is_item_hovered() then imgui.set_tooltip('Preprocess the rsz' .. reframework.get_game_name() .. '.json file for optimized type lookups.\nOnly needed when the rsz data changes and a new version is not included with the mod yet.\nThe original rsz file should be placed in reframework/data/rsz/rsz{gamename}.json.\nCan take a bit to execute.') end
-    end
-
-    if imgui.tree_node('Data dumps') then
-        if imgui.button('Dump enums: ' .. core._basepath .. 'dump/enums/*.json') then
-            enums.dump_all_enums()
-        end
-
-        imgui.tree_pop()
     end
 
     local w = imgui.calc_item_width()

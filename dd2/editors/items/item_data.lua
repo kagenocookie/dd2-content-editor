@@ -563,7 +563,7 @@ if core.editor_enabled then
         end
     end)
 
-    editor.define_window('item_data', 'Items', function (state)
+    editor.define_window('item_data', 'Item data', function (state)
         if editor.active_bundle then
             local create, preset = ui.editor.create_button_with_preset(state, 'item_data')
             if create then

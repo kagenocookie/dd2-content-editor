@@ -1,4 +1,6 @@
 # DD2 Content editor
+![editor](editor.png)
+
 Real-time ingame data editor for DD2 (and possibly other RE engine games). Can theoretically edit any game data with the right addon support, while also providing a common reusable UI framework.
 
 The default launch only contains the content database without editor support. Users who wish to actually edit things can enable it through the button in the ingame REF UI, in the content database section. It is disabled by default to speed up gameplay and load times, though it may not make a noticeable difference.

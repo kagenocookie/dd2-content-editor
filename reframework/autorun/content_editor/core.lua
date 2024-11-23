@@ -64,7 +64,7 @@ local function get_glob_regex(type)
     return path
 end
 
-local version = {0, 5, 0}
+local version = {0, 5, 1}
 
 --- @class ContentEditorCore
 usercontent.core = {
