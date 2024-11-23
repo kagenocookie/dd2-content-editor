@@ -631,6 +631,14 @@ local function get_gameobject_component(gameObject, componentType)
     return getComponent:call(gameObject, sdk.typeof(componentType))
 end
 
+local createComponent = sdk.find_type_definition('via.GameObject'):get_method('createComponent(System.Type)')
+--- @param gameObject via.GameObject
+--- @param componentType string
+--- @return via.Component|nil
+local function add_gameobject_component(gameObject, componentType)
+    return createComponent:call(gameObject, sdk.typeof(componentType))
+end
+
 --- comment
 --- @param array SystemArray
 --- @param itemType RETypeDefinition|string
@@ -704,7 +712,6 @@ usercontent.utils = {
     tojson = tojson,
 
     create_array = create_array,
-    create_generic_list = create_generic_list,
     system_array_of_type = system_array_of_type,
     enumerator_to_table = enumerator_to_table,
 
@@ -715,6 +722,7 @@ usercontent.utils = {
     guid_try_parse = try_parse_guid,
     guid_parse = parse_guid,
     get_gameobject_component = get_gameobject_component,
+    add_gameobject_component = add_gameobject_component,
     folder_get_children = folder_get_children,
 }
 

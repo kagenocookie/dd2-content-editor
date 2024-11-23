@@ -133,10 +133,26 @@ local function prefab_instantiate_shared(path, onload)
     end
 end
 
+--- Get an already loaded shared prefab gameobject instance
+--- @param path string
+--- @return via.GameObject
+local function get_shared_instance(path)
+    return sharedInstances[path]
+end
+
+--- Add or replace a shared instance gameobject
+--- @param path string
+--- @param gameObject via.GameObject
+local function store_shared_instance(path, gameObject)
+    sharedInstances[path] = gameObject
+end
+
 usercontent.prefabs = {
     load = load_prefab,
     get_loaded = get_loaded_prefab,
     instantiate = prefab_instantiate,
     instantiate_shared = prefab_instantiate_shared,
+    get_shared_instance = get_shared_instance,
+    store_shared_instance = store_shared_instance,
 }
 return usercontent.prefabs
