@@ -66,7 +66,10 @@ Set-Location _build/content_editor
 Set-Location ../..
 
 # DD2 specific zip
-PrepareFiles -Folder "content_editor/reframework/autorun" -FileList ("dd2/|editors/core")
+PrepareFiles -Folder "content_editor/reframework/autorun" -FileList (
+    "dd2/|editors/core",
+    "dd2/editors/|devtools.lua"
+)
 PrepareFiles -Folder "content_editor/reframework/data/usercontent" -FileList (
     "dd2/|enums",
     "dd2/|presets",
