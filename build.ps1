@@ -57,7 +57,7 @@ PrepareFiles -Folder "content_editor" -FileList (
     "reframework/autorun/content_editor",
     "reframework/autorun/content_editor.lua",
     "readme.md",
-    "campfire.jpg"
+    "editor.png"
 )
 Copy-Item -Path modinfo.ini -Destination "_build/content_editor/modinfo.ini"
 
