@@ -1,4 +1,4 @@
-param([String]$Version="v0.6.0", [Int32]$injectVersion = 0)
+param([String]$Version="", [String]$CommitHash = "")
 
 function PrepareFiles {
     param (
@@ -6,7 +6,7 @@ function PrepareFiles {
         [string] $Folder,
         [string[]] $FileList
     )
-    Write-Output "Preparing submod $Folder ..."
+    Write-Output "Preparing subfolder $Folder ..."
 
     foreach ($file in $FileList)
     {
@@ -21,7 +21,7 @@ function PrepareFiles {
         $outpath = "_build/$Folder/$outfile"
         $targetfolder = Split-Path $outpath -Parent
         if (!(Test-Path $targetfolder -PathType Container)) {
-            New-Item -Path $targetfolder -ItemType Directory -Force
+            New-Item -Path $targetfolder -ItemType Directory -Force | Out-Null
         }
         Copy-Item -Path $infile -Recurse -Destination $outpath -Force -Container:$false
     }
@@ -37,19 +37,12 @@ function MakeModinfo {
     $outpath = "_build/$Folder/modinfo.ini"
     $targetfolder = Split-Path $outpath -Parent
     if (!(Test-Path $targetfolder -PathType Container)) {
-        New-Item -Path $targetfolder -ItemType Directory -Force
+        New-Item -Path $targetfolder -ItemType Directory -Force | Out-Null
     }
     $content = $(Get-Content .\addon_template.ini)
     $content = $content.Replace("_VERSION_", "$Version").Replace("_NAME_", "$Name").Replace("_DESCRIPTION_", "$Description")
     Out-File -FilePath $outpath -InputObject $content
     ((Get-Content $outpath) -join "`n") + "`n" | Set-Content -NoNewline $outpath
-}
-
-if ($injectVersion) {
-    $versionParts = $Version.Substring(1).Split('.')
-    $versionTable = Join-String -Separator ', ' -InputObject $versionParts
-    $versionedFile = ((Get-Content 'reframework/autorun/content_editor/core.lua') -replace 'local version = {([^}]+)}', "local version = {$versionTable}" -join "`n") + "`n"
-    Out-File -FilePath 'reframework/autorun/content_editor/core.lua' -InputObject $versionedFile -NoNewline
 }
 
 # core game-agnostic zip
@@ -61,8 +54,26 @@ PrepareFiles -Folder "content_editor" -FileList (
 )
 Copy-Item -Path modinfo.ini -Destination "_build/content_editor/modinfo.ini"
 
+if ($CommitHash) {
+    $CommitHash = $CommitHash.Substring(0, 7)
+    Write-Output "Building for commit hash: $CommitHash"
+    $versionedFile = ((Get-Content '_build/content_editor/reframework/autorun/content_editor/core.lua') -replace "table\.concat\(version, '\.'\)", "table.concat(version, '.') .. '-$CommitHash'" -join "`n") + "`n"
+    Out-File -FilePath '_build/content_editor/reframework/autorun/content_editor/core.lua' -InputObject $versionedFile
+}
+
+if (!$Version) {
+    $Version = 'v0.0.0'
+}
+if ($Version) {
+    Write-Output "Building version: $Version"
+    $versionParts = $Version.Substring(1).Split('.')
+    $versionTable = Join-String -Separator ', ' -InputObject $versionParts
+    $versionedFile = ((Get-Content '_build/content_editor/reframework/autorun/content_editor/core.lua') -replace 'local version = {([^}]+)}', "local version = {$versionTable}" -join "`n") + "`n"
+    Out-File -FilePath '_build/content_editor/reframework/autorun/content_editor/core.lua' -InputObject $versionedFile -NoNewline
+}
+
 Set-Location _build/content_editor
-& "C:/Program Files/7-Zip/7z.exe" a ../../content_editor_core.zip *
+& "C:/Program Files/7-Zip/7z.exe" a ../../content_editor_core.zip * | Out-Null
 Set-Location ../..
 
 # DD2 specific zip
@@ -112,7 +123,7 @@ PrepareFiles -Folder "weather_editor/reframework/autorun" -FileList (
 )
 
 Set-Location _build
-& "C:/Program Files/7-Zip/7z.exe" a ../content_editor_dd2.zip *
+& "C:/Program Files/7-Zip/7z.exe" a ../content_editor_dd2.zip * | Out-Null
 
 Set-Location ..
 Remove-Item .\_build -Recurse
