@@ -317,6 +317,20 @@ sdk.hook(
 )
 --#endregion
 
+local ptr_true = sdk.to_ptr(true)
+sdk.hook(
+    -- ensure all isValid checks pass for custom items
+    sdk.find_type_definition('app.ItemManager'):get_method('isValidItem'),
+    function(args)
+        local id = sdk.to_int64(args[2]) & 0xffffffff
+        if id >= custom_item_id_min and udb.get_entity('item_data', id) ~= nil then
+            thread.get_hook_storage().result = ptr_true
+            return sdk.PreHookResult.SKIP_ORIGINAL
+        end
+    end,
+    function(ret) return thread.get_hook_storage().result or ret end
+)
+
 scripts.define_script_hook(
     'app.ItemManager',
     'useItemSub',

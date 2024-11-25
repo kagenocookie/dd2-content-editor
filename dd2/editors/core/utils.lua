@@ -43,6 +43,11 @@ local function get_player()
     return CharacterManager:get_ManualPlayer()
 end
 
+local function get_main_pawn()
+    local pawn = PawnManager:get_MainPawn()
+    return pawn and pawn:get_CachedCharacter()
+end
+
 ---@return app.Character[]
 local function get_player_party()
     local player = CharacterManager:get_ManualPlayer()
@@ -76,6 +81,7 @@ return {
     get_ingame_timestamp = get_ingame_timestamp,
     get_main_pawn_search_id = get_main_pawn_search_id,
     get_player = get_player,
+    get_main_pawn = get_main_pawn,
     get_player_party = get_player_party,
     set_position = set_position,
 }
