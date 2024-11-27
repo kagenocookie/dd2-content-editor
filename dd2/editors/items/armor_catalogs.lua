@@ -98,7 +98,21 @@ local armorCatalogs = {
     },
     Facewear = {
         { name = 'Mesh', id = 'MeshID', dict = '_FacewearMeshCatalog', enum = 'app.CharacterEditDefine.FacewearMeshID' },
-    }
+    },
+    UnderwearSkin = {
+        { name = 'Skin', id = 'SkinID', dict = '_UnderwearSkinCatalog', enum = 'app.CharacterEditDefine.UnderwearSkinID' },
+    },
+    Underwear = {
+        { name = 'Mesh', id = 'MeshID', dict = '_UnderwearMeshCatalog', enum = 'app.CharacterEditDefine.UnderwearMeshID' },
+    },
+    BackpackSkin = {
+        { name = 'Skin', id = 'SkinID', dict = '_BackpackSkinCatalog', enum = 'app.CharacterEditDefine.BackpackSkinID' },
+    },
+    Backpack = {
+        { name = 'Mesh', id = 'MeshID', dict = '_BackpackMeshCatalog', enum = 'app.CharacterEditDefine.BackpackMeshID' },
+        { name = 'Chain', id = 'ChainID', dict = '_BackpackChainCatalog' },
+        { name = 'Clsp', id = 'ClspID', dict = '_BackpackCollisionShapePresetCatalog' },
+    },
 }
 local recordTypes = utils.get_sorted_table_keys(armorCatalogs)
 

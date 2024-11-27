@@ -384,6 +384,8 @@ if core.editor_enabled then
                     uiHandler = ui.handlers.common.enum_flags(ItemUseAttrBits, 6)
                 },
                 _IconNo = { extensions = { { type = 'tooltip', text = 'For custom items, icon number should be equal to the item ID' } } },
+                _FakeItemId = { uiHandler = ui.handlers.common.enum('app.ItemIDEnum') },
+                _DecayedItemId = { uiHandler = ui.handlers.common.enum('app.ItemIDEnum') },
             },
         },
         ['app.ItemWeaponParam'] = {

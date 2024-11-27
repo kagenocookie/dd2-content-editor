@@ -56,6 +56,7 @@ local recordClasses = {
     MantleStyle = { styleDb = '_MantleDB', swap = 'app.MantleSwapItem', enum = 'app.MantleStyle', styleDict = 'MantleDict', slot = 5, styleField = '_MantleStyle', styleNoEnum = enums.get_virtual_enum('MantleStyleNo', {}) },
     BackpackStyle = { styleDb = '_BackpackDB', swap = 'app.BackpackSwapItem', enum = 'app.BackpackStyle', styleField = '_BackpackStyle' },
     UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_Style' },
+    FacewearStyle = { styleDb = '_FacewearDB', swap = 'app.FacewearSwapItem', enum = 'app.FacewearStyle', styleField = '_Style', furmaskIndex = 6 },
     -- _BodySkinDB = {'app.BodySkinSwapItem', 'app.SkinStyle'},
     -- _BodyMuscleDB = {'app.BodyMuscleSwapItem', 'app.MuscleStyle'},
     -- _BodyMeshDB = {'app.BodyMeshSwapItem', 'app.BodyMeshStyle'}, -- species +  gender
@@ -185,13 +186,17 @@ end)
 for _, name in ipairs(recordTypes) do
     local record = recordClasses[name]
     local class = record.swap
+    local hasFurmasks = record.furmaskIndex ~= nil
     local styleHashEnum = utils.clone_table(enums.get_enum(record.enum).valueToLabel)
     udb.register_entity_type(name, {
         export = function (instance)
             --- @cast instance StyleEntity
-            local furmasks = import_handlers.export_table(instance.furmasks or {}, 'app.PrefabController') or {}
-            furmasks[variantKeys[1]] = furmasks[variantKeys[1]] or 'null'
-            furmasks[variantKeys[2]] = furmasks[variantKeys[2]] or 'null'
+            local furmasks = nil
+            if hasFurmasks then
+                furmasks = import_handlers.export_table(instance.furmasks or {}, 'app.PrefabController') or {}
+                furmasks[variantKeys[1]] = furmasks[variantKeys[1]] or 'null'
+                furmasks[variantKeys[2]] = furmasks[variantKeys[2]] or 'null'
+            end
             return {
                 styleHash = instance.styleHash,
                 data = import_handlers.export_table(instance.variants, class),

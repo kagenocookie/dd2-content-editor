@@ -100,12 +100,22 @@ local function create_float_slider(min_range, max_range, format_string)
 end
 
 
---- @param enum EnumSummary
+--- @param enum EnumSummary|string|nil
 --- @return UIHandler
 local function create_enum(enum)
+    if type(enum) == 'string' then enum = enums.get_enum(enum) end
     --- @type UIHandler
     return function (context)
         local changed, value
+        if not enum then
+            if context.data.classname and context.data.classname:find('System.') ~= 1 then
+                enum = enums.get_enum(context.data.classname)
+            else
+                changed, value = imgui.drag_int(context.label .. ' (Invalid enum)', context.get(), 0.1)
+                if changed then context.set(value) end
+                return changed
+            end
+        end
         if #enum.values > 15 then
             changed, value, context.data.filter = ui.filterable_enum_value_picker(context.label, context.get(), enum, context.data.filter or '')
         else
