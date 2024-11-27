@@ -12,9 +12,9 @@ local enums = require('content_editor.enums')
 local entity_tracker = {}
 
 --- @class EntityTypeConfig
---- @field import fun(import_data: EntityImportData, instance: nil|DBEntity): DBEntity Method to import this type of entity into the game.
---- @field export fun(instance: DBEntity): EntityImportData Export the data into a serializable object; The core fields can be omitted (id, label, type) as they will be automatically before saving.
---- @field delete nil|fun(instance: DBEntity): status: nil|'ok'|'error'|'not_deletable'|'forget' Delete / disable the entity from the game's data; forget: entity may not be fully deleted or reverted to default state, we can remove the entity record for it but will show a prompt to restart the game
+--- @field import fun(import_data: EntityImportData, entity: DBEntity) Method that imports this type of entity into the game.
+--- @field export fun(entity: DBEntity): EntityImportData Export the data into a serializable object; The core fields can be omitted (id, label, type) as they will be automatically added before saving.
+--- @field delete nil|fun(entity: DBEntity): status: nil|'ok'|'error'|'not_deletable'|'forget' Delete / disable the entity from the game's data; forget: entity may not be fully deleted or reverted to default state, we can remove the entity record for it but will show a prompt to restart the game
 --- @field generate_label nil|fun(entity: DBEntity): string
 --- @field root_types string[] Types to automatically generate type data for
 --- @field replaced_enum string|nil
@@ -238,11 +238,12 @@ end
 --- @param data EntityImportData
 --- @param instance DBEntity|nil
 local function import_entity(entity_cfg, data, instance)
-    local entity = entity_cfg.import(data, instance)
-    entity.id = data.id
-    entity.type = data.type
-    entity.label = data.label or (instance and instance.label)
-    return entity
+    instance = instance or {}
+    instance.id = data.id
+    instance.type = data.type
+    instance.label = data.label or instance.label
+    entity_cfg.import(data, instance)
+    return instance
 end
 
 --- @param entity DBEntity

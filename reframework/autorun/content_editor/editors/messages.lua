@@ -184,7 +184,6 @@ udb.register_entity_type('message_group', {
     import = function (data, instance)
         --- @cast data MessageGroupData
         --- @cast instance MessageGroupEntity
-        instance = instance or {}
 
         -- ensure we clean up any existing references
         if instance.messages then
@@ -212,7 +211,6 @@ udb.register_entity_type('message_group', {
                 end
             end
         end
-        return instance
     end,
     delete = function (instance)
         --- @cast instance MessageGroupEntity

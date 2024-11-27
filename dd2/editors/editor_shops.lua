@@ -53,9 +53,7 @@ udb.register_entity_type('shop', {
     end,
     import = function (data, instance)
         --- @cast instance ItemShopData
-        instance = instance or {}
         instance.runtime_instance = import_handlers.import('app.ItemShopParam', data.data, instance.runtime_instance)
-        return instance
     end,
     delete = function (instance)
         --- @cast instance ItemShopData
@@ -92,14 +90,13 @@ local function register_partial_entity_array(parent_entity, partial_type_name, e
         import = function (data, instance)
             --- @cast instance PartialArrayEntity
             --- @cast data PartialEntityData
-            instance = instance or {}
             instance.parent_id = data.parent_id
             local importedItems = {}
             local arr = array_getter(data.parent_id)
             if not arr then
                 re.msg('error in partial entity ' .. partial_type_name .. ' - array was not found for ID ' .. tostring(instance.parent_id))
                 instance.items = {}
-                return instance
+                return
             end
             local unimportedItems = utils.table_values(data.data or {})
             for _, existingItem in pairs(arr) do
@@ -123,7 +120,6 @@ local function register_partial_entity_array(parent_entity, partial_type_name, e
             end
 
             instance.items = importedItems
-            return instance
         end,
         delete = function (instance)
             --- @cast instance PartialArrayEntity

@@ -82,7 +82,6 @@ udb.register_entity_type('item_data', {
     end,
     import = function (data, instance)
         --- @cast instance ItemDataEntity
-        instance = instance or {}
         if data.data and data.data._IconNo == 0 then
             data.data._IconNo = data.id
         end
@@ -113,7 +112,6 @@ udb.register_entity_type('item_data', {
             -- I'm actually not sure whether this is even needed and how we're gonna tell the game to fetch it by string
             -- ItemManager._EquipDataDict[tostring(data.id)] = data.id
         -- end
-        return instance
     end,
     generate_label = function (entity)
         return 'Item ' .. entity.id .. ' : ' .. enums.get_enum('app.ItemIDEnum').get_label(entity.id)

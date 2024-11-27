@@ -74,7 +74,6 @@ udb.register_entity_type('weapon', {
     end,
     import = function (data, instance)
         --- @cast instance WeaponEntity
-        instance = instance or {}
         instance.prefab = import_handlers.import('app.RefCounter`1<app.PrefabController>', data.prefab, instance.prefab)
         instance.offsets = import_handlers.import('app.WeaponSetting.OffsetSetting', data.offsets, instance.offsets)
         if instance.prefab and instance.prefab:get_RefCount() < 1 then instance.prefab:addRef() end
@@ -89,7 +88,6 @@ udb.register_entity_type('weapon', {
                 offSettings.OffsetSettings = helpers.expand_system_array(offSettings.OffsetSettings, { instance.offsets })
             end
         end
-        return instance
     end,
     generate_label = function (entity)
         if OriginalWeaponIDs[entity.id] then

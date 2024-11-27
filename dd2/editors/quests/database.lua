@@ -453,13 +453,11 @@ end)
 
 udb.register_entity_type('quest', {
     import = function (data, instance)
-        --- @cast instance QuestDataSummary|nil
+        --- @cast instance QuestDataSummary
         --- @cast data Import.Quest
 
         -- TODO what's quest progress data?
-        instance = instance or {}
         instance = importer.quest.data(data, instance)
-        return instance
     end,
     export = function (data)
         --- @cast data QuestDataSummary
@@ -558,20 +556,14 @@ udb.register_entity_type('quest', {
 })
 
 udb.register_entity_type('quest_processor', {
-    import = function (data, instance)
+    import = function (data, entity)
         --- @cast data Import.QuestProcessor
-        --- @cast instance QuestProcessorData
-        instance = instance or {
-            raw_data = data.data,
-            id = data.id,
-            type = 'quest_processor',
-            label = data.label,
-            runtime_instance = instance,
-            disabled = data.disabled or false
-        }
+        --- @cast entity QuestProcessorData
+        entity.raw_data = data.data
+        entity.disabled = data.disabled or false
         if data.data.QuestAction == nil then data.data.QuestAction = {} end
         if data.data.PrevProcCondition == nil then data.data.PrevProcCondition = {} end
-        return importer.quest.processor(instance)
+        importer.quest.processor(entity)
     end,
     root_types = {'app.QuestProcessor'},
     export = function (data)
@@ -612,14 +604,12 @@ udb.register_entity_type('quest_processor', {
 udb.register_entity_type('quest_reward', {
     import = function (data, instance)
         --- @cast instance QuestRewardData
-        instance = instance or {}
         instance.runtime_instance = import_handlers.import('app.QuestRewardData', data.data or {}, instance.runtime_instance)
         instance.runtime_instance--[[@as any]]._NameHash = data.id
         local catalog = gamedb.get_first_quest_catalog()
         if not catalog._QuestRewardTableData._DataList:Contains(instance.runtime_instance) then
             catalog._QuestRewardTableData._DataList:Add(instance.runtime_instance)
         end
-        return instance
     end,
     export = function (instance)
         --- @cast instance QuestRewardData

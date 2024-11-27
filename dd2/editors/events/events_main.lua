@@ -84,18 +84,16 @@ udb.events.on('data_imported', function (data)
 end)
 
 udb.register_entity_type('event_context', {
-    import = function (data, instance)
+    import = function (data, entity)
         --- @cast data Import.EventContext
-        --- @cast instance EventContext|nil
-        instance = instance or {}
-        if instance.rootContext == nil then
-            instance.rootContext = sdk.create_instance('app.SuddenQuestContextData'):add_ref()--[[@as app.SuddenQuestContextData]]
-            instance.rootContext._SerialNum = data.id
+        --- @cast entity EventContext
+        if entity.rootContext == nil then
+            entity.rootContext = sdk.create_instance('app.SuddenQuestContextData'):add_ref()--[[@as app.SuddenQuestContextData]]
+            entity.rootContext._SerialNum = data.id
         end
 
-        instance.context = import_handlers.import('app.SuddenQuestContextData.ContextData', data.data, instance.rootContext._Data)
-        instance.rootContext._Data = instance.context
-        return instance
+        entity.context = import_handlers.import('app.SuddenQuestContextData.ContextData', data.data, entity.rootContext._Data)
+        entity.rootContext._Data = entity.context
     end,
     export = function (data)
         --- @cast data EventContext
@@ -133,8 +131,7 @@ udb.register_entity_type('event_context', {
 udb.register_entity_type('event', {
     import = function (data, instance)
         --- @cast data Import.EventData
-        --- @cast instance Event|nil
-        instance = instance or {}
+        --- @cast instance Event
         instance.selectData = import_handlers.import('app.SuddenQuestSelectData', data.data, instance.selectData)
         instance.selectData._SerialNum = data.id
         instance.scriptEffects = data.scriptEffects

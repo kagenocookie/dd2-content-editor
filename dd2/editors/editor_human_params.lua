@@ -51,7 +51,6 @@ udb.register_entity_type('job_param', {
     end,
     import = function (data, instance)
         --- @cast instance HumanParamsEntity
-        instance = instance or {}
         instance.runtime_instance = import_handlers.import('app.JobUniqueParameter', data.data, instance.runtime_instance)
         local field = string.format('Job%02dParameter', instance.id)
         CharacterManager:get_HumanParam().JobParam[field] = instance.runtime_instance
@@ -79,10 +78,8 @@ local function define_param_entity(entity_type, classname, labeler)
         end,
         import = function (data, instance)
             --- @cast instance HumanParamsEntity
-            instance = instance or {}
             instance.runtime_instance = import_handlers.import(classname, data.data, instance.runtime_instance)
             -- no need to inject anything into game data since we're only editing existing records for now
-            return instance
         end,
         generate_label = labeler or function (entity)
             return entity_type .. ' ' .. entity.id

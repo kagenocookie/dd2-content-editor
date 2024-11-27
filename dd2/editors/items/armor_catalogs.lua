@@ -121,15 +121,12 @@ for armorMeshType, fieldData in pairs(armorCatalogs) do
     udb.register_entity_type(armorMeshType, {
         insert_id_range = {1000, 360000},
         import = function (import_data, instance)
-            instance = instance or {}
             for i, entry in ipairs(fieldData) do
                 instance[entry.name] = import_handlers.import('app.PrefabController', import_data[entry.name], instance[entry.name])
                 if instance[entry.name] then
                     CharacterEditManager[entry.dict][import_data.id] = instance[entry.name]
                 end
             end
-
-            return instance
         end,
         export = function (instance)
             local data = {}

@@ -189,30 +189,29 @@ for _, name in ipairs(recordTypes) do
     local hasFurmasks = record.furmaskIndex ~= nil
     local styleHashEnum = utils.clone_table(enums.get_enum(record.enum).valueToLabel)
     udb.register_entity_type(name, {
-        export = function (instance)
-            --- @cast instance StyleEntity
+        export = function (entity)
+            --- @cast entity StyleEntity
             local furmasks = nil
             if hasFurmasks then
-                furmasks = import_handlers.export_table(instance.furmasks or {}, 'app.PrefabController') or {}
+                furmasks = import_handlers.export_table(entity.furmasks or {}, 'app.PrefabController') or {}
                 furmasks[variantKeys[1]] = furmasks[variantKeys[1]] or 'null'
                 furmasks[variantKeys[2]] = furmasks[variantKeys[2]] or 'null'
             end
             return {
-                styleHash = instance.styleHash,
-                data = import_handlers.export_table(instance.variants, class),
+                styleHash = entity.styleHash,
+                data = import_handlers.export_table(entity.variants, class),
                 furmasks = furmasks,
             }
         end,
-        import = function (data, instance)
-            --- @cast instance StyleEntity
+        import = function (data, entity)
+            --- @cast entity StyleEntity
             --- @cast data StyleData
-            instance = instance or {}
-            instance.variants = instance.variants or {}
-            instance.styleHash = data.styleHash or data.id
+            entity.variants = entity.variants or {}
+            entity.styleHash = data.styleHash or data.id
             local hasVisor = false
             for variantKey, variantImport in pairs(data.data) do
-                local variant = import_handlers.import(class, variantImport, instance.variants[variantKey])
-                instance.variants[variantKey] = variant
+                local variant = import_handlers.import(class, variantImport, entity.variants[variantKey])
+                entity.variants[variantKey] = variant
                 variant[record.styleField] = data.id
                 if variant then
                     CharacterEditManager[record.styleDb][tonumber(variantKey)][data.id] = variant
@@ -227,10 +226,10 @@ for _, name in ipairs(recordTypes) do
                 visorIds[data.id] = hasVisor or nil
             end
             if data.furmasks then
-                instance.furmasks = instance.furmasks or {}
+                entity.furmasks = entity.furmasks or {}
                 for k, v in pairs(data.furmasks) do
-                    local importedFurmask = import_handlers.import('app.PrefabController', v, instance.furmasks[k])
-                    instance.furmasks[k] = importedFurmask
+                    local importedFurmask = import_handlers.import('app.PrefabController', v, entity.furmasks[k])
+                    entity.furmasks[k] = importedFurmask
                     if CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)] then
                         if importedFurmask then
                             CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)][data.styleHash] = importedFurmask
@@ -242,10 +241,8 @@ for _, name in ipairs(recordTypes) do
             end
 
             if record.styleDict then
-                ItemManager[record.styleDict][data.id] = instance.styleHash
+                ItemManager[record.styleDict][data.id] = entity.styleHash
             end
-
-            return instance
         end,
         generate_label = function (entity)
             --- @cast entity StyleEntity
@@ -255,22 +252,22 @@ for _, name in ipairs(recordTypes) do
                 return name .. ' ' .. entity.id
             end
         end,
-        delete = function (instance)
-            --- @cast instance StyleEntity
-            if instance.id < 10000 then return 'forget' end
+        delete = function (entity)
+            --- @cast entity StyleEntity
+            if entity.id < 10000 then return 'forget' end
 
-            if instance.furmasks then
-                for k, v in pairs(instance.furmasks) do
-                    CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)]:Remove(instance.styleHash)
+            if entity.furmasks then
+                for k, v in pairs(entity.furmasks) do
+                    CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)]:Remove(entity.styleHash)
                 end
             end
 
             if record.styleDict then
-                ItemManager[record.styleDict]:Remove(instance.id)
+                ItemManager[record.styleDict]:Remove(entity.id)
             end
 
-            for variantKey, _ in pairs(instance.variants or {}) do
-                CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(instance.id)
+            for variantKey, _ in pairs(entity.variants or {}) do
+                CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(entity.id)
             end
 
             return 'ok'
@@ -400,7 +397,7 @@ if core.editor_enabled then
             if editor.active_bundle then
                 local create, preset = ui.editor.create_button_with_preset(state, state.style_type, nil, nil, nil, nil, true)
                 if create then
-                    print('creating style from preset', state.style_type, json.dump_string(preset))
+                    -- print('creating style from preset', state.style_type, json.dump_string(preset))
                     local newEntity = udb.insert_new_entity(state.style_type, editor.active_bundle, preset)
                     ui.editor.set_selected_entity_picker_entity(state, state.style_type, newEntity)
                 end

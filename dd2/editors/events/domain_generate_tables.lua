@@ -30,9 +30,7 @@ udb.register_entity_type('domain_query_generate_table', {
         --- @cast instance DQGenerateTable
         local genTable = GenerateManager:get_DomainQueryGenerateTable()
         local storedInstance = utils.first_where(genTable._Elements, function (value) return value._RequestID == import_data.id end)
-        instance = instance or {}
 
-        instance.label = import_data.label
         if storedInstance ~= nil then
             instance.table = storedInstance
         end
@@ -43,8 +41,6 @@ udb.register_entity_type('domain_query_generate_table', {
         if storedInstance == nil and instance.table then
             genTable._Elements = helpers.expand_system_array(genTable._Elements, { instance.table }, 'app.DomainQueryGenerateTable.DomainQueryGenetateTableElement')
         end
-
-        return instance
     end,
     export = function (instance)
         --- @cast instance DQGenerateTable

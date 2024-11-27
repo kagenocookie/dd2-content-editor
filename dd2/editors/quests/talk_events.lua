@@ -304,7 +304,6 @@ udb.register_entity_type('talk_event', {
     import = function (data, instance)
         --- @cast data TalkEventImportData
         --- @cast instance TalkEventData
-        instance = instance or {}
         instance.data = import_handlers.import('app.TalkEventDefine.TalkEventData', data.data or {}, instance.data)
         instance.questId = data.questId
         if instance.questId == nil then
@@ -314,7 +313,6 @@ udb.register_entity_type('talk_event', {
             TalkEventManager._ResourceCatalog:register(data.id, instance.data)
             print('Imported talk event: ', data.id, 'quest', instance.questId)
         end
-        return instance
     end,
     delete = function (instance)
         --- @cast instance TalkEventData
@@ -350,8 +348,6 @@ udb.register_entity_type('quest_dialogue_pack', {
     import = function (data, instance)
         --- @cast data QuestDialogueImportData
         --- @cast instance QuestDialogueEntity
-        instance = instance or {}
-
         instance.data = import_handlers.import('app.TalkEventDefine.TalkEventDialoguePack', data.data or {}, instance.data)
         if not TalkEventManager._QuestDialoguePackCatalog:ContainsKey(data.id) then
             TalkEventManager._QuestDialoguePackCatalog[data.id] = instance.data
@@ -383,8 +379,6 @@ udb.register_entity_type('pawn_talk_monologue', {
     import = function (data, instance)
         --- @cast data PawnTalkImportData
         --- @cast instance PawnTalkData
-        instance = instance or {}
-
         instance.data = import_handlers.import('app.PawnTalkMonologueData', data.data, instance.data)
         if instance.data._IsQuest then
             if instance.data._QuestId and instance.data._QuestId ~= -1 and not TalkEventManager._PawnQuestTalkMonologueCatalog:ContainsKey(data.id) then

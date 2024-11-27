@@ -25,13 +25,11 @@ udb.register_entity_type('custom_script', {
         return { script = instance.script, hook_type = instance.hook_type }
     end,
     import = function (data, instance)
-        --- @cast data CustomScriptEntity|nil
-        --- @cast instance CustomScriptEntity|nil
-        instance = instance or {}
+        --- @cast data CustomScriptEntity
+        --- @cast instance CustomScriptEntity
         instance.script = data and data.script or ''
         instance.hook_type = data and data.hook_type or ''
-        instance.script_func = load(preprocess_func(instance.script), data and ('_custom_script_' .. data.id) or nil, 't')
-        return instance
+        instance.script_func = load(preprocess_func(instance.script), '_custom_script_' .. data.id, 't')
     end,
     insert_id_range = {100000, 99999900},
     delete = function () return 'ok' end,

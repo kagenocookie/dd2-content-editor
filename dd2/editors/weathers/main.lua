@@ -52,8 +52,7 @@ udb.register_entity_type('weather', {
         }
     end,
     import = function (data, instance)
-        --- @cast instance WeatherEntity|nil
-        instance = instance or {}
+        --- @cast instance WeatherEntity
         instance.runtime_instance = import_handlers.import('app.WeatherUserData.WeatherData', data.data, instance.runtime_instance)
         instance.area = instance.runtime_instance.Area
         instance.weather_type = instance.runtime_instance.Weather
@@ -65,7 +64,6 @@ udb.register_entity_type('weather', {
             WeatherManager.mWeatherUserData.mWeatherDataList:Add(instance.runtime_instance)
         end
         instance.scriptedEffects = data.scriptedEffects or {}
-        return instance
     end,
     delete = function (instance)
         if instance.id < 10000 then return 'not_deletable' end
