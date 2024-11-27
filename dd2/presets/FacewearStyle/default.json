@@ -1,0 +1,31 @@
+{
+    "data": {
+        "1910070090": {
+            "_BeardHideParts": 0,
+            "_FaceJointMask": 8,
+            "_Gender": 1910070090,
+            "_HeadHideParts": 2097152,
+            "_MeshID": 0,
+            "_PartsEnable": 1072694271,
+            "_SkinID": 0,
+            "_Style": 0,
+            "_TopsBdHideParts": 0
+        },
+        "2776536455": {
+            "_BeardHideParts": 3306058423303,
+            "_FaceJointMask": 8,
+            "_Gender": 2776536455,
+            "_HeadHideParts": 2097152,
+            "_MeshID": 0,
+            "_PartsEnable": 1072694271,
+            "_SkinID": 0,
+            "_Style": 0,
+            "_TopsBdHideParts": 0
+        }
+    },
+    "furmasks": {
+        "1910070090": "null",
+        "2776536455": "null"
+    },
+    "type": "FacewearStyle"
+}
