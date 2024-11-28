@@ -35,6 +35,9 @@ local CharacterManager = sdk.get_managed_singleton('app.CharacterManager')
 local MathEx = sdk.find_type_definition('via.MathEx')
 local distSqVec3 = MathEx:get_method('distanceSq(via.vec3, via.vec3)')
 
+local t_position = sdk.find_type_definition('via.Position')
+
+---@param position via.vec3|via.Position|Vector3f|nil
 ---@param time_hour number|nil
 ---@param time_min number|nil
 ---@param time_day number|nil
@@ -44,6 +47,15 @@ local function warp_player(position, time_hour, time_min, time_day, timeType)
 
     local transform = player:get_GameObject():get_Transform()
     if transform == nil then print('player has no transform?') return end
+
+    if position and (not position.get_type_definition or not position--[[@as any]]:get_type_definition():is_a(t_position)) then
+        local newpos = ValueType.new(sdk.find_type_definition('via.Position'))--[[@as any]]
+        newpos.x = position.x
+        newpos.y = position.y
+        newpos.z = position.z
+        position = newpos
+    end
+
     position = position or transform:get_UniversalPosition()
 
     local now_hr = timeManager:get_InGameHour() --- @type number
