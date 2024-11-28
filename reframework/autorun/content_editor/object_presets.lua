@@ -51,6 +51,7 @@ end
 
 --- @return string[]
 local function get_preset_names(type)
+    if not next(preset_names_by_type) then refresh_available_presets() end
     local names = {}
     for k, v in pairs(preset_names_by_type[type] or {}) do
         names[#names+1] = v
@@ -60,10 +61,12 @@ end
 
 --- @return DataObjectPreset[]
 local function get_preset_list(type)
+    if not next(preset_names_by_type) then refresh_available_presets() end
     return presets_by_type[type] or {}
 end
 
 local function get_preset_data(type, name)
+    if not next(preset_names_by_type) then refresh_available_presets() end
     local names = preset_names_by_type[type]
     if not names then return nil end
 
@@ -72,8 +75,6 @@ local function get_preset_data(type, name)
 
     return presets_by_type[type][idx].data
 end
-
-refresh_available_presets()
 
 usercontent.__internal.presets = {
     refresh = refresh_available_presets,

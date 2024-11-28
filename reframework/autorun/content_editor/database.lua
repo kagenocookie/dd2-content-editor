@@ -12,7 +12,7 @@ local enums = require('content_editor.enums')
 local entity_tracker = {}
 
 --- @class EntityTypeConfig
---- @field import fun(import_data: EntityImportData, entity: DBEntity) Method that imports this type of entity into the game.
+--- @field import fun(import_data: EntityImportData|table, entity: DBEntity) Method that imports this type of entity into the game.
 --- @field export fun(entity: DBEntity): EntityImportData Export the data into a serializable object; The core fields can be omitted (id, label, type) as they will be automatically added before saving.
 --- @field delete nil|fun(entity: DBEntity): status: nil|'ok'|'error'|'not_deletable'|'forget' Delete / disable the entity from the game's data; forget: entity may not be fully deleted or reverted to default state, we can remove the entity record for it but will show a prompt to restart the game
 --- @field generate_label nil|fun(entity: DBEntity): string
