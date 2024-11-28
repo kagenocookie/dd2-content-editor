@@ -83,6 +83,9 @@ end
 local globalSettings = editor.persistent_storage.get('console', {})
 local maxlines = 12
 
+--- @param item via.Component
+local function remap_gameobj(item) return item and item.get_GameObject and item:get_GameObject():add_ref()--[[@as any]] or item end
+
 local sceneFindComponents = sdk.find_type_definition('via.Scene'):get_method('findComponents(System.Type)')
 local compGetGO = sdk.find_type_definition('via.Component'):get_method('get_GameObject')
 local goGetName = sdk.find_type_definition('via.GameObject'):get_method('get_Name')
@@ -94,8 +97,9 @@ local function find_gameobjects(typedef, name_prefix, remap)
     if not scene then return nil end
     if not typedef then return nil end
 
-    local list = sceneFindComponents:call(scene, typedef)
+    local list = sceneFindComponents:call(scene, typedef)--[[@as SystemArray]]
     list = list and list:get_elements() or {}
+    local count = 0
     if name_prefix then
         local filtered = {}
         for _, item in ipairs(list) do
@@ -103,70 +107,104 @@ local function find_gameobjects(typedef, name_prefix, remap)
             if s and go then
                 local name = goGetName:call(go)
                 if name:find(name_prefix) then
-                    if remap then
-                        filtered[#filtered+1] = remap(item)
-                    else
-                        filtered[#filtered+1] = item
-                    end
+                    filtered[#filtered+1] = item
+                    count = count +1
                 end
             end
         end
         list = filtered
+    else
+        local list2 = {}
+        table.move(list, 1, #list, 1, list2)
+        list = list2
+        count = #list
     end
-    if #list == 1 then return list[1] end
+
+    if count > 0 and remap then
+        for i, v in ipairs(list) do
+            list[i] = remap(v)
+        end
+    end
+
+    if count == 1 then return list[1] end
     return list
+end
+
+--- @param query string syntax: {gameobject_name?}:{classname?}:{mapper_function?}
+local function find_game_object(query)
+    local typedef
+    local filter = nil
+    local remap = nil
+    if not query or query == '' then
+        typedef = sdk.typeof('via.Transform')
+        remap = remap_gameobj
+    else
+        local colon = query:find(':')
+        if not colon then
+            typedef = sdk.typeof('via.Transform')
+            remap = remap_gameobj
+            filter = query
+        else
+            filter = query:sub(1, colon - 1)
+            local colon2 = query:find('::', colon + 1)
+
+            if colon2 == colon + 1 then
+                typedef = sdk.typeof('via.Transform')
+            else
+                local t = query:sub(colon + 1, colon2 and colon2 - 1 or #query)
+                typedef = sdk.typeof(t)
+                if not typedef then
+                    error('Invalid type "' .. t .. '"')
+                end
+            end
+
+            if colon2 then
+                local success, remapper = pcall(load, 'return function(item) return ' .. query:sub(colon2 + 2) .. ' end', nil, 't')
+                if not success or not remapper then error('load error' .. tostring(remapper)) end
+                remap = remapper()
+            end
+        end
+    end
+    return find_gameobjects(typedef, filter, remap)
+end
+
+ce_find = function (text, single)
+    local s, e = pcall(find_game_object, text)
+    if single == true and type(e) == 'table' then
+        return select(2, next(e))
+    end
+    return e
 end
 
 --- @param text string
 --- @return boolean success, any result
 local function prepare_exec_func(text)
-    if text:sub(1, 1) == '/' then
-        local filter = text ~= '/' and text:sub(2) or nil
-        local typedef
-        if not filter then
-            typedef = sdk.typeof('via.Transform')
-        else
-            local colon = filter:find(':')
-            if not colon then
-                typedef = sdk.typeof('via.Transform')
-            else
-                local colon2 = filter:find('::', colon + 1)
-                if colon2 then
-                    local t = filter:sub(1, colon - 1)
-                    typedef = sdk.typeof(t)
-                    if not typedef then
-                        return false, 'Invalid type "' .. t .. '"'
-                    end
-                    -- print('colon2', 'function(item) return ' .. filter:sub(colon2 + 2) .. ' end')
-                    local success, remapper = pcall(load, 'return function(item) return ' .. filter:sub(colon2 + 2) .. ' end', nil, 't')
-                    if not success or not remapper then return false, 'load error' .. tostring(remapper) end
+    local uncached = false
+    if text:sub(1, 1) == '!' then
+        uncached = true
+        text = text:sub(2)
+    end
 
-                    filter = filter:sub(colon + 1, colon2 - 1)
-                    return true, find_gameobjects(typedef, filter, remapper())
-                else
-                    local t = filter:sub(1, colon - 1)
-                    typedef = sdk.typeof(t)
-                    filter = filter:sub(colon + 1)
-                    if not typedef then
-                        return false, 'Invalid type "' .. t .. '"'
-                    end
-                end
-            end
+    if text:sub(1, 1) == '/' then
+        text = text:sub(2)
+        if uncached then
+            return true, function () return find_game_object(text) end
         end
-        return true, find_gameobjects(typedef, filter)
-    elseif text:sub(1, 1) == '!' then
-        local code = isMultiline(text) and text:sub(2) or 'return ' .. text:sub(2)
-        local success, errOrFunc = pcall(load, code, nil, 't')
-        if not success or not errOrFunc then print('errored out', errOrFunc) return false, errOrFunc end
-        return pcall(errOrFunc)
+        return pcall(find_game_object, text)
     else
         local code = isMultiline(text) and text or 'return ' .. text
-        return pcall(load, code, nil, 't')
+        local success, errOrFunc = pcall(load, code, nil, 't')
+        if uncached then return success, errOrFunc end
+        if not success or not errOrFunc then print('errored out', errOrFunc) return false, errOrFunc end
+        return pcall(errOrFunc)
     end
 end
 
-_G.ce_find = function (text)
+_G.ce_find = function (text, single)
     local s, e = prepare_exec_func(text)
+    if single == true and type(e) == 'table' then
+        return select(2, next(e))
+    end
     return e
 end
 
@@ -179,6 +217,8 @@ local function add_to_exec_list(state, text)
     end
     editor.persistent_storage.save()
 end
+
+local last_result_string = nil
 
 editor.define_window('data_viewer', 'Data console', function (state)
     local confirm = imgui.button('Run')
@@ -205,16 +245,41 @@ editor.define_window('data_viewer', 'Data console', function (state)
 
     if state.input and state.input ~= '' and confirm then
         add_to_exec_list(state, state.input)
+        local _success, _eval = prepare_exec_func(state.input)
+        if _success then
+            if type(_eval) == 'function' then
+                _success, _eval = pcall(_eval)
+                if _success then
+                    last_result_string = helpers.to_string(_eval)
+                else
+                    last_result_string = 'ERROR: ' .. tostring(_eval)
+                end
+            else
+                last_result_string = helpers.to_string(_eval)
+            end
+        else
+            last_result_string = 'ERROR: ' .. tostring(_eval)
+        end
         state.input = ''
     end
 
     if state.toggleInfo then
+        imgui.begin_rect()
         imgui.text('Can write any valid lua code')
         imgui.text('Entering a / prefix does a search for game objects')
         imgui.text('/Player will search for any transforms that contain the text "Player"')
-        imgui.text('/app.Character:Player will search for any app.Character components that contain the text "Player"')
-        imgui.text('/app.Character:Player::item:get_GameObject() will evaluate the function after :: on each matching item and return that value instead')
-        imgui.text('Entering a ! prefix evaluates the result once and retrieves the cached result instead of evaluating every frame')
+        imgui.text('/Player:app.Character will search for any app.Character components that contain the text "Player"')
+        imgui.text('/Player:app.Character::item:get_GameObject() will evaluate the function after :: on each matching item and return that value instead')
+        imgui.text('Entering a ! prefix makes the result evaluate every frame instead of showing a cached result')
+        imgui.end_rect(2)
+    end
+
+    if last_result_string then
+        if last_result_string:find('ERROR:') == 1 then
+            imgui.text_colored(last_result_string, core.get_color('error'))
+        else
+            imgui.text(last_result_string)
+        end
     end
 
     if imgui.tree_node('History') then
@@ -343,19 +408,19 @@ editor.define_window('data_viewer', 'Data console', function (state)
             else
                 success = cache._success
             end
-            func = cache._eval
+            entryResult = cache._eval
             if not success then
-                imgui.text_colored('Error: ' .. tostring(func), core.get_color('error'))
-            elseif func == nil then
+                imgui.text_colored('Error: ' .. tostring(entryResult), core.get_color('error'))
+            elseif entryResult == nil then
                 imgui.text_colored('No results', core.get_color('error'))
-            elseif type(func) == 'string' then
-                imgui.text(func)
+            elseif type(entryResult) == 'string' then
+                imgui.text(entryResult)
             else
                 local data
-                if type(cache._eval) == 'function' then
-                    success, data = pcall(func)
+                if type(entryResult) == 'function' then
+                    success, data = pcall(entryResult)
                 else
-                    success, data = true, cache._eval
+                    success, data = true, entryResult
                 end
                 if not success then
                     imgui.text_colored('Error:' .. tostring(data), core.get_color('error'))
