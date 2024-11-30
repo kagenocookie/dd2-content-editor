@@ -8,7 +8,7 @@ local type_settings = {
     -- this one seems to have some magic that auto converts the via.GameObjectRef to a `nil|via.GameObject`
     -- not sure how we can edit this but it's probably a runtime entity that gets set automatically anyway
     ['via.GameObjectRef'] = {
-        handler = common.readonly_label(),
+        uiHandler = common.readonly_label(),
     },
     ['via.GameObject'] = {
         force_expander = true,
@@ -27,6 +27,9 @@ local type_settings = {
     ['via.vec4'] = {
         force_expander = false,
     },
+    ['via.Size'] = {
+        uiHandler = common.vec_n({'w', 'h'}, imgui.drag_float2, function() return Vector2f.new(0, 0) end),
+    }
 }
 
 local function merge_table(target, src)

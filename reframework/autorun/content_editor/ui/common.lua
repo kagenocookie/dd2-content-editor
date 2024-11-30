@@ -340,6 +340,7 @@ local function create_nullable_value_type(valueClassname, valueFieldHandler)
     )
 end
 
+local imgui_vec_fields = {'x', 'y', 'z', 'w'}
 --- @param fields string[]
 --- @param imgui_callback function
 --- @return UIHandler
@@ -347,15 +348,15 @@ local function create_vec_n(fields, imgui_callback, imgui_value_creator)
     return function (ctx)
         local value = ctx.get() or {}
         local newval = imgui_value_creator()
-        for _, f in ipairs(fields) do
-            newval[f] = value[f] or 0
+        for i, f in ipairs(fields) do
+            newval[imgui_vec_fields[i]] = value[f] or 0
         end
 
         local changed
         changed, newval = imgui_callback(ctx.label, newval, 0.1)
         if changed then
-            for _, f in ipairs(fields) do
-                value[f] = newval[f]
+            for i, f in ipairs(fields) do
+                value[f] = newval[imgui_vec_fields[i]]
             end
             ctx.set(value)
         end
@@ -455,6 +456,7 @@ _quest_DB._common_handlers = {
     vec4 = float_vec4,
     vec2_int = int_vec2,
     vec3_int = int_vec3,
+    vec_n = create_vec_n,
     color = handle_color,
 
     resource_holder = resource_holder,
