@@ -175,20 +175,21 @@ if core.editor_enabled then
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()
-            state.subtype = select(2, ui.basic.tabs({'Base shop data', 'Buy lists', 'Sell lists'}, state.subtype or 1))
-            if state.subtype == 1 then
-                imgui.text_colored('The base shop data view is intended for modifying the basic data or adding new shops.\nIf you wish to only add items to an existing shop, consider using the buy lists and sell lists views instead.\nThat way multiple mods can add items to the same shop', core.get_color('disabled'))
+            state.subtype = select(2, ui.basic.tabs({'Buy lists', 'Sell lists', 'Base shop data'}, state.subtype or 1))
+            if state.subtype == 3 then
+                imgui.text_colored('The base shop data view is intended for modifying the basic data or eventually adding new shops, as it fully replaces all data.\nIf you wish to only add items to an existing shop, consider using the buy lists and sell lists views instead.\nThat way multiple mods can add items to the same shop', core.get_color('disabled'))
                 imgui.spacing()
                 ui.editor.show_entity_metadata(selectedShop)
                 ui.handlers.show_editable(selectedShop, 'runtime_instance', selectedShop, nil, 'app.ItemShopParam')
-            elseif state.subtype == 2 then
-                local subtype = ui.editor.entity_picker('shop_buy', state, nil, 'List entity', function (e) return e.parent_id == selectedShop.id end) --[[@as PartialArrayEntity|nil]]
-                if editor.active_bundle and imgui.button('Create new') then
+            elseif state.subtype == 1 then
+                local subtype = ui.editor.entity_picker('shop_buy', state, nil, 'Buy list', function (e) return e.parent_id == selectedShop.id end) --[[@as PartialArrayEntity|nil]]
+                if editor.active_bundle and imgui.button('New buy list') then
                     local newEntity = udb.insert_new_entity('shop_buy', editor.active_bundle, { parent_id = selectedShop.id, parent_type = 'shop', data = {} })
                     ui.editor.set_selected_entity_picker_entity(state, 'shop_buy', newEntity)
                 end
                 if subtype and subtype.parent_id == selectedShop.id then
                     ui.editor.show_entity_metadata(subtype)
+                    imgui.text('Items: ' .. #subtype.items)
                     for idx, item in ipairs(subtype.items) do
                         imgui.push_id(idx)
                         if imgui.button('X') then
@@ -209,14 +210,15 @@ if core.editor_enabled then
                         udb.mark_entity_dirty(subtype)
                     end
                 end
-            elseif state.subtype == 3 then
-                local subtype = ui.editor.entity_picker('shop_sell', state, nil, 'List entity', function (e) return e.parent_id == selectedShop.id end) --[[@as PartialArrayEntity|nil]]
-                if editor.active_bundle and imgui.button('Create new') then
+            elseif state.subtype == 2 then
+                local subtype = ui.editor.entity_picker('shop_sell', state, nil, 'Sell list', function (e) return e.parent_id == selectedShop.id end) --[[@as PartialArrayEntity|nil]]
+                if editor.active_bundle and imgui.button('New sell list') then
                     subtype = udb.insert_new_entity('shop_sell', editor.active_bundle, { parent_id = selectedShop.id, parent_type = 'shop', data = {} })
                     ui.editor.set_selected_entity_picker_entity(state, 'shop_sell', subtype)
                 end
                 if subtype and subtype.parent_id == selectedShop.id then
                     ui.editor.show_entity_metadata(subtype)
+                    imgui.text('Items: ' .. #subtype.items)
                     for idx, item in ipairs(subtype.items) do
                         imgui.push_id(idx)
                         if imgui.button('X') then
@@ -247,12 +249,14 @@ if core.editor_enabled then
 
     definitions.override('', {
         ['app.ItemShopBuyParam'] = {
+            fieldOrder = {'_ItemId', '_Stock'},
             fields = {
                 _ItemId = { uiHandler = ui.handlers.common.enum(enums.get_enum('app.ItemIDEnum')) }
             },
             toString = function (value) return 'Buy ' .. enums.get_enum('app.ItemIDEnum').get_label(value._ItemId) end
         },
         ['app.ItemShopSellParam'] = {
+            fieldOrder = {'_ItemId'},
             fields = {
                 _ItemId = { uiHandler = ui.handlers.common.enum(enums.get_enum('app.ItemIDEnum')) }
             },
