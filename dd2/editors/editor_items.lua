@@ -3,7 +3,6 @@ require('editors.items.armor_catalogs')
 require('editors.items.weapons')
 require('editors.items.styles')
 require('editors.items.item_data')
-require('editors.items.pawn_sync_settings')
 
 if core.editor_enabled then
     local ui = require('content_editor.ui')
