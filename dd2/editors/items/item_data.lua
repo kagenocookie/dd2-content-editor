@@ -195,6 +195,90 @@ local function apply_icon_rect(tex, item)
     end
 end
 
+--- @param item ItemDataEntity
+--- @param tex via.gui.Texture
+local function replace_item_icon(item, tex)
+    if not item._texture then
+        if not item.icon_path or item.icon_path == '' then return false end
+        local immediateInst
+        if item.icon_path:match('.tex$') then
+            -- issue with using a tex resource directly:
+            -- the texture loads up but then game crashes next time it shows up
+            -- does the resource get garbage collected despite the add_ref()?
+            -- anyway, storing it in a gameobject works
+            immediateInst = prefabs.get_shared_instance(item.icon_path)
+            if not immediateInst then
+                immediateInst = sdk.find_type_definition("via.GameObject"):get_method("create(System.String)"):call(nil, '_' .. item.icon_path):add_ref()--[[@as via.GameObject]]
+                local holder = utils.add_gameobject_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
+                holder._Texture = import_handlers.import('via.render.TextureResourceHolder', item.icon_path):add_ref()
+                item._texture = holder._Texture
+                prefabs.store_shared_instance(item.icon_path, immediateInst)
+            else
+                local holder = utils.get_gameobject_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
+                item._texture = holder._Texture
+            end
+            apply_icon_rect(tex, item)
+        else
+            immediateInst = prefabs.instantiate_shared(item.icon_path, function (gameObj)
+                if not item._texture then
+                    local texHolder = utils.get_gameobject_component(gameObj, 'app.GUITextureHolder') --[[@as app.GUITextureHolder|nil]]
+                    item._texture = texHolder and (texHolder._Texture or texHolder._UVSequense)
+                end
+
+                if tex and sdk.is_managed_object(tex) and item._texture then
+                    apply_icon_rect(tex, item)
+                end
+            end)
+        end
+        -- apply a default transparent texture instead of having it flash white.png until the prefab loads
+        -- (iconNo = 8099 is empty for basegame icons, may need to change if devs add more content)
+        if not immediateInst then
+            tex:set_UVSequence(ItemManager:get_UVSequenceResourceManager():getUVSequenceResourceHolder(8000, 10000000))
+            tex:set_UVSequenceNo(8)
+            tex:set_UVPatternNo(99)
+        end
+        return true
+    end
+
+    if item._texture then
+        apply_icon_rect(tex, item)
+        return true
+    end
+
+    return false
+end
+
+-- the upgrade UI applies the focused item's icon UV sequence inlined, needs separate handling
+-- haven't yet managed to figure out how to make the default icons show up again afterwards though
+-- sdk.hook(
+--     sdk.find_type_definition('app.ui041101_00'):get_method('setupDetail'),
+--     function (args)
+--         thread.get_hook_storage().this = sdk.to_managed_object(args[2])
+--     end,
+--     function (returnValue)
+--         local this = thread.get_hook_storage().this--[[@as app.ui041101_00]]
+--         local selectedInfo = this.ItemListCtrl:get_SelectedInfo()--[[@as app.ui041101_00.ListInfo|nil]]
+--         local itemIcon = selectedInfo and selectedInfo.Storage and selectedInfo.Storage._ItemData and selectedInfo.Storage._ItemData._IconNo
+--         print('setupDetail itemicon', itemIcon)
+--         if itemIcon then
+--             if itemIcon >= custom_item_id_min then
+--                 local item = udb.get_entity('item_data', itemIcon) --[[@as ItemDataEntity|nil]]
+--                 if not item then return returnValue end
+--                 if not item._texture and (not item.icon_path or item.icon_path == '') then
+--                     -- no icon :(
+--                     return returnValue
+--                 end
+--                 print('replacing upgrade screen icon', itemIcon)
+--                 replace_item_icon(item, this.UpgradeDetail.TexIcon)
+--             else
+--                 -- TODO figure out how to restore the default icons
+--             end
+--         end
+
+--         return returnValue
+--     end
+-- )
+
 sdk.hook(
     -- I think this is the earliest common method where the game fetches item icons
     -- the game then calls getUVSequenceResourceHolder() and then applyUVSettings() when setting item icons, but we can override it right here already
@@ -210,50 +294,7 @@ sdk.hook(
             end
 
             local tex = sdk.to_managed_object(args[2]) --[[@as via.gui.Texture]]
-            if not item._texture then
-                if not item.icon_path or item.icon_path == '' then return end
-                local immediateInst
-                if item.icon_path:match('.tex$') then
-                    -- issue with using a tex resource directly:
-                    -- the texture loads up but then game crashes next time it shows up
-                    -- does the resource get garbage collected despite the add_ref()?
-                    -- anyway, storing it in a gameobject works
-                    immediateInst = prefabs.get_shared_instance(item.icon_path)
-                    if not immediateInst then
-                        immediateInst = sdk.find_type_definition("via.GameObject"):get_method("create(System.String)"):call(nil, '_' .. item.icon_path):add_ref()--[[@as via.GameObject]]
-                        local holder = utils.add_gameobject_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
-                        holder._Texture = import_handlers.import('via.render.TextureResourceHolder', item.icon_path):add_ref()
-                        item._texture = holder._Texture
-                        prefabs.store_shared_instance(item.icon_path, immediateInst)
-                    else
-                        local holder = utils.get_gameobject_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
-                        item._texture = holder._Texture
-                    end
-                    apply_icon_rect(tex, item)
-                else
-                    immediateInst = prefabs.instantiate_shared(item.icon_path, function (gameObj)
-                        if not item._texture then
-                            local texHolder = utils.get_gameobject_component(gameObj, 'app.GUITextureHolder') --[[@as app.GUITextureHolder|nil]]
-                            item._texture = texHolder and (texHolder._Texture or texHolder._UVSequense)
-                        end
-
-                        if tex and sdk.is_managed_object(tex) and item._texture then
-                            apply_icon_rect(tex, item)
-                        end
-                    end)
-                end
-                -- apply a default transparent texture instead of having it flash white.png until the prefab loads
-                -- (iconNo = 8099 is empty for basegame icons, may need to change if devs add more content)
-                if not immediateInst then
-                    tex:set_UVSequence(ItemManager:get_UVSequenceResourceManager():getUVSequenceResourceHolder(8000, 10000000))
-                    tex:set_UVSequenceNo(8)
-                    tex:set_UVPatternNo(99)
-                end
-                return sdk.PreHookResult.SKIP_ORIGINAL
-            end
-
-            if item._texture then
-                apply_icon_rect(tex, item)
+            if replace_item_icon(item, tex) then
                 return sdk.PreHookResult.SKIP_ORIGINAL
             end
         end
