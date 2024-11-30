@@ -168,14 +168,6 @@ local function find_game_object(query)
     return find_gameobjects(typedef, filter, remap)
 end
 
-ce_find = function (text, single)
-    local s, e = pcall(find_game_object, text)
-    if single == true and type(e) == 'table' then
-        return select(2, next(e))
-    end
-    return e
-end
-
 --- @param text string
 --- @return boolean success, any result
 local function prepare_exec_func(text)
@@ -200,8 +192,8 @@ local function prepare_exec_func(text)
     end
 end
 
-_G.ce_find = function (text, single)
-    local s, e = prepare_exec_func(text)
+ce_find = function (text, single)
+    local s, e = pcall(find_game_object, text)
     if single == true and type(e) == 'table' then
         return select(2, next(e))
     end
