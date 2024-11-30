@@ -367,7 +367,7 @@ local function load_data_bundles()
         end
     end
 
-    table.sort(orderedBundles, function (a, b) return utils.table_index_of(orders, a.name) > utils.table_index_of(orders, b.name) end)
+    table.sort(orderedBundles, function (a, b) return utils.table_index_of(orders, a.name) < utils.table_index_of(orders, b.name) end)
 
     for _, bundle in ipairs(unorderedBundles) do
         orderedBundles[#orderedBundles + 1] = bundle
