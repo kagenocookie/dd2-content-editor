@@ -83,7 +83,7 @@ local prefab = {
     end,
     import = function (src, target)
         if src == nil or src == '' or src == 'null' then return nil end
-        target = target or sdk.create_instance('via.Prefab')
+        target = target or sdk.create_instance('via.Prefab'):add_ref()
         target:set_Path(src)
         return target
     end

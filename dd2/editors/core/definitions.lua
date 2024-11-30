@@ -43,8 +43,8 @@ definitions.override('dd2', {
             end,
             import = function (src, target)
                 if src == nil or src == '' or src == 'null' then return nil end
-                target = target or sdk.create_instance('app.PrefabController')
-                target._Item = target._Item or sdk.create_instance('via.Prefab') ---@type via.Prefab
+                target = target or sdk.create_instance('app.PrefabController'):add_ref()
+                target._Item = target._Item or sdk.create_instance('via.Prefab'):add_ref() ---@type via.Prefab
                 target._Item:set_Path(src)
                 return target
             end
