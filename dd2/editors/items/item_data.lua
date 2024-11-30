@@ -249,35 +249,39 @@ local function replace_item_icon(item, tex)
 end
 
 -- the upgrade UI applies the focused item's icon UV sequence inlined, needs separate handling
--- haven't yet managed to figure out how to make the default icons show up again afterwards though
--- sdk.hook(
---     sdk.find_type_definition('app.ui041101_00'):get_method('setupDetail'),
---     function (args)
---         thread.get_hook_storage().this = sdk.to_managed_object(args[2])
---     end,
---     function (returnValue)
---         local this = thread.get_hook_storage().this--[[@as app.ui041101_00]]
---         local selectedInfo = this.ItemListCtrl:get_SelectedInfo()--[[@as app.ui041101_00.ListInfo|nil]]
---         local itemIcon = selectedInfo and selectedInfo.Storage and selectedInfo.Storage._ItemData and selectedInfo.Storage._ItemData._IconNo
---         print('setupDetail itemicon', itemIcon)
---         if itemIcon then
---             if itemIcon >= custom_item_id_min then
---                 local item = udb.get_entity('item_data', itemIcon) --[[@as ItemDataEntity|nil]]
---                 if not item then return returnValue end
---                 if not item._texture and (not item.icon_path or item.icon_path == '') then
---                     -- no icon :(
---                     return returnValue
---                 end
---                 print('replacing upgrade screen icon', itemIcon)
---                 replace_item_icon(item, this.UpgradeDetail.TexIcon)
---             else
---                 -- TODO figure out how to restore the default icons
---             end
---         end
+-- as soon as we try to apply a custom texture, somehow the via.gui.Texture breaks and stops drawing basegame items even though the component looks unchanged
+-- so until we find a solution, switching to setItemIconUV() which always works but is slightly lower quality
+local upgradeMenuFoundCustomItems = false
+sdk.hook(
+    sdk.find_type_definition('app.ui041101_00'):get_method('awake'),
+    function ()
+        upgradeMenuFoundCustomItems = false
+    end
+)
+sdk.hook(
+    sdk.find_type_definition('app.ui041101_00'):get_method('setupDetail'),
+    function (args)
+        thread.get_hook_storage().this = sdk.to_managed_object(args[2])
+    end,
+    function (returnValue)
+        local this = thread.get_hook_storage().this--[[@as app.ui041101_00]]
 
---         return returnValue
---     end
--- )
+        local selectedInfo = this.ItemListCtrl:get_SelectedInfo()--[[@as app.ui041101_00.ListInfo|nil]]
+        local itemIcon = selectedInfo and selectedInfo.Storage and selectedInfo.Storage._ItemData and selectedInfo.Storage._ItemData._IconNo
+        if itemIcon then
+            if itemIcon >= custom_item_id_min then
+                upgradeMenuFoundCustomItems = true
+            end
+            if upgradeMenuFoundCustomItems then
+                sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUV'):call(nil, this.UpgradeDetail.TexIcon, itemIcon)
+            else
+                sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUVS_ui01c01'):call(nil, this.UpgradeDetail.TexIcon, itemIcon)
+            end
+        end
+
+        return returnValue
+    end
+)
 
 sdk.hook(
     -- I think this is the earliest common method where the game fetches item icons
