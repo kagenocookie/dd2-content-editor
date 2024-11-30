@@ -3,13 +3,14 @@ require('editors.items.armor_catalogs')
 require('editors.items.weapons')
 require('editors.items.styles')
 require('editors.items.item_data')
+require('editors.items.pawn_sync_settings')
 
 if core.editor_enabled then
     local ui = require('content_editor.ui')
     local editor = require('content_editor.editor')
 
     editor.define_window('items', 'Items', function (state)
-        state.subtab = select(2, ui.core.tabs({'Item data', 'Styles', 'Armor catalogs', 'Weapon catalogs'}, state.subtab))
+        state.subtab = select(2, ui.basic.tabs({'Item data', 'Styles', 'Armor catalogs', 'Weapon catalogs'}, state.subtab))
         if state.subtab == 1 then
             state.item_data = state.item_data or {}
             editor.embed_window('item_data', 1, state.item_data)

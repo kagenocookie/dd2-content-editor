@@ -43,12 +43,12 @@ local function imgui_show_quest(questId)
             TalkEventManager._RecordDict:Remove(qt.id)
         end
     end
-    ui.core.tooltip('Resets all data stored in the current game save regarding this quest. All processor results will be reset to -1.\nMight need to save and reload afterwards to apply and reset everything properly.')
+    ui.basic.tooltip('Resets all data stored in the current game save regarding this quest. All processor results will be reset to -1.\nMight need to save and reload afterwards to apply and reset everything properly.')
 
     if questEntity and imgui.button('Update runtime entity') then
         gamedb.upsert_quest_entity(quest)
     end
-    ui.core.tooltip("Changes to source data only propagate to runtime after a reload or returning to title screen.\nClick this to force update runtime data, though I'm not sure I've handled every single thing yet.")
+    ui.basic.tooltip("Changes to source data only propagate to runtime after a reload or returning to title screen.\nClick this to force update runtime data, though I'm not sure I've handled every single thing yet.")
 
     imgui.same_line()
     if imgui.button('Update processor / cast NPC IDs') then
@@ -75,9 +75,9 @@ local function imgui_show_quest(questId)
 
         udb.mark_entity_dirty(quest)
     end
-    ui.core.tooltip("Update the Processor IDs and Cast NPCs lists with the currently active data.\nAny entites that are not currently loaded will be deemed gone and removed from the list.")
+    ui.basic.tooltip("Update the Processor IDs and Cast NPCs lists with the currently active data.\nAny entites that are not currently loaded will be deemed gone and removed from the list.")
 
-    if questEntity and ui.core.treenode_tooltip('Runtime data', 'The active runtime data for this event, generated from the source data objects.') then
+    if questEntity and ui.basic.treenode_tooltip('Runtime data', 'The active runtime data for this event, generated from the source data objects.') then
         ui.handlers.show_readonly(questEntity, quest, 'Quest entity', 'app.QuestManager.QuestEntity')
         if imgui.tree_node('Quest entity object explorer') then
             object_explorer:handle_address(questEntity)
@@ -105,14 +105,14 @@ local function imgui_show_quest(questId)
     changed = ui.handlers.show_nullable(quest, 'AfterStoryData', '_AfterStorys', 'After stories', 'app.QuestContextData.AfterStoryData', 'app.QuestAfterStoryData[]') or changed
     changed = ui.handlers.show_editable(quest, 'Log', quest, 'Quest log', 'app.QuestLogResource') or changed
     changed = ui.handlers.show_editable(quest, 'OracleHints', quest, 'Oracle hints', 'app.QuestOracleHintGroup') or changed
-    ui.core.tooltip('Required at least if any NpcControl processors are expected for this quest', nil, true)
+    ui.basic.tooltip('Required at least if any NpcControl processors are expected for this quest', nil, true)
     changed = ui.handlers.show_editable(quest, 'AISituation', quest, 'AI Situation', 'app.QuestAISituationGenerateParameter') or changed
 
-    ui.core.tooltip("I'm not sure if any how these last 3 arrays matter", nil, true)
+    ui.basic.tooltip("I'm not sure if any how these last 3 arrays matter", nil, true)
     changed = ui.handlers.show_editable(quest.contextData, 'TimeDetectionKeys', quest, 'Time detection keys') or changed
-    ui.core.tooltip("I'm not sure if any how these last 3 arrays matter", nil, true)
+    ui.basic.tooltip("I'm not sure if any how these last 3 arrays matter", nil, true)
     changed = ui.handlers.show_editable(quest.contextData, 'ProcessorIDs', quest, 'Processor IDs') or changed
-    ui.core.tooltip("I'm not sure if any how these last 3 arrays matter", nil, true)
+    ui.basic.tooltip("I'm not sure if any how these last 3 arrays matter", nil, true)
     changed = ui.handlers.show_editable(quest.contextData, 'CastNPCIDs', quest, 'Cast NPCs') or changed
 
     if changed then

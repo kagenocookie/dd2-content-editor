@@ -141,12 +141,12 @@ end
 
 editor.define_window('dev_tools', 'Dev tools', function (state)
     local changed
-    changed, state.pos_picker, state.pos_filter = ui.core.filterable_enum_value_picker("Location", state.pos_picker, AIKeyLocation, state.pos_filter)
+    changed, state.pos_picker, state.pos_filter = ui.basic.filterable_enum_value_picker("Location", state.pos_picker, AIKeyLocation, state.pos_filter)
     if imgui.button('Teleport to AIKeyLocation') and state.pos_picker then
         warp_player(get_AIKeyLocation_uni_position(tonumber(state.pos_picker)))
     end
 
-    changed, state.item_picker, state.item_filter = ui.core.filterable_enum_value_picker("Item", state.item_picker, ItemID, state.item_filter)
+    changed, state.item_picker, state.item_filter = ui.basic.filterable_enum_value_picker("Item", state.item_picker, ItemID, state.item_filter)
     if imgui.button('Give player item') and state.item_picker then
         give_item(state.item_picker, 1)
     end
@@ -160,7 +160,7 @@ editor.define_window('dev_tools', 'Dev tools', function (state)
         warp_player(nil, nil, nil, tonumber(state.time_input), 'add')
     end
 
-    ui.core.setting_checkbox('Show locations on screen', storage, 'show_locations', editor.persistent_storage.save)
+    ui.basic.setting_checkbox('Show locations on screen', storage, 'show_locations', editor.persistent_storage.save)
     if imgui.button('Stop all running custom effects') then
         usercontent.script_effects.stop_all_effects()
     end

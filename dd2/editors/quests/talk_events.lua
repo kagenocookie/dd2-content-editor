@@ -430,7 +430,7 @@ if core.editor_enabled then
         imgui.indent(8)
         imgui.begin_rect()
         local changed
-        changed, newval, ctx.data._state.filter = ui.core.filterable_enum_value_picker('Target quest', talkEvent.questId, udb.get_entity_enum('quest'), ctx.data._state.filter)
+        changed, newval, ctx.data._state.filter = ui.basic.filterable_enum_value_picker('Target quest', talkEvent.questId, udb.get_entity_enum('quest'), ctx.data._state.filter)
         if changed then
             talkEvent.questId = newval
             udb.mark_entity_dirty(talkEvent)
@@ -528,7 +528,7 @@ if core.editor_enabled then
             local selectedIdx = utils.table_find_index(ctx.data.all_nodes, function (item) return item._NodeId == nodeId end)
             local nextNode = ctx.data.all_nodes[selectedIdx]
             local changed, newNode
-            changed, newNode, ctx.data.node_filter = ui.core.combo_filterable('Next node', nextNode, ctx.data.all_node_names, ctx.data.node_filter, ctx.data.all_nodes)
+            changed, newNode, ctx.data.node_filter = ui.basic.combo_filterable('Next node', nextNode, ctx.data.all_node_names, ctx.data.node_filter, ctx.data.all_nodes)
             if changed then
                 ctx.set(newNode._NodeId)
                 ctx.parent.children._NextNodeName.set(newNode._NodeName)
@@ -704,7 +704,7 @@ if core.editor_enabled then
             end
 
             if talkEvent and monologueIndex ~= 0 and monologueContainer then
-                if ui.core.treenode_tooltip('Pawn talk reference', 'Reference to a pawn_talk_monologue entity, specified by the quest ID and Selector.SegmentNameHash') then
+                if ui.basic.treenode_tooltip('Pawn talk reference', 'Reference to a pawn_talk_monologue entity, specified by the quest ID and Selector.SegmentNameHash') then
                     local mng = udb.get_entity('pawn_talk_monologue', talkEvent.questId)
                     ui.handlers.show_editable(monologueContainer, monologueIndex, mng)
                     imgui.tree_pop()

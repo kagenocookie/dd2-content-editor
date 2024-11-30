@@ -258,7 +258,7 @@ if core.editor_enabled then
                         if proc then
                             local depIds = get_processor_dependency_ids(proc.PrevProcCondition._ElementArray)
                             if utils.table_contains(depIds, processor.ProcID) then
-                                if ui.core.treenode_suffix('Processor ' .. proc.ProcID, helpers.to_string(proc)) then
+                                if ui.basic.treenode_suffix('Processor ' .. proc.ProcID, helpers.to_string(proc)) then
                                     local ent = udb.get_entity('quest_processor', proc.ProcID)
                                     if ent then
                                         --- @cast ent QuestProcessorData

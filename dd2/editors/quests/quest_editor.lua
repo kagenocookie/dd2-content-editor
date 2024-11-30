@@ -29,12 +29,12 @@ editor.define_window('quests', 'Quests', function (state)
             local questVars = questdb.quests.extract_game_variables_into_enums()
             json.dump_file(var_fn, questVars)
         end
-        ui.core.tooltip('Export all quest variables with auto generated labels.\nMainly useful so we can update our name list whenever the game updates the data.')
+        ui.basic.tooltip('Export all quest variables with auto generated labels.\nMainly useful so we can update our name list whenever the game updates the data.')
 
         imgui.tree_pop()
     end
 
-    _, state.entity_subtype = ui.core.tabs({'Quests', 'Rewards'}, state.entity_subtype)
+    _, state.entity_subtype = ui.basic.tabs({'Quests', 'Rewards'}, state.entity_subtype)
     if state.entity_subtype == 1 then
         if editor.active_bundle and imgui.button('New quest') then
             --- @type Import.Quest
@@ -51,7 +51,7 @@ editor.define_window('quests', 'Quests', function (state)
             local newQuest = udb.insert_new_entity('quest', editor.active_bundle, newdata)
             ui.editor.set_selected_entity_picker_entity(state, 'quest', newQuest)
         end
-        ui.core.tooltip("Custom quests need some manual file editing that we can't do through code yet.\nThis button can handle dynamically modifying the quest catalog, but the quest scene files can't be created here.\nNeed to at least modify the stm/appsystem/scene/quest.scn.20 file and create a new stm/appdata/quest/qu###.scn.20 and resident.scn.20 file.\nCheck the dd2 content editor wiki for more info.", core.get_color('warning'))
+        ui.basic.tooltip("Custom quests need some manual file editing that we can't do through code yet.\nThis button can handle dynamically modifying the quest catalog, but the quest scene files can't be created here.\nNeed to at least modify the stm/appsystem/scene/quest.scn.20 file and create a new stm/appdata/quest/qu###.scn.20 and resident.scn.20 file.\nCheck the dd2 content editor wiki for more info.", core.get_color('warning'))
 
         local selectedQuest = ui.editor.entity_picker('quest', state)
         if selectedQuest then
@@ -85,7 +85,7 @@ editor.define_window('quests', 'Quests', function (state)
 
     imgui.spacing()
 
-    if ui.core.treenode_tooltip('Quest catalogs', 'Raw unsorted quest catalog data') then
+    if ui.basic.treenode_tooltip('Quest catalogs', 'Raw unsorted quest catalog data') then
         if questdb.catalogs == nil then questdb.catalogs = gamedb.get_quest_catalogs() end
         for path, catalog in pairs(questdb.catalogs) do
             if imgui.tree_node(path) then

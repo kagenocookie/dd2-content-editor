@@ -498,10 +498,10 @@ if core.editor_enabled then
 
         local fieldsChanged = false
         local function markdirty() fieldsChanged = true end
-        ui.core.setting_text('Name', item, 'name', markdirty)
-        ui.core.setting_text('Description', item, 'description', markdirty, 4)
-        ui.core.setting_text('Icon filepath', item, 'icon_path', markdirty)
-        ui.core.tooltip('Can either be the path to a .tex file or to a .pfb with an app.GUITextureHolder component')
+        ui.basic.setting_text('Name', item, 'name', markdirty)
+        ui.basic.setting_text('Description', item, 'description', markdirty, 4)
+        ui.basic.setting_text('Icon filepath', item, 'icon_path', markdirty)
+        ui.basic.tooltip('Can either be the path to a .tex file or to a .pfb with an app.GUITextureHolder component')
         if not item.icon_rect then
             local enable_rect = imgui.checkbox('Use custom icon UV rect', false)
             if enable_rect then
@@ -530,7 +530,7 @@ if core.editor_enabled then
 
         local itemType = item.runtime_instance:get_DataType()
         if itemType == 2 or itemType == 3 then
-            state.tab = select(2, ui.core.tabs({ 'Basic data', 'Enhance params' }, state.tab or 0))
+            state.tab = select(2, ui.basic.tabs({ 'Basic data', 'Enhance params' }, state.tab or 0))
             if state.tab == 2 then
                 if not item.enhance then
                     if imgui.button('Create') then

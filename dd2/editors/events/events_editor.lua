@@ -19,20 +19,20 @@ local function show_event_context(ctx, entity)
 
     local npcIdStr = enums.get_enum('CharacterID_NPC').valueToLabel[ctx.context._NpcID]
     local name = utils.dd2.translate_character_name(ctx.context._NpcID)
-    if ui.core.treenode_suffix(tostring(ctx.id), tostring(npcIdStr) .. ' : ' .. name .. '  ' .. (ctx.label or '')) then
+    if ui.basic.treenode_suffix(tostring(ctx.id), tostring(npcIdStr) .. ' : ' .. name .. '  ' .. (ctx.label or '')) then
         ui.editor.show_entity_metadata(ctx)
 
         if entity then
             if not entity._ExecutableList:Contains(ctx.rootContext) then
                 imgui.text_colored('Not executable', editor.get_color('warning'))
                 if entity._ExecutedDict:ContainsKey(ctx.id) then
-                    ui.core.tooltip('This context has already been executed recently and is now locked. entity._ExecutedDict value: ' .. tostring(entity._ExecutedDict:get_Item(ctx.id)))
+                    ui.basic.tooltip('This context has already been executed recently and is now locked. entity._ExecutedDict value: ' .. tostring(entity._ExecutedDict:get_Item(ctx.id)))
                     imgui.same_line()
                     if imgui.button('Unlock') then
                         entity._ExecutedDict:Clear()
                     end
                 else
-                    ui.core.tooltip("This event can't execute at the moment.\nThis generally means that some required data might be missing, conditions are not fulfilled, or the game is in a state where events don't update like the title screen.")
+                    ui.basic.tooltip("This event can't execute at the moment.\nThis generally means that some required data might be missing, conditions are not fulfilled, or the game is in a state where events don't update like the title screen.")
                 end
             end
         end
@@ -72,7 +72,7 @@ local function show_event(event, contextData, uiState)
         end
         if not gamedb.event_entity_is_synced_with_source_data(runtimeEntity, event) then
             imgui.same_line()
-            ui.core.tooltip("Some pending changes need to be manually transferred to the game's runtime entity.", core.get_color('warning'))
+            ui.basic.tooltip("Some pending changes need to be manually transferred to the game's runtime entity.", core.get_color('warning'))
         end
     else
         imgui.spacing()
@@ -99,11 +99,11 @@ local function show_event(event, contextData, uiState)
             if imgui.button('Clear executed contexts') then
                 runtimeEntity._ExecutedDict:Clear()
             end
-            ui.core.tooltip('Make all linked contexts executable again')
+            ui.basic.tooltip('Make all linked contexts executable again')
         end
     end
 
-    if runtimeEntity and ui.core.treenode_tooltip('Runtime entity', 'The active runtime data for this event, generated from the source data and contexts.') then
+    if runtimeEntity and ui.basic.treenode_tooltip('Runtime entity', 'The active runtime data for this event, generated from the source data and contexts.') then
         local charaId = runtimeEntity:get_NpcID()
         if charaId ~= enums.get_enum('app.CharacterID').labelToValue.Invalid then
             imgui.text('Currently chosen character: ' .. enums.get_enum('app.CharacterID').valueToLabel[charaId])
@@ -117,7 +117,7 @@ local function show_event(event, contextData, uiState)
         imgui.tree_pop()
     end
 
-    if ui.core.treenode_tooltip('Source data', 'This object is used as a base when generating the runtime entity') then
+    if ui.basic.treenode_tooltip('Source data', 'This object is used as a base when generating the runtime entity') then
         imgui.begin_rect()
         ui.editor.show_entity_metadata(event)
 
@@ -131,7 +131,7 @@ local function show_event(event, contextData, uiState)
         imgui.tree_pop()
     end
 
-    if ui.core.treenode_tooltip('Contexts', 'List of context objects that can be picked for this quest, generally used to vary NPCs') then
+    if ui.basic.treenode_tooltip('Contexts', 'List of context objects that can be picked for this quest, generally used to vary NPCs') then
         local contexts = gamedb.get_contexts(id)
         for idx, ctx in ipairs(contexts) do
             imgui.push_id(idx)

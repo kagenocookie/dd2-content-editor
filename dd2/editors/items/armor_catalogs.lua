@@ -234,7 +234,7 @@ if core.editor_enabled then
     end
 
     editor.define_window('armor_catalogs', 'Armor catalogs', function (state)
-        _, state.part_type, state.part_type_filter = ui.core.combo_filterable('Part type', state.part_type, recordTypes, state.part_type_filter or '')
+        _, state.part_type, state.part_type_filter = ui.basic.combo_filterable('Part type', state.part_type, recordTypes, state.part_type_filter or '')
         if state.part_type then
             local recordData = armorCatalogs[state.part_type]
 

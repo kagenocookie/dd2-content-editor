@@ -389,7 +389,7 @@ if core.editor_enabled then
 
     local equipped_style_result
     editor.define_window('styles', 'Styles', function (state)
-        _, state.style_type, state.style_type_filter = ui.core.combo_filterable('Style type', state.style_type, recordTypes, state.style_type_filter or '')
+        _, state.style_type, state.style_type_filter = ui.basic.combo_filterable('Style type', state.style_type, recordTypes, state.style_type_filter or '')
         if state.style_type then
             local recordData = recordClasses[state.style_type]
             local entity_type = state.style_type

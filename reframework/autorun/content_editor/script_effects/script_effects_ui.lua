@@ -20,7 +20,7 @@ ui.editor.set_entity_editor('script_effect', function (effect, state)
 
     local effectTypes = main.get_effect_types()
     local typeChanged, newType
-    typeChanged, newType, state.type_filter = ui.core.filterable_enum_value_picker('Effect type', effect--[[@as any]].effect_type, effectTypes, state.type_filter or '')
+    typeChanged, newType, state.type_filter = ui.basic.filterable_enum_value_picker('Effect type', effect--[[@as any]].effect_type, effectTypes, state.type_filter or '')
     if typeChanged then
         effect--[[@as any]].effect_type = newType
         effect.data = {}
@@ -74,12 +74,12 @@ end)
 editor.add_editor_tab('script_effects')
 
 set_ui_hook('group', function (entity, state)
-    ui.core.tooltip('All selected effects will be triggered')
+    ui.basic.tooltip('All selected effects will be triggered')
     return ui.editor.show_linked_entity_list(entity, entity.data, 'ids', 'script_effect', 'Effects', state)
 end)
 
 set_ui_hook('random', function (entity, state)
-    ui.core.tooltip('A single randomly selected effect from the list will be triggered')
+    ui.basic.tooltip('A single randomly selected effect from the list will be triggered')
     return ui.editor.show_linked_entity_list(entity, entity.data, 'ids', 'script_effect', 'Effects', state)
 end)
 
@@ -103,7 +103,7 @@ set_ui_hook('script', function (effect, state)
         changed = true
     end
 
-    ui.core.tooltip('Start input: input[1] - effect entity\nUpdate input: input[1] - effect entity, input[2] - persistent data table, input[3] - delta time (float)\nStop input: input[1] - effect entity, input[2] - persistent data table')
+    ui.basic.tooltip('Start input: input[1] - effect entity\nUpdate input: input[1] - effect entity, input[2] - persistent data table, input[3] - delta time (float)\nStop input: input[1] - effect entity, input[2] - persistent data table')
 
     changed = ui.editor.show_linked_entity_picker(effect.data, 'start_script_id', 'custom_script', state, 'Start script') or changed
     changed = ui.editor.show_linked_entity_picker(effect.data, 'update_script_id', 'custom_script', state, 'Update script') or changed

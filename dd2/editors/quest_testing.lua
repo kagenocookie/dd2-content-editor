@@ -82,7 +82,7 @@ local function draw_window()
         imgui.text('Last interacted NPC: N/A')
     end
 
-    _, selectedNpcId, selectedNpcFilter = ui.core.filterable_enum_value_picker('NPC picker', selectedNpcId, enums.NPCIDs, selectedNpcFilter)
+    _, selectedNpcId, selectedNpcFilter = ui.basic.filterable_enum_value_picker('NPC picker', selectedNpcId, enums.NPCIDs, selectedNpcFilter)
     if selectedNpcId ~= nil and selectedNpcId ~= enums.NPCIDs.labelToValue.Invalid and not npc_is_follower(selectedNpcId) then
         if imgui.button('Make follower') then
             local preset = presets.get_preset_data('quest_processor', 'NPC Follower')

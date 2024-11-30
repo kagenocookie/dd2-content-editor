@@ -55,7 +55,7 @@ local function show_quest_processor(processor)
         local changed
         changed, processor.disabled = imgui.checkbox('Disabled', processor.disabled or false)
         if changed then udb.mark_entity_dirty(processor) end
-        ui.core.tooltip("A disabled processor won't get activated with the quest.\nThis allows you to temporarily disable a processor, maybe as a backup.")
+        ui.basic.tooltip("A disabled processor won't get activated with the quest.\nThis allows you to temporarily disable a processor, maybe as a backup.")
         ui.handlers.show_editable(processor.raw_data, 'QuestAction', processor, 'Raw data', 'app.quest.action.QuestActionBase', 'quest_processor_entity_main')
         ui.handlers.show_editable(processor.raw_data, 'PrevProcCondition', processor, 'PrevProcCondition', 'app.QuestProcessor.ProcCondition', 'quest_processor_conditions_main')
     end
@@ -96,7 +96,7 @@ local function process_quest_folder(questId, folder, state)
 
         imgui.push_style_color(0, editor.get_color(compStatus))
 
-        if (not state.active_processors_only or compStatus == 'default') and ui.core.treenode_suffix(go:get_Name(), label or helpers.to_string(proc, proctype), core.get_color('info')) then
+        if (not state.active_processors_only or compStatus == 'default') and ui.basic.treenode_suffix(go:get_Name(), label or helpers.to_string(proc, proctype), core.get_color('info')) then
             imgui.pop_style_color(1)
             if proctype == 'app.QuestProcessor' then
                 if imgui.button('Reset processor result') then
@@ -157,7 +157,7 @@ editor.define_window('quest_processors', 'Quest processors', function (state)
         if imgui.button('Activate all quest processors') then
             activate_all_processors()
         end
-        ui.core.tooltip("Useful for editing or data dump purposes to force all processors active.\nMight have to click the button twice to also activate quest subfolders.\nRecommended to turn this on only temporarily, and return to the title screen after desired changes are saved.\nBEWARE: Keeping all processors active during gameplay might break save data or quest behaviour, as well as hurt performance.")
+        ui.basic.tooltip("Useful for editing or data dump purposes to force all processors active.\nMight have to click the button twice to also activate quest subfolders.\nRecommended to turn this on only temporarily, and return to the title screen after desired changes are saved.\nBEWARE: Keeping all processors active during gameplay might break save data or quest behaviour, as well as hurt performance.")
 
         if imgui.button('Dump all quest processor data: ' .. core.resolve_file('dump', 'processors')) then
             activate_all_processors()
@@ -282,7 +282,7 @@ editor.define_window('quest_processors', 'Quest processors', function (state)
                             if imgui.button('Force activate residents folder') then
                                 residentFolder:call('activate()')
                             end
-                            ui.core.tooltip('The residents folder contains the quest processors, it will try to re-trigger all of them on activation')
+                            ui.basic.tooltip('The residents folder contains the quest processors, it will try to re-trigger all of them on activation')
                         end
 
                         process_quest_folder(questId, procFolder, state)

@@ -212,7 +212,7 @@ if core.editor_enabled then
             imgui.spacing()
             imgui.spacing()
             imgui.text('All offsets')
-            _, state.view_offset_id, state.view_offset_filter = ui.core.filterable_enum_value_picker('View offsets', state.view_offset_id, enums.get_enum('app.WeaponID'), state.view_offset_filter)
+            _, state.view_offset_id, state.view_offset_filter = ui.basic.filterable_enum_value_picker('View offsets', state.view_offset_id, enums.get_enum('app.WeaponID'), state.view_offset_filter)
             if state.view_offset_id then
                 local off = EquipmentManager:getWeaponOffsetSetting(state.view_offset_id)
                 if off then

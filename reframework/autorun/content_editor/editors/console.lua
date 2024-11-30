@@ -35,7 +35,7 @@ local function display_table(tbl, state)
                 imgui.tree_pop()
             end
         elseif type(v) == 'userdata' then
-            if ui.core.treenode_suffix(tostring(k), helpers.to_string(v)) then
+            if ui.basic.treenode_suffix(tostring(k), helpers.to_string(v)) then
                 display_managed(v--[[@as any]], state)
                 imgui.tree_pop()
             end

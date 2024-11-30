@@ -11,8 +11,6 @@ local imgui_wrappers = require('content_editor.ui.imgui_wrappers')
 local utils = require('content_editor.utils')
 local presets = require('content_editor.object_presets')
 
-core.editor_enabled = true
-
 local window_title = 'Content editor v' .. core.VERSION_STR .. ', gamever: ' .. core.game.version
 local tabs = {}
 
