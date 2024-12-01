@@ -12,6 +12,7 @@ local helpers = require('content_editor.helpers')
 local scripts = require('content_editor.editors.custom_scripts')
 local utils = require('content_editor.utils')
 local prefabs = require('content_editor.prefabs')
+local consts = require('editors.items.constants')
 
 --- @class ItemDataEntity : DBEntity
 --- @field runtime_instance app.ItemDataParam|app.ItemArmorParam|app.ItemWeaponParam
@@ -33,8 +34,6 @@ local ItemDataType = enums.get_enum('app.ItemDataType')
 local ItemAttrBits = enums.get_enum('app.ItemAttrBits')
 local ItemUseAttrBits = enums.get_enum('app.ItemUseAttrBits')
 
-local custom_item_id_min = 30000
-
 local function register_entity(id, type, runtime_instance, enhance)
     --- @type ItemDataEntity
     local entity = {
@@ -51,6 +50,9 @@ end
 local get_item_name = sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName(System.Int32, System.Boolean)')
 local get_item_desc = sdk.find_type_definition('app.GUIBase'):get_method('getElfItemDetail(System.Int32, System.Boolean)')
 
+local customWeaponIds = {}
+local customShieldIds = {}
+
 udb.events.on('get_existing_data', function ()
     for item in utils.enumerate(ItemManager._ItemDataDict) do
         if item.value._Id then
@@ -58,6 +60,15 @@ udb.events.on('get_existing_data', function ()
             local enhance
             if itemType == 2 then
                 enhance = ItemManager._WeaponEnhanceDict:ContainsKey(item.value._Id) and ItemManager._WeaponEnhanceDict[item.value._Id] or nil
+                if consts.is_custom_item(item.value._Id) then
+                    local weaponId = (item.value--[[@as app.ItemWeaponParam]])._WeaponId
+                    local isMain = item.value._EquipCategory == 0
+                    if isMain then
+                        customWeaponIds[weaponId] = true
+                    else
+                        customShieldIds[weaponId] = true
+                    end
+                end
             elseif itemType == 3 then
                 enhance = ItemManager._ArmorEnhanceDict:ContainsKey(item.value._Id) and ItemManager._ArmorEnhanceDict[item.value._Id] or nil
             end
@@ -97,8 +108,9 @@ udb.register_entity_type('item_data', {
         if instance.runtime_instance and not ItemManager._ItemDataDict:ContainsKey(data.id) then
             ItemManager._ItemDataDict[data.id] = instance.runtime_instance
         end
+        local dataType = instance.runtime_instance:get_DataType()
         if data.enhance then
-            if instance.runtime_instance:get_DataType() == 2 then
+            if dataType == 2 then
                 instance.enhance = import_handlers.import('app.WeaponEnhanceParam[]', data.enhance, instance.enhance)
                 if instance.enhance then ItemManager._WeaponEnhanceDict[data.id] = instance.enhance end
             else
@@ -106,7 +118,19 @@ udb.register_entity_type('item_data', {
                 if instance.enhance then ItemManager._ArmorEnhanceDict[data.id] = instance.enhance end
             end
         end
-        -- local dataType = instance.runtime_instance:get_DataType()
+
+        if dataType == 2 and consts.is_custom_item(instance.id) then
+            local weaponId = (instance.runtime_instance--[[@as app.ItemWeaponParam]])._WeaponId
+            if weaponId and consts.is_custom_weapon(weaponId) then
+                local isMain = instance.runtime_instance._EquipCategory == 0
+                if isMain then
+                    customWeaponIds[weaponId] = true
+                else
+                    customShieldIds[weaponId] = true
+                end
+            end
+        end
+
         -- if dataType == 2 or dataType == 3 then
             -- _EquipDataDict contains conversion between item id and style string (why strings, capcom? don't you have enums everywhere??)
             -- I'm actually not sure whether this is even needed and how we're gonna tell the game to fetch it by string
@@ -118,7 +142,7 @@ udb.register_entity_type('item_data', {
     end,
     delete = function (instance)
         --- @cast instance ItemDataEntity
-        if instance.id < custom_item_id_min then
+        if not consts.is_custom_item(instance.id) then
             return 'not_deletable'
         end
 
@@ -127,7 +151,7 @@ udb.register_entity_type('item_data', {
         end
         return 'forget'
     end,
-    insert_id_range = {custom_item_id_min, 65000},
+    insert_id_range = {consts.custom_item_min_id, consts.custom_item_max_id},
     -- basegame item IDs go up to 10512
     -- there seems to be a ushort conversion somewhere in the game, so assuming max id 65536 for now
     -- specifically app.ItemManager:isUseEnable(int), called from some native code, ID 140000 was sent as 8928
@@ -248,6 +272,32 @@ local function replace_item_icon(item, tex)
     return false
 end
 
+-- the game does some stupid looking black magic to determine whether it wants to apply weapon damage or not
+-- and has an extra check to see if it's a main or sub weapon even though it already had that info in the caller method
+-- which is why we need to hook in and fix that shit for custom weapons since they're not inside the app.WeaponIDCompTable
+
+sdk.hook(
+    sdk.find_type_definition('app.PlayerAttackDefenceStatus'):get_method('setWeaponEquipParam'),
+    function (args)
+        local weaponId = sdk.to_int64(args[4]) & 0xffffffff--[[@as app.WeaponID]]
+        if customWeaponIds[weaponId] then
+            thread.get_hook_storage().equip = sdk.to_managed_object(args[3])
+            thread.get_hook_storage().param = sdk.to_managed_object(args[5])
+        elseif customShieldIds[weaponId] then
+            thread.get_hook_storage().equip = sdk.to_managed_object(args[3])
+            thread.get_hook_storage().param = sdk.to_managed_object(args[6])
+        end
+    end,
+    function (ret)
+        local equip = thread.get_hook_storage().equip--[[@as app.EquipParam]]
+        if equip then
+            local param = thread.get_hook_storage().param--[[@as app.EquipParam]]
+            equip:copyFrom(param)
+        end
+        return ret
+    end
+)
+
 -- the upgrade UI applies the focused item's icon UV sequence inlined, needs separate handling
 -- as soon as we try to apply a custom texture, somehow the via.gui.Texture breaks and stops drawing basegame items even though the component looks unchanged
 -- so until we find a solution, switching to setItemIconUV() which always works but is slightly lower quality
@@ -269,7 +319,7 @@ sdk.hook(
         local selectedInfo = this.ItemListCtrl:get_SelectedInfo()--[[@as app.ui041101_00.ListInfo|nil]]
         local itemIcon = selectedInfo and selectedInfo.Storage and selectedInfo.Storage._ItemData and selectedInfo.Storage._ItemData._IconNo
         if itemIcon then
-            if itemIcon >= custom_item_id_min then
+            if itemIcon >= consts.custom_item_min_id then
                 upgradeMenuFoundCustomItems = true
             end
             if upgradeMenuFoundCustomItems then
@@ -289,7 +339,7 @@ sdk.hook(
     sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUV'),
     function (args)
         local iconNo = sdk.to_int64(args[3]) & 0xffffffff
-        if iconNo >= custom_item_id_min then
+        if iconNo >= consts.custom_item_min_id then
             local item = udb.get_entity('item_data', iconNo) --[[@as ItemDataEntity|nil]]
             if not item then return end
             if not item._texture and (not item.icon_path or item.icon_path == '') then
@@ -315,7 +365,7 @@ sdk.hook(
 
 local function hook_pre_getItemName(args)
     local itemId = sdk.to_int64(args[2]) & 0xffffffff
-    if itemId >= custom_item_id_min then
+    if itemId >= consts.custom_item_min_id then
         local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
         if item and item.name then
             -- TODO cache the managed string pointer somewhere instead of making new ones each time?
@@ -340,7 +390,7 @@ sdk.hook(
     function (args)
         local data = sdk.to_managed_object(args[3]) --[[@as app.ItemCommonParam]]
         local id = data and data._Id
-        if id and id >= custom_item_id_min then
+        if id and id >= consts.custom_item_min_id then
             local item = udb.get_entity('item_data', id) --[[@as ItemDataEntity]]
             if item and item.name then
                 local s = thread.get_hook_storage()
@@ -366,7 +416,7 @@ sdk.hook(
     sdk.find_type_definition('app.ItemManager'):get_method('isValidItem'),
     function(args)
         local id = sdk.to_int64(args[2]) & 0xffffffff
-        if id >= custom_item_id_min and udb.get_entity('item_data', id) ~= nil then
+        if consts.is_custom_item(id) and udb.get_entity('item_data', id) ~= nil then
             thread.get_hook_storage().result = ptr_true
             return sdk.PreHookResult.SKIP_ORIGINAL
         end

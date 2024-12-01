@@ -1,12 +1,11 @@
-local udb = require('content_editor.database')
-local import_handlers = require('content_editor.import_handlers')
-
 local core = require('content_editor.core')
+local udb = require('content_editor.database')
 local enums = require('content_editor.enums')
-
+local import_handlers = require('content_editor.import_handlers')
 local definitions = require('content_editor.definitions')
-
 local helpers = require('content_editor.helpers')
+
+local consts = require('editors.items.constants')
 
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.ItemManager
 local EquipmentManager = sdk.get_managed_singleton('app.EquipmentManager') --- @type app.EquipmentManager
@@ -22,8 +21,6 @@ local weapon_to_item_id = sdk.find_type_definition('app.ItemManager'):get_method
 --- @field offsets app.WeaponSetting.OffsetSetting|nil
 
 -- TODO: some sort of override for the weapon ID -> category/group conversion?
-
-local max_custom_weapon_id = 100000
 
 local function register_entity(id, prefabContainer, offsets)
     --- @type WeaponEntity
@@ -103,7 +100,7 @@ udb.register_entity_type('weapon', {
     end,
     delete = function (instance)
         --- @cast instance WeaponEntity
-        if instance.id > max_custom_weapon_id then return 'forget' end
+        if not consts.is_custom_weapon(instance.id) then return 'forget' end
 
         if instance.offsets then
             EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.system_array_remove(
@@ -113,10 +110,7 @@ udb.register_entity_type('weapon', {
         EquipmentManager.WeaponCatalog:Remove(instance.id)
         return 'ok'
     end,
-    insert_id_range = {1000, 100000},
-    -- basegame item IDs go up to 10512
-    -- there seems to be a ushort conversion somewhere in the game, so assuming max id 65536 for now
-    -- specifically app.ItemManager:isUseEnable(int), called from some native code, ID 140000 was sent as 8928
+    insert_id_range = {consts.custom_weapon_min_id, consts.custom_weapon_max_id},
     replaced_enum = 'app.WeaponID',
     root_types = {},
 })
@@ -134,7 +128,7 @@ if core.editor_enabled then
     ui.editor.set_entity_editor('weapon', function (selectedItem, state)
         --- @cast selectedItem WeaponEntity
         local path = selectedItem.prefab and (selectedItem.prefab._Item--[[@as app.PrefabController]]):get_ResourcePath()
-        if selectedItem.id < max_custom_weapon_id then
+        if consts.is_custom_weapon(selectedItem.id) then
             imgui.text_colored('For custom weapons, make sure the app.Weapon->WeaponID inside the .pfb matches the ID of the entity\nOtherwise the game can crash on unpause. Disabling the bundle with the custom weapon and reloading should fix it.', core.get_color('danger'))
         end
         local changed, newpath = imgui.input_text('Prefab', path or '')
