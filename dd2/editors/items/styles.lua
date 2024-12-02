@@ -389,8 +389,10 @@ if core.editor_enabled then
 
     local equipped_style_result
     editor.define_window('styles', 'Styles', function (state)
-        _, state.style_type, state.style_type_filter = ui.basic.combo_filterable('Style type', state.style_type, recordTypes, state.style_type_filter or '')
+        local styleIdx = select(2, ui.basic.tabs(recordTypes, utils.table_index_of(recordTypes, state.style_type or '')))
+        state.style_type = recordTypes[styleIdx]
         if state.style_type then
+            imgui.spacing()
             local recordData = recordClasses[state.style_type]
             local entity_type = state.style_type
 
