@@ -19,6 +19,7 @@ local weapon_to_item_id = sdk.find_type_definition('app.ItemManager'):get_method
 --- @class WeaponEntity : DBEntity
 --- @field prefab app.RefCounter<app.PrefabController>
 --- @field offsets app.WeaponSetting.OffsetSetting|nil
+--- @field _kind nil|integer
 
 -- TODO: some sort of override for the weapon ID -> category/group conversion?
 
@@ -120,6 +121,69 @@ definitions.override('weapons', {
         import_field_whitelist = {'_Item'}
     }
 })
+
+local weaponIds = enums.get_enum('app.WeaponID')
+
+local weaponKinds = {
+    sword = weaponIds.labelToValue.wp00,
+    shield = weaponIds.labelToValue.wp01,
+    greatsword = weaponIds.labelToValue.wp02,
+    dagger = weaponIds.labelToValue.wp03,
+    bow = weaponIds.labelToValue.wp04,
+    magick_bow = weaponIds.labelToValue.wp05,
+    staff = weaponIds.labelToValue.wp07,
+    archistaff = weaponIds.labelToValue.wp08,
+    duospear = weaponIds.labelToValue.wp09,
+    censer = weaponIds.labelToValue.wp10,
+}
+
+--- @param weapon WeaponEntity
+--- @return integer
+local function figure_out_weapon_kind(weapon)
+    --- @type ItemDataEntity|nil
+    local wpItem = select(2, next(udb.get_entities_where('item_data', function (entity)
+        --- @cast entity ItemDataEntity
+        local wpId = entity.runtime_instance and entity.runtime_instance._WeaponId
+        return wpId and wpId == weapon.id
+    end)))
+    if wpItem and wpItem.runtime_instance:get_DataType() == 2 then
+        if wpItem.runtime_instance._EquipCategory == 1 then
+            return weaponKinds.shield
+        end
+        local jobId = wpItem.runtime_instance._Job
+        if (jobId & 2) ~= 0 then return weaponKinds.sword end
+        if (jobId & 4) ~= 0 then return weaponKinds.bow end
+        if (jobId & 8) ~= 0 then return weaponKinds.staff end
+        if (jobId & 16) ~= 0 then return weaponKinds.dagger end
+        if (jobId & 32) ~= 0 then return weaponKinds.greatsword end
+        if (jobId & 64) ~= 0 then return weaponKinds.archistaff end
+        if (jobId & 128) ~= 0 then return weaponKinds.duospear end
+        if (jobId & 256) ~= 0 then return weaponKinds.magick_bow end
+        if (jobId & 512) ~= 0 then return weaponKinds.censer end
+    end
+    return 0
+end
+
+local ptr_true = sdk.to_ptr(true)
+local ptr_false = sdk.to_ptr(false)
+sdk.hook(
+    sdk.find_type_definition('app.WeaponIDUtil'):get_method('isKindOf'),
+    function (args)
+        local weaponId = sdk.to_int64(args[2]) & 0xffffffff
+        if consts.is_custom_weapon(weaponId) then
+            local weapon = udb.get_entity('weapon', weaponId)--[[@as WeaponEntity|nil]]
+            if weapon then
+                if not weapon._kind then
+                    weapon._kind = figure_out_weapon_kind(weapon)
+                end
+                local compId = sdk.to_int64(args[3]) & 0xffffffff
+                thread.get_hook_storage().ret = compId == weapon._kind and ptr_true or ptr_false
+                return sdk.PreHookResult.SKIP_ORIGINAL
+            end
+        end
+    end,
+    function (r) return thread.get_hook_storage().ret or r end
+)
 
 if core.editor_enabled then
     local editor = require('content_editor.editor')

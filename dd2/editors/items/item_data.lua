@@ -132,7 +132,7 @@ udb.register_entity_type('item_data', {
         end
 
         -- if dataType == 2 or dataType == 3 then
-            -- _EquipDataDict contains conversion between item id and style string (why strings, capcom? don't you have enums everywhere??)
+            -- _EquipDataDict contains conversion between armor_style|weapon_id enum label string to item id
             -- I'm actually not sure whether this is even needed and how we're gonna tell the game to fetch it by string
             -- ItemManager._EquipDataDict[tostring(data.id)] = data.id
         -- end
