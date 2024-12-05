@@ -521,6 +521,12 @@ local function get_entity_types()
     return entity_types
 end
 
+local function id_within_custom_id_range(entityType, id)
+    local et = entity_types[entityType]
+    if not et then return false end
+    return id >= et.insert_id_range[1] and id < et.insert_id_range[2]
+end
+
 --- @param name string
 --- @param config EntityTypeConfig
 local function register_entity_type(name, config)
@@ -1071,6 +1077,7 @@ usercontent.database = {
     get_entity_bundle = get_entity_bundle,
     set_entity_bundle = set_entity_bundle,
     add_entity_to_bundle = add_entity_to_bundle,
+    is_custom_entity_id = id_within_custom_id_range,
 
     check_any_unsaved_changes = check_any_unsaved_changes,
     get_all_entities = get_all_entities,

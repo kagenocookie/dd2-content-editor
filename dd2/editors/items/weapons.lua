@@ -5,8 +5,6 @@ local import_handlers = require('content_editor.import_handlers')
 local definitions = require('content_editor.definitions')
 local helpers = require('content_editor.helpers')
 
-local consts = require('editors.items.constants')
-
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.ItemManager
 local EquipmentManager = sdk.get_managed_singleton('app.EquipmentManager') --- @type app.EquipmentManager
 
@@ -101,7 +99,7 @@ udb.register_entity_type('weapon', {
     end,
     delete = function (instance)
         --- @cast instance WeaponEntity
-        if not consts.is_custom_weapon(instance.id) then return 'forget' end
+        if not udb.is_custom_entity_id('weapon', instance.id) then return 'forget' end
 
         if instance.offsets then
             EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.system_array_remove(
@@ -111,7 +109,7 @@ udb.register_entity_type('weapon', {
         EquipmentManager.WeaponCatalog:Remove(instance.id)
         return 'ok'
     end,
-    insert_id_range = {consts.custom_weapon_min_id, consts.custom_weapon_max_id},
+    insert_id_range = {1000, 100000},
     replaced_enum = 'app.WeaponID',
     root_types = {},
 })
@@ -170,7 +168,7 @@ sdk.hook(
     sdk.find_type_definition('app.WeaponIDUtil'):get_method('isKindOf'),
     function (args)
         local weaponId = sdk.to_int64(args[2]) & 0xffffffff
-        if consts.is_custom_weapon(weaponId) then
+        if udb.is_custom_entity_id('weapon', weaponId) then
             local weapon = udb.get_entity('weapon', weaponId)--[[@as WeaponEntity|nil]]
             if weapon then
                 if not weapon._kind then
@@ -192,7 +190,7 @@ if core.editor_enabled then
     ui.editor.set_entity_editor('weapon', function (selectedItem, state)
         --- @cast selectedItem WeaponEntity
         local path = selectedItem.prefab and (selectedItem.prefab._Item--[[@as app.PrefabController]]):get_ResourcePath()
-        if consts.is_custom_weapon(selectedItem.id) then
+        if udb.is_custom_entity_id('weapon', selectedItem.id) then
             imgui.text_colored('For custom weapons, make sure the app.Weapon->WeaponID inside the .pfb matches the ID of the entity\nOtherwise the game can crash on unpause. Disabling the bundle with the custom weapon and reloading should fix it.', core.get_color('danger'))
         end
         local changed, newpath = imgui.input_text('Prefab', path or '')

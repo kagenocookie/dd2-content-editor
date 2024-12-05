@@ -12,7 +12,6 @@ local helpers = require('content_editor.helpers')
 local scripts = require('content_editor.editors.custom_scripts')
 local utils = require('content_editor.utils')
 local prefabs = require('content_editor.prefabs')
-local consts = require('editors.items.constants')
 
 --- @class ItemDataEntity : DBEntity
 --- @field runtime_instance app.ItemDataParam|app.ItemArmorParam|app.ItemWeaponParam
@@ -60,7 +59,7 @@ udb.events.on('get_existing_data', function ()
             local enhance
             if itemType == 2 then
                 enhance = ItemManager._WeaponEnhanceDict:ContainsKey(item.value._Id) and ItemManager._WeaponEnhanceDict[item.value._Id] or nil
-                if consts.is_custom_item(item.value._Id) then
+                if udb.is_custom_entity_id('item_data', item.value._Id) then
                     local weaponId = (item.value--[[@as app.ItemWeaponParam]])._WeaponId
                     local isMain = item.value._EquipCategory == 0
                     if isMain then
@@ -119,9 +118,9 @@ udb.register_entity_type('item_data', {
             end
         end
 
-        if dataType == 2 and consts.is_custom_item(instance.id) then
+        if dataType == 2 and udb.is_custom_entity_id('item_data', instance.id) then
             local weaponId = (instance.runtime_instance--[[@as app.ItemWeaponParam]])._WeaponId
-            if weaponId and consts.is_custom_weapon(weaponId) then
+            if weaponId and udb.is_custom_entity_id('weapon', weaponId) then
                 local isMain = instance.runtime_instance._EquipCategory == 0
                 if isMain then
                     customWeaponIds[weaponId] = true
@@ -142,7 +141,7 @@ udb.register_entity_type('item_data', {
     end,
     delete = function (instance)
         --- @cast instance ItemDataEntity
-        if not consts.is_custom_item(instance.id) then
+        if not udb.is_custom_entity_id('item_data', instance.id) then
             return 'not_deletable'
         end
 
@@ -151,7 +150,7 @@ udb.register_entity_type('item_data', {
         end
         return 'forget'
     end,
-    insert_id_range = {consts.custom_item_min_id, consts.custom_item_max_id},
+    insert_id_range = {30000, 65000},
     -- basegame item IDs go up to 10512
     -- there seems to be a ushort conversion somewhere in the game, so assuming max id 65536 for now
     -- specifically app.ItemManager:isUseEnable(int), called from some native code, ID 140000 was sent as 8928
@@ -319,7 +318,7 @@ sdk.hook(
         local selectedInfo = this.ItemListCtrl:get_SelectedInfo()--[[@as app.ui041101_00.ListInfo|nil]]
         local itemIcon = selectedInfo and selectedInfo.Storage and selectedInfo.Storage._ItemData and selectedInfo.Storage._ItemData._IconNo
         if itemIcon then
-            if itemIcon >= consts.custom_item_min_id then
+            if udb.is_custom_entity_id('item_data', itemIcon) then
                 upgradeMenuFoundCustomItems = true
             end
             if upgradeMenuFoundCustomItems then
@@ -339,7 +338,7 @@ sdk.hook(
     sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUV'),
     function (args)
         local iconNo = sdk.to_int64(args[3]) & 0xffffffff
-        if iconNo >= consts.custom_item_min_id then
+        if udb.is_custom_entity_id('item_data', iconNo) then
             local item = udb.get_entity('item_data', iconNo) --[[@as ItemDataEntity|nil]]
             if not item then return end
             if not item._texture and (not item.icon_path or item.icon_path == '') then
@@ -365,7 +364,7 @@ sdk.hook(
 
 local function hook_pre_getItemName(args)
     local itemId = sdk.to_int64(args[2]) & 0xffffffff
-    if itemId >= consts.custom_item_min_id then
+    if udb.is_custom_entity_id('item_data', itemId) then
         local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
         if item and item.name then
             -- TODO cache the managed string pointer somewhere instead of making new ones each time?
@@ -390,7 +389,7 @@ sdk.hook(
     function (args)
         local data = sdk.to_managed_object(args[3]) --[[@as app.ItemCommonParam]]
         local id = data and data._Id
-        if id and id >= consts.custom_item_min_id then
+        if id and udb.is_custom_entity_id('item_data', id) then
             local item = udb.get_entity('item_data', id) --[[@as ItemDataEntity]]
             if item and item.name then
                 local s = thread.get_hook_storage()
@@ -416,7 +415,7 @@ sdk.hook(
     sdk.find_type_definition('app.ItemManager'):get_method('isValidItem'),
     function(args)
         local id = sdk.to_int64(args[2]) & 0xffffffff
-        if consts.is_custom_item(id) and udb.get_entity('item_data', id) ~= nil then
+        if udb.is_custom_entity_id('item_data', id) and udb.get_entity('item_data', id) ~= nil then
             thread.get_hook_storage().result = ptr_true
             return sdk.PreHookResult.SKIP_ORIGINAL
         end
