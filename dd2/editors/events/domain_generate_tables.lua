@@ -14,13 +14,16 @@ local GenerateManager = sdk.get_managed_singleton('app.GenerateManager') ---@typ
 --- @class Import.DQGenerateTable : EntityImportData
 --- @field table table
 
-udb.events.on('get_existing_data', function ()
+udb.events.on('get_existing_data', function (whitelist)
+    if whitelist and not whitelist.domain_query_generate_table then return end
     for _, elem in pairs(GenerateManager:get_DomainQueryGenerateTable()._Elements) do
-        udb.register_pristine_entity({
-            id = elem._RequestID,
-            type = 'domain_query_generate_table',
-            table = elem,
-        })
+        if not whitelist or whitelist.domain_query_generate_table[elem._RequestID] then
+            udb.register_pristine_entity({
+                id = elem._RequestID,
+                type = 'domain_query_generate_table',
+                table = elem,
+            })
+        end
     end
 end)
 

@@ -45,6 +45,8 @@ local bundles_enum = enums.create_enum({}, 'UserdataBundles')
 local db_ready = false
 local db_failed = false
 
+local use_global_entity_fetch_whitelist = not core.editor_enabled
+
 ---Get a bundle by its name.
 ---@param name string
 ---@return BundleRuntimeData|nil
@@ -312,7 +314,11 @@ local function load_single_bundle(bundle, bundleImports)
 end
 
 local function load_single_bundle_safe(bundle, bundleImports)
-    load_single_bundle(bundle, bundleImports) if true then return true end
+    if internal.config.data.editor.devmode then
+        load_single_bundle(bundle, bundleImports)
+        return true
+    end
+
     local success, result = pcall(function () load_single_bundle(bundle, bundleImports) end)
     if success then
         print('Loaded bundle', bundle.name)
@@ -320,10 +326,12 @@ local function load_single_bundle_safe(bundle, bundleImports)
     elseif result then
         print('ERROR while loading bundle ' .. bundle.name .. ':')
         print(tostring(result))
+        log.error('ERROR while loading bundle ' .. bundle.name .. ':' .. tostring(result))
         re.msg('Failed to load data bundle ' .. bundle.name .. ':\n\n' .. tostring(result))
         return false
     else
         print('ERROR: bundle ' .. bundle.name .. ' failed to load.')
+        log.error('ERROR while loading bundle ' .. bundle.name .. ': unknown error')
         re.msg('Failed to load data bundle ' .. bundle.name .. ': unknown error')
         return false
     end
@@ -346,8 +354,56 @@ local function refresh_enums()
     end
 end
 
+--- @param bundleData DataBundle
+--- @param map table
+local function get_unloaded_bundle_entities_map_impl(bundleData, map)
+    if not bundleData.data then return map end
+    for _, entity in ipairs(bundleData.data) do
+        local entityId = entity.id
+        if not entities_by_id[entity.type] or not entities_by_id[entity.type][entityId] then
+            local entmap = map[entity.type]
+            if not entmap then
+                entmap = {}
+                map[entity.type] = entmap
+            end
+            entmap[entity.id] = true
+        end
+    end
+    return map
+end
+
+--- @param bundle string
+--- @param map table
+local function get_unloaded_bundle_entities_map(bundle, map)
+    local bundleData = json.load_file(core.resolve_file('bundle', bundle)) ---@type DataBundle|nil
+    if bundleData then return get_unloaded_bundle_entities_map_impl(bundleData, map) end
+    return map
+end
+
+---@type string[]
+local storedBundles
+local function scan_stored_bundles(forceFresh)
+    if storedBundles and not forceFresh then return storedBundles end
+    storedBundles = fs.glob(core.get_glob_regex('bundle'))
+    return storedBundles
+end
+
+local function get_merged_unloaded_entities_map()
+    scan_stored_bundles()
+    local map = {}
+    local bundleBasepath = core.resolve_file('bundle', ''):gsub('.json$', ''):gsub('/', '\\')
+    for _, bundlePath in ipairs(storedBundles) do
+        local name = bundlePath:gsub(bundleBasepath, ''):gsub('.json$', '')
+        local settings = internal.config.data.bundle_settings[name]
+        if not settings or not settings.disabled then
+            get_unloaded_bundle_entities_map(name, map)
+        end
+    end
+    return map
+end
+
 local function load_data_bundles()
-    local storedBundles = fs.glob(core.get_glob_regex('bundle'))
+    scan_stored_bundles()
     local configData = internal.config.data
     local orders = configData.bundle_order
     enums.replace_items(bundles_enum, {}, false)
@@ -830,6 +886,9 @@ local function set_bundle_enabled(bundleName, enabled)
     internal.config.data.bundle_settings[bundleName] = settings
     if enabled then
         local bundleImports = {}
+        if use_global_entity_fetch_whitelist then
+            events.emit('get_existing_data', get_unloaded_bundle_entities_map_impl(allBundleEntry, {}))
+        end
         if load_single_bundle_safe(allBundleEntry, bundleImports) then
             refresh_enums()
             events.emit('data_imported', bundleImports)
@@ -893,6 +952,7 @@ local function reload_all_bundles()
     -- also check if there's any non-revertable ones active and figure out what to do in those cases
     utils.clear_table(activeBundles)
     utils.clear_table(allBundles)
+    scan_stored_bundles(true)
     load_data_bundles()
     events.emit('bundles_loaded')
 end
@@ -1015,7 +1075,11 @@ local function finish_database_init()
     print('Starting content import for pre-existing game data...')
 
     -- this event is intended for plugins to fetch any current pre-existing game state and initialize the already present instances
-    events.emit('get_existing_data')
+    local whitelistedLoadEntities = nil
+    if use_global_entity_fetch_whitelist then
+        whitelistedLoadEntities = get_merged_unloaded_entities_map()
+    end
+    events.emit('get_existing_data', whitelistedLoadEntities)
 
     timestamps[#timestamps+1] = os.clock()
     print('All content entity types ready, starting load...')

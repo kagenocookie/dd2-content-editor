@@ -16,8 +16,8 @@ local utils = require('content_editor.utils')
 --- @field find_index_by_label fun(label: string): integer
 --- @field find_index_by_value fun(value: integer): integer
 --- @field get_label fun(value: integer): string
---- @field set_display_labels fun(valueLabelPairs: [integer, string])
---- @field set_display_label fun(value: integer, displayLabel: string)
+--- @field set_display_labels fun(valueLabelPairs: [integer, string], shouldResort: nil|boolean)
+--- @field set_display_label fun(value: integer, displayLabel: string, shouldResort: nil|boolean)
 --- @field orderByValue boolean
 --- @field is_virtual boolean
 --- @field resort fun()
@@ -125,14 +125,16 @@ local function create_enum_summary_from_table(labelToValue, enumName, orderByVal
     result.get_label = function(value)
         return result.valueToDisplayLabels and result.valueToDisplayLabels[value] or result.displayLabels and result.displayLabels[result.find_index_by_value(value)] or result.valueToLabel[value] or tostring(value)
     end
-    result.set_display_labels = function(valueLabelPairs)
+    result.set_display_labels = function(valueLabelPairs, shouldResort)
         if not result.valueToDisplayLabels then result.valueToDisplayLabels = {} end
         for _, kv in ipairs(valueLabelPairs) do
             result.valueToDisplayLabels[kv[1]] = kv[2]
         end
-        result.resort()
+        if shouldResort == nil or shouldResort == true then
+            result.resort()
+        end
     end
-    result.set_display_label = function(value, displayLabel)
+    result.set_display_label = function(value, displayLabel, shouldResort)
         if not result.valueToDisplayLabels then result.valueToDisplayLabels = {} end
         if result.valueToLabel[value] then
             result.valueToDisplayLabels[value] = displayLabel
@@ -142,7 +144,9 @@ local function create_enum_summary_from_table(labelToValue, enumName, orderByVal
                 result.displayLabels[idx] = displayLabel
             end
         end
-        result.resort()
+        if shouldResort == nil or shouldResort == true then
+            result.resort()
+        end
     end
     return result
 end

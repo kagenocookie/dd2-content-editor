@@ -19,13 +19,14 @@ local function register_entity(id, type, runtime_instance)
         type = type,
         runtime_instance = runtime_instance,
     }
-    udb.create_entity(entity, nil, true)
-    udb.mark_entity_dirty(entity, false)
-    return entity
+    return udb.register_pristine_entity(entity)
 end
 
 -- fetch current game data
 udb.events.on('get_existing_data', function ()
+    -- always fetch everything, don't re-fetch if we've already fetched
+    if next(udb.get_all_entities_map('job_param')) then return end
+
     local paramData = CharacterManager:get_HumanParam() ---@type REManagedObject|table
     for i = 1, 10 do
         local field = string.format('Job%02dParameter', i)
@@ -54,7 +55,6 @@ udb.register_entity_type('job_param', {
         instance.runtime_instance = import_handlers.import('app.JobUniqueParameter', data.data, instance.runtime_instance)
         local field = string.format('Job%02dParameter', instance.id)
         CharacterManager:get_HumanParam().JobParam[field] = instance.runtime_instance
-        return instance
     end,
     generate_label = function (entity)
         return 'Job ' .. entity.id .. ' params'

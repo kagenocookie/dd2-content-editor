@@ -52,19 +52,19 @@ local get_item_desc = sdk.find_type_definition('app.GUIBase'):get_method('getElf
 local customWeaponIds = {}
 local customShieldIds = {}
 
-udb.events.on('get_existing_data', function ()
+udb.events.on('get_existing_data', function (whitelist)
+    if whitelist and not whitelist.item_data then return end
     for item in utils.enumerate(ItemManager._ItemDataDict) do
-        if item.value._Id then
+        local id = item.value._Id
+        if not whitelist or whitelist.item_data[id] then
             local itemType = (item.value--[[@as app.ItemCommonParam]]):get_DataType()
             local enhance
             if itemType == 2 then
-                enhance = ItemManager._WeaponEnhanceDict:ContainsKey(item.value._Id) and ItemManager._WeaponEnhanceDict[item.value._Id] or nil
+                enhance = ItemManager._WeaponEnhanceDict:ContainsKey(id) and ItemManager._WeaponEnhanceDict[id] or nil
             elseif itemType == 3 then
-                enhance = ItemManager._ArmorEnhanceDict:ContainsKey(item.value._Id) and ItemManager._ArmorEnhanceDict[item.value._Id] or nil
+                enhance = ItemManager._ArmorEnhanceDict:ContainsKey(id) and ItemManager._ArmorEnhanceDict[id] or nil
             end
-            register_entity(item.value._Id, 'item_data', item.value, enhance)
-        else
-            print('Missing item id', item, item.value, item:get_type_definition():get_full_name())
+            register_entity(id, 'item_data', item.value, enhance)
         end
     end
 end)

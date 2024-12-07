@@ -36,10 +36,13 @@ local function emit_event(name, ...)
     if not store then return end
 
     local devmode = usercontent.__internal.config.data.editor.devmode
+    -- local t_start = os.clock()
     for i, cb in ipairs(store) do
+        -- local t_start_single = os.clock()
         if devmode then
             log.info('Invoking event listener ' .. name .. ' #' .. tostring(i))
             cb(...)
+            -- print(name, i, os.clock() - t_start_single)
         else
             local success, ret = pcall(cb, ...)
             if not success then
@@ -48,11 +51,13 @@ local function emit_event(name, ...)
             end
         end
     end
+    -- print(name, 'TOTAL', os.clock() - t_start)
 end
 
 ---@param name EventName
 ---@param fn function
----@overload fun(name: 'get_existing_data', fn: fun())
+---Can import only a whitelisted set of entities instead of everything. Expected handling: whitelist == nil => import everything; otherwise, import only if whitelist.entity_type[id] is true; if the fetch is fast enough even for the full dataset, feel free to ignore this parameter and just check if next(udb.get_all_entities_map('entity_type'))
+---@overload fun(name: 'get_existing_data', fn: fun(whitelist: nil|table<string,table<integer,true>>))
 ---@overload fun(name: 'bundles_loaded', fn: fun())
 ---@overload fun(name: 'ready', fn: fun()) The content DB is all ready and all initial bundles loaded
 ---@overload fun(name: 'enum_updated', fn: fun(enum: EnumSummary)) An enum was updated

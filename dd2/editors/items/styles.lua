@@ -141,29 +141,34 @@ local function add_style_entity(id, entityType, variant_id, styleHash, runtime_i
     return entity
 end
 
-udb.events.on('get_existing_data', function ()
+udb.events.on('get_existing_data', function (whitelist)
     for name, type in pairs(recordClasses) do
+        if whitelist and not whitelist[name] then goto continue end
+
+        local wl = whitelist and whitelist[name]
         if type.styleDict then
             local root_enumerator = ItemManager[type.styleDict]:GetEnumerator()
             while root_enumerator:MoveNext() do
                 local styleId = root_enumerator._current.key
-                local styleHash = root_enumerator._current.value
-                local variants = CharacterEditManager[type.styleDb]:GetEnumerator()
-                while variants:MoveNext() do
-                    local variant = variants._current.key
-                    if variants._current.value:ContainsKey(styleHash) then
-                        local swapData = variants._current.value[styleHash]
-                        local furmask
-                        if type.furmaskIndex then
-                            local furmaskContainer = CharacterEditManager._FurMaskMapGenderCatalog[type.furmaskIndex]
-                            furmask = furmaskContainer and furmaskContainer:ContainsKey(variant) and furmaskContainer[variant]
-                            furmask = furmask and furmask:ContainsKey(styleHash) and furmask[styleHash] or nil
+                if not wl or wl[styleId] then
+                    local styleHash = root_enumerator._current.value
+                    local variants = CharacterEditManager[type.styleDb]:GetEnumerator()
+                    while variants:MoveNext() do
+                        local variant = variants._current.key
+                        if variants._current.value:ContainsKey(styleHash) then
+                            local swapData = variants._current.value[styleHash]
+                            local furmask
+                            if type.furmaskIndex then
+                                local furmaskContainer = CharacterEditManager._FurMaskMapGenderCatalog[type.furmaskIndex]
+                                furmask = furmaskContainer and furmaskContainer:ContainsKey(variant) and furmaskContainer[variant]
+                                furmask = furmask and furmask:ContainsKey(styleHash) and furmask[styleHash] or nil
+                            end
+                            add_style_entity(styleId, name, variant, styleHash, swapData, furmask)
+                        else
+                            -- non-playable style, idk, for npcs or enemies maybe?
+                            -- ignore all of these for now
+                            -- print('missing style swap', styleId, styleHash, variant)
                         end
-                        add_style_entity(styleId, name, variant, styleHash, swapData, furmask)
-                    else
-                        -- non-playable style, idk, for npcs or enemies maybe?
-                        -- ignore all of these for now
-                        -- print('missing style swap', styleId, styleHash, variant)
                     end
                 end
             end
@@ -180,6 +185,7 @@ udb.events.on('get_existing_data', function ()
                 end
             end
         end
+        ::continue::
     end
 end)
 
@@ -254,7 +260,7 @@ for _, name in ipairs(recordTypes) do
         end,
         delete = function (entity)
             --- @cast entity StyleEntity
-            if entity.id < 10000 then return 'forget' end
+            if not udb.is_custom_entity_id(entity.type, entity.id) then return 'forget' end
 
             if entity.furmasks then
                 for k, v in pairs(entity.furmasks) do

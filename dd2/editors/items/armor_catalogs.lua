@@ -193,8 +193,11 @@ for armorMeshType, fieldData in pairs(armorCatalogs) do
     })
 end
 
-udb.events.on('get_existing_data', function ()
+udb.events.on('get_existing_data', function (whitelist)
     for armorMeshType, fieldData in pairs(armorCatalogs) do
+        local fullIgnore = whitelist and not whitelist[armorMeshType]
+        if fullIgnore then goto continue end
+        local wl = whitelist and whitelist[armorMeshType]
         for _, fields in ipairs(fieldData) do
             if fields.hashCatalog then
                 local hashLookup = CharacterEditManager[fields.hashCatalog]
@@ -217,19 +220,22 @@ udb.events.on('get_existing_data', function ()
                 for _, comp in ipairs(fields.components) do
                     for pair in utils.enumerate(comp.dict) do
                         local id = pair.key
-                        local pfbCtrl = pair.value
-                        local entity = udb.get_entity(armorMeshType, id)
-                        if not entity then
-                            entity = udb.register_pristine_entity({
-                                id = id,
-                                type = armorMeshType,
-                            })
+                        if not wl or wl[id] then
+                            local pfbCtrl = pair.value
+                            local entity = udb.get_entity(armorMeshType, id)
+                            if not entity then
+                                entity = udb.register_pristine_entity({
+                                    id = id,
+                                    type = armorMeshType,
+                                })
+                            end
+                            entity[comp.name] = pfbCtrl
                         end
-                        entity[comp.name] = pfbCtrl
                     end
                 end
             end
         end
+        ::continue::
     end
 end)
 

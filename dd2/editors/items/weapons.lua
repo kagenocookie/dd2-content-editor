@@ -34,7 +34,8 @@ local function register_entity(id, prefabContainer, offsets)
     return entity
 end
 
-udb.events.on('get_existing_data', function ()
+udb.events.on('get_existing_data', function (whitelist)
+    if whitelist and not whitelist.weapon then return end
     -- TODO weapon additional data
     -- ItemManager._WeaponAdditionalDataDict (readonly dict)
     -- ItemManager.WeaponSpecialEfficacyParam
@@ -44,18 +45,21 @@ udb.events.on('get_existing_data', function ()
     local enumerator = EquipmentManager.WeaponCatalog:GetEnumerator()
     while enumerator:MoveNext() do
         local id = enumerator._current.key
-        local refPfb = enumerator._current.value
-        local offsetSettings = EquipmentManager.WeaponSetting:getOffsetSettings(id)
-        if offsetSettings and offsetSettings.ID == id then
-            register_entity(id, refPfb, offsetSettings)
-        else
-            register_entity(id, refPfb)
+        if not whitelist or whitelist[id] then
+            local refPfb = enumerator._current.value
+            local offsetSettings = EquipmentManager.WeaponSetting:getOffsetSettings(id)
+            if offsetSettings and offsetSettings.ID == id then
+                register_entity(id, refPfb, offsetSettings)
+            else
+                register_entity(id, refPfb)
+            end
         end
     end
 
+    if not core.editor_enabled then return end
     for id, label in pairs(OriginalWeaponIDs) do
         if not udb.get_entity('weapon', id) then
-            weaponEnum.set_display_label(id, '[group] ' .. label)
+            weaponEnum.set_display_label(id, '[group] ' .. label, false)
         end
     end
 end)

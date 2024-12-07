@@ -21,6 +21,7 @@ usercontent.utils.dd2.weather = weather_utils
 --- @field scriptedEffects integer[]|nil
 
 udb.events.on('get_existing_data', function ()
+    if next(udb.get_all_entities_map('weather')) then return end
     WeatherManager = WeatherManager or sdk.get_managed_singleton('app.WeatherManager')
     for item in utils.list_iterator(WeatherManager.mWeatherUserData.mWeatherDataList) do
         --- @cast item app.WeatherUserData.WeatherData

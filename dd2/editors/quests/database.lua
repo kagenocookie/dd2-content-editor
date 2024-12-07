@@ -33,7 +33,8 @@ local basegameQuestIds = utils.clone_table(enums.utils.get_enum('app.QuestDefine
 basegameQuestIds[0] = ''
 basegameQuestIds[-1] = ''
 
-local function refresh_game_data()
+local function refresh_game_data(whitelist)
+    if whitelist and (not whitelist.quest) then return end
     local questData = {} --- @type table<integer, QuestDataSummary>
     game_catalogs = gamedb.get_quest_catalogs()
     _quest_DB.catalogs = game_catalogs
@@ -52,7 +53,9 @@ local function refresh_game_data()
                 contextData = ctx,
                 Log = questlog,
             }
-            if summary.id == -1 then
+            if whitelist and not whitelist.quest[summary.id] then
+                -- ignore
+            elseif summary.id == -1 then
                 invalidQuests[#invalidQuests + 1] = summary
             else
                 -- summary = u_db.create_entity(summary) --- @type QuestDataSummary
@@ -430,8 +433,8 @@ local function remove_array_elem_if_exists(element, arrayContainer, arrayField, 
 end
 --#endregion
 
-udb.events.on('get_existing_data', function ()
-    refresh_game_data()
+udb.events.on('get_existing_data', function (whitelist)
+    refresh_game_data(whitelist)
 end)
 
 --- @class QuestDBImportData

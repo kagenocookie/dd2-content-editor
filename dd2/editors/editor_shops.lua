@@ -19,18 +19,21 @@ local utils = require('content_editor.utils')
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') ---@type app.ItemManager
 
 -- fetch current game data
-udb.events.on('get_existing_data', function ()
+udb.events.on('get_existing_data', function (whitelist)
+    if whitelist and not whitelist.shop then return end
     local dataRoot = ItemManager.ItemShopData
     for _, shop in ipairs(dataRoot._Params:get_elements()) do
         --- @cast shop app.ItemShopParam
-        --- @type DBEntity
-        local entity = {
-            id = shop._ShopId,
-            type = 'shop',
-            runtime_instance = shop,
-        }
+        if not whitelist or whitelist.shop[shop._ShopId] then
+            --- @type DBEntity
+            local entity = {
+                id = shop._ShopId,
+                type = 'shop',
+                runtime_instance = shop,
+            }
 
-        udb.register_pristine_entity(entity)
+            udb.register_pristine_entity(entity)
+        end
     end
 end)
 

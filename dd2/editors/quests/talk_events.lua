@@ -241,7 +241,9 @@ end
 --#endregion
 
 -- fetch current game data
-udb.events.on('get_existing_data', function ()
+udb.events.on('get_existing_data', function (whitelist)
+    if whitelist and not whitelist.talk_event then return end
+
     local enumerator = TalkEventManager._ResourceCatalog:get_MergedCatalog():GetEnumerator()
     while enumerator:MoveNext() do
         local kv = enumerator._current

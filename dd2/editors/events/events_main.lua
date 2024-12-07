@@ -28,35 +28,41 @@ local GenerateManager = sdk.get_managed_singleton('app.GenerateManager') ---@typ
 --- @field data table
 --- @field scriptEffects integer[]|nil
 
-udb.events.on('get_existing_data', function ()
+udb.events.on('get_existing_data', function (whitelist)
     local catalogs = gamedb.get_catalogs()
     for _, catalog in ipairs(catalogs) do
-        for _, ctx in ipairs(catalog._QuestSuddenTableData._ContextDataArray:get_elements()) do
-            --- @cast ctx app.SuddenQuestContextData
-            local ignore = false
-            if ctx._SerialNum == 118 and udb.get_entity('event_context', 118) then
-                -- the basegame has a duplicate id for this one SuddenQuestContext...
-                -- I highly doubt they actually have a way to use the second one in any way, so I won't support it either, just pretend it doesn't exist
-                ignore = true
-            end
+        if not whitelist or whitelist.event_context then
+            for _, ctx in ipairs(catalog._QuestSuddenTableData._ContextDataArray:get_elements()) do
+                --- @cast ctx app.SuddenQuestContextData
+                local ignore = not not whitelist and not whitelist[ctx._SerialNum]
+                if not ignore and ctx._SerialNum == 118 and udb.get_entity('event_context', 118) then
+                    -- the basegame has a duplicate id for this one SuddenQuestContext...
+                    -- I highly doubt they actually have a way to use the second one in any way, so I won't support it either, just pretend it doesn't exist
+                    ignore = true
+                end
 
-            if not ignore then
-                udb.register_pristine_entity({
-                    id = ctx._SerialNum,
-                    type = 'event_context',
-                    context = ctx._Data,
-                    rootContext = ctx,
-                })
+                if not ignore then
+                    udb.register_pristine_entity({
+                        id = ctx._SerialNum,
+                        type = 'event_context',
+                        context = ctx._Data,
+                        rootContext = ctx,
+                    })
+                end
             end
         end
 
-        for _, selectData in ipairs(catalog._QuestSuddenTableData._SelectDataArray:get_elements()) do
-            --- @cast selectData app.SuddenQuestSelectData
-            udb.register_pristine_entity({
-                selectData = selectData,
-                type = 'event',
-                id = selectData._SerialNum,
-            })
+        if not whitelist or whitelist.event then
+            for _, selectData in ipairs(catalog._QuestSuddenTableData._SelectDataArray:get_elements()) do
+                --- @cast selectData app.SuddenQuestSelectData
+                if not whitelist or whitelist[selectData._SerialNum] then
+                    udb.register_pristine_entity({
+                        selectData = selectData,
+                        type = 'event',
+                        id = selectData._SerialNum,
+                    })
+                end
+            end
         end
     end
 end)
@@ -135,7 +141,6 @@ udb.register_entity_type('event', {
         instance.selectData = import_handlers.import('app.SuddenQuestSelectData', data.data, instance.selectData)
         instance.selectData._SerialNum = data.id
         instance.scriptEffects = data.scriptEffects
-        return instance
     end,
     root_types = {'app.SuddenQuestSelectData'},
     export = function (data)
