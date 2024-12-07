@@ -25,6 +25,9 @@ local entity_tracker = {}
 --- @type table<string, EntityTypeConfig>
 local entity_types = {}
 
+--- @type string[]
+local known_entity_types = {}
+
 --- @type table<string, table<integer, DBEntity>>
 local entities_by_id = {}
 
@@ -518,7 +521,7 @@ local function set_active_bundle(name)
 end
 
 local function get_entity_types()
-    return entity_types
+    return known_entity_types
 end
 
 local function id_within_custom_id_range(entityType, id)
@@ -532,6 +535,7 @@ end
 local function register_entity_type(name, config)
     entity_types[name] = config
     entities_by_id[name] = entities_by_id[name] or {}
+    known_entity_types[#known_entity_types+1] = name
     local enum = config.replaced_enum and enums.get_enum(config.replaced_enum, true) or enums.create_enum({ ['<unset>'] = -1 }, name)
     if not enum.labelToValue['<unset>'] and not enum.valueToLabel[-1] then
         enum.labelToValue['<unset>'] = -1

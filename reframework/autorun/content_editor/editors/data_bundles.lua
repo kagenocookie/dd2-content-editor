@@ -150,7 +150,7 @@ return function (state)
         imgui.spacing()
         if imgui.tree_node('Insert IDs') then
             local newval
-            for t, et in pairs(udb.get_entity_types()) do
+            for _, t in pairs(udb.get_entity_types()) do
                 if bundle.initial_insert_ids[t] then
                     changed, newval = imgui.input_text(t, tostring(bundle.initial_insert_ids[t]), 1)
                     if changed then
