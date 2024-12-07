@@ -59,15 +59,6 @@ udb.events.on('get_existing_data', function ()
             local enhance
             if itemType == 2 then
                 enhance = ItemManager._WeaponEnhanceDict:ContainsKey(item.value._Id) and ItemManager._WeaponEnhanceDict[item.value._Id] or nil
-                if udb.is_custom_entity_id('item_data', item.value._Id) then
-                    local weaponId = (item.value--[[@as app.ItemWeaponParam]])._WeaponId
-                    local isMain = item.value._EquipCategory == 0
-                    if isMain then
-                        customWeaponIds[weaponId] = true
-                    else
-                        customShieldIds[weaponId] = true
-                    end
-                end
             elseif itemType == 3 then
                 enhance = ItemManager._ArmorEnhanceDict:ContainsKey(item.value._Id) and ItemManager._ArmorEnhanceDict[item.value._Id] or nil
             end
@@ -148,7 +139,7 @@ udb.register_entity_type('item_data', {
         if instance.runtime_instance then
             ItemManager._ItemDataDict:Remove(instance.id)
         end
-        return 'forget'
+        return 'ok'
     end,
     insert_id_range = {30000, 65000},
     -- basegame item IDs go up to 10512

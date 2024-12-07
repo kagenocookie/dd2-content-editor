@@ -112,6 +112,18 @@ local function flip_table_keys_values(table)
     return l
 end
 
+--- Find the index of a table element, or 0 if not found
+--- @generic T
+--- @param table T[]
+--- @return T[]
+local function table_reverse(table)
+    local out = {}
+    for i = #table, 1, -1 do
+        out[#out+1] = table[i]
+    end
+    return out
+end
+
 ---Get an associative table keys, sorted
 local function get_sorted_table_keys(table)
     local list = {}
@@ -661,6 +673,21 @@ local function enumerator_to_table(enumerator)
     return list
 end
 
+local t_enum = sdk.find_type_definition('System.Enum')
+--- Use the game's native enum handler to convert an enum value to string. Alternative to constructing whole enum lookups when only a single value is needed
+--- @param enum_type string
+--- @param value integer
+--- @return string|nil
+local function enum_to_string(enum_type, value)
+    local t = sdk.find_type_definition(enum_type)
+    if not t or not t_enum:is_a(t_enum) then return nil end
+    local v = t:create_instance()--[[@as any]]
+    -- assumption: all enums have the non-static value field as their first field
+    -- we could just assume "value__" but I'm not sure if it is the same in all games and will be the same forever
+    v[t:get_fields()[1]:get_name()] = value
+    return v:ToString()
+end
+
 usercontent.utils = {
     log = log_all,
     string_join = string_join,
@@ -682,6 +709,7 @@ usercontent.utils = {
     get_sorted_table_values = get_sorted_table_values,
     get_sorted_list_table = get_sorted_list_table,
     flip_table_keys_values = flip_table_keys_values,
+    table_reverse = table_reverse,
     dictionary_get_values = dictionary_get_values,
     dictionary_to_table = dictionary_to_table,
     merge_into_table = merge_into_table,
@@ -717,6 +745,7 @@ usercontent.utils = {
 
     format_timestamp = format_timestamp,
 
+    enum_to_string = enum_to_string,
     translate_guid = translate_message_guid,
     translate = translate_message,
     guid_try_parse = try_parse_guid,

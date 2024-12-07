@@ -670,11 +670,25 @@ local function get_entity_enum(entityType)
     return entity_enums[entityType]
 end
 
+--- Get the main bundle of the given entity
 --- @param entity DBEntity
 --- @return string|nil
 local function get_entity_bundle(entity)
     local tracked = entity_tracker[entity]
     return tracked and tracked.bundle
+end
+
+--- Get a list of all bundles that contain the given entity
+--- @param entity DBEntity
+--- @return string[]
+local function get_all_entity_bundles(entity)
+    local list = {}
+    for _, bundle in ipairs(activeBundles) do
+        if utils.table_contains(bundle.entities, entity) then
+            list[#list+1] = bundle.info.name
+        end
+    end
+    return list
 end
 
 --- @param entity DBEntity
@@ -749,7 +763,8 @@ local function reload_entity(type, id)
 
     local storedEntity = utils.table_find(bundleData.data, function (item) return item.id == id and item.type == type end)
     if not storedEntity then
-        return re.msg('Bundle ' .. bundle.info.name .. ' does not contain the entity')
+        delete_entity(entity, bundle.info.name)
+        return
     end
 
     local loader = entity_types[type]
@@ -1075,6 +1090,7 @@ usercontent.database = {
     register_pristine_entity = register_pristine_entity,
     entity_has_unsaved_changes = entity_check_unsaved_changes,
     get_entity_bundle = get_entity_bundle,
+    get_all_entity_bundles = get_all_entity_bundles,
     set_entity_bundle = set_entity_bundle,
     add_entity_to_bundle = add_entity_to_bundle,
     is_custom_entity_id = id_within_custom_id_range,

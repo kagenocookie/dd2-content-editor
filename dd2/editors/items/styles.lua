@@ -25,8 +25,8 @@ local GuiManager = sdk.get_managed_singleton('app.GuiManager') --- @type app.Gui
 
 local variantKeys = {'2776536455', '1910070090'}
 local variantLabels = {
-    ['2776536455'] = '2776536455 Male',
-    ['1910070090'] = '1910070090 Female',
+    ['2776536455'] = 'Male (2776536455)',
+    ['1910070090'] = 'Female (1910070090)',
 }
 
 --- note to self: furmasks are on CharacterEditManager
