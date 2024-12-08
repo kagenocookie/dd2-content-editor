@@ -48,7 +48,7 @@ end
 events.on('setup', function ()
     local enums = require('content_editor.enums')
     local utils = usercontent.utils
-    local sounds = usercontent._sounds
+    local sounds = usercontent._sounds or select(2, pcall(require, 'content_editor.features.sounds'))
 
     if usercontent.core.editor_enabled then
         local CharacterID = enums.get_enum('app.CharacterID')
@@ -62,21 +62,23 @@ events.on('setup', function ()
         return CharacterManager:get_ManualPlayer()
     end)
 
-    effects.register_effect_type({
-        effect_type = 'sound_player',
-        label = 'Play sound on player',
-        category = 'player',
-        start = function (entity)
-            if entity.data.trigger_id then
-                sounds.trigger_on_gameobject(entity.data.trigger_id, utils_dd2.get_player():get_GameObject())
+    if sounds and type(sounds) == 'table' then
+        effects.register_effect_type({
+            effect_type = 'sound_player',
+            label = 'Play sound on player',
+            category = 'player',
+            start = function (entity)
+                if entity.data.trigger_id then
+                    sounds.trigger_on_gameobject(entity.data.trigger_id, utils.dd2.get_player():get_GameObject())
+                end
+            end,
+            ui = function (entity)
+                local changed, newsound = imgui.input_text('Sound trigger ID', tostring(entity.data.trigger_id), 1)
+                entity.data.trigger_id = newsound
+                return changed
             end
-        end,
-        ui = function (entity)
-            local changed, newsound = imgui.input_text('Sound trigger ID', tostring(entity.data.trigger_id), 1)
-            entity.data.trigger_id = newsound
-            return changed
-        end
-    })
+        })
+    end
 end)
 
 usercontent.utils.dd2 = require('editors.core.utils')

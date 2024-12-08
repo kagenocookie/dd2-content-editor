@@ -160,12 +160,13 @@ local function _combo_filterable_internal(label, index, options, filter)
     return false, index, filter
 end
 
+--- @generic TVal
 --- @param label string
 --- @param value any
 --- @param labels string[]
 --- @param filter string
---- @param values any[]|nil A pair array of the labels array, to use custom values instead of using the labels directly
---- @return boolean changed, any value, string filter
+--- @param values TVal[]|nil A pair array of the labels array, to use custom values instead of using the labels directly
+--- @return boolean changed, TVal value, string filter
 local function combo_filterable(label, value, labels, filter, values)
     local visible_labels, visible_values
     if filter and filter ~= '' then
