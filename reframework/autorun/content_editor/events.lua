@@ -54,21 +54,28 @@ local function emit_event(name, ...)
     -- print(name, 'TOTAL', os.clock() - t_start)
 end
 
+---`setup`: Called at the start of the initial DB setup (before ready, bundles and type cache not yet loaded)
+---
 ---`get_existing_data`: Called to request all active editors to fetch existing game data.
----<br><br>If editor is enabled: only ever called once on game start with whitelist = nil, in which case all data should be fetched
+---<br>If editor is enabled: only ever called once on game start with whitelist = nil, in which case all data should be fetched
 ---<br>If editor disabled: whitelist is never null; called once on start and once whenever a new bundle gets enabled. Whitelist contains only entity IDs that are not yet known to the content editor database.
 ---<br><br>If the fetch is fast enough even for the full dataset, feel free to ignore the whitelist and just check if `next(udb.get_all_entities_map('entity_type'))`
----<br>`bundles_loaded`: Called after all bundles have finished loading (on start or full database refresh)
----<br>`ready`: Called after the initial DB setup is finished
----<br>`data_imported`: Called to request an import of a set of entities into the game's data; Intended as a bulk insert for better performance compared to importing directly in the entity's import handler
+---
+---`bundles_loaded`: Called after all bundles have finished loading (on start or full database refresh)
+---
+---`data_imported`: Called to request an import of a set of entities into the game's data. Table keys represent entity types.
+---<br>Intended as a bulk insert for cases where importing one by one in the entity's import handler directly is less performant.
+---
+---`ready`: Called after the initial DB setup is finished and bundles are all loaded
 ---@param name EventName
 ---@param fn function
 ---@overload fun(name: 'get_existing_data', fn: fun(whitelist: nil|table<string,table<integer,true>>))
 ---@overload fun(name: 'bundles_loaded', fn: fun())
----@overload fun(name: 'ready', fn: fun()) The content DB is all ready and all initial bundles loaded
----@overload fun(name: 'enum_updated', fn: fun(enum: EnumSummary)) An enum was updated
----@overload fun(name: 'bundle_created', fn: fun(bundle: BundleRuntimeData)) A new data bundle was created
----@overload fun(name: 'data_imported', fn: fun(entities: table<string,DBEntity[]>)) Entities have been (re-)imported. Table keys represent entity types.
+---@overload fun(name: 'ready', fn: fun())
+---@overload fun(name: 'setup', fn: fun())
+---@overload fun(name: 'enum_updated', fn: fun(enum: EnumSummary))
+---@overload fun(name: 'bundle_created', fn: fun(bundle: BundleRuntimeData))
+---@overload fun(name: 'data_imported', fn: fun(entities: table<string,DBEntity[]>))
 local function register_event_ext(name, fn) register_event(name, fn) end
 
 ---@param name EventName
