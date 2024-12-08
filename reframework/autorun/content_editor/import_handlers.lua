@@ -362,11 +362,11 @@ importer_factories = {
 
         -- only allow strings and integer key types, ignore the rest
         local isIntegerKey = helpers.is_integer_type(meta.keyType)
-        if keyMeta.elementType ~= 'System.String' and not isIntegerKey then
+        if meta.keyType ~= 'System.String' and not isIntegerKey then
             return import_export_ignore
         end
 
-        local valueHandler = get_handler(meta.keyType, keyMeta)
+        local valueHandler = get_handler(meta.elementType, typecache.get(meta.elementType))
 
         return {
             import = function (src, target)
@@ -398,16 +398,14 @@ importer_factories = {
                         end
                     end
                 end
+                return target
             end,
             export = function (src, target, options)
                 if src == nil then return 'null' end
                 target = target or {}
 
-                local it = target:GetEnumerator()
-                while it:MoveNext() do
-                    local key = it._current.key
-                    local value = it._current.value
-                    target[key] = valueHandler.export(value, nil, options)
+                for pair in utils.enumerate(src) do
+                    target[pair.key] = valueHandler.export(pair.value, nil, options)
                 end
                 return target
             end,

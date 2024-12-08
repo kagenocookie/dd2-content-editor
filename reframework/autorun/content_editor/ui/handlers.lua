@@ -519,8 +519,9 @@ local function dictionary_ui(meta, classname, label, settings)
                     create_field_editor(newCtx, '__none', 'new_key', meta.keyType, 'Key', nil, settings, true):ui()
                     create_field_editor(newCtx, '__none', 'new_value', meta.elementType, 'Value', nil, settings, true):ui()
 
-                    if imgui.button('Add') then
-                        local newkey = newCtx.children.new_key.get()
+                    local newkey = newCtx.children.new_key.get()
+                    local curKeyExists = newkey and (type(dict) == 'userdata' and dict:ContainsKey(newkey) or dict[newkey]) or false
+                    if newkey and not curKeyExists and imgui.button('Add') then
                         local newvalue = newCtx.children.new_value.get()
                         dict[newkey] = newvalue
                         items = nil
@@ -916,7 +917,7 @@ end
 --- @param setter nil|fun(oldValue: any, newValue: any)
 --- @param uiSettingOverrides UISettings|nil
 --- @return boolean changed
-local function show_root_entity(target, owner, label, classname, editorId, setter, uiSettingOverrides)
+local function show_root_entity(target, owner, label, classname, editorId, setter, uiSettingOverrides, preventLoop)
     if not target then error('OI! ui needs a target and a parent!') end
     classname = classname or helpers.get_type(target)
     if not classname then
@@ -930,11 +931,14 @@ local function show_root_entity(target, owner, label, classname, editorId, sette
     if isNew then
         if setter then rootContext.set = setter end
     elseif rootContext.object ~= target then
-        print('root context instance changed', target, rootContext.object, editorId)
         ui_context.delete(rootContext, editorId)
-        -- show_entity_ui_internal(target, owner, label, classname, editorId, accessors)
-        imgui.pop_id()
-        return true
+        if preventLoop then
+            imgui.pop_id()
+            print('root context instance changed', target, rootContext.object, editorId)
+            return true
+        else
+            return show_root_entity(target, owner, label, classname, editorId, setter, uiSettingOverrides, true)
+        end
     end
 
     imgui.push_id(editorId)
