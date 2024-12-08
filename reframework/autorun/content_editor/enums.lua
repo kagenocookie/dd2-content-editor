@@ -311,7 +311,7 @@ local function get_or_generate_enum(enumName, default_sort_by_value)
 end
 
 local function refresh_modded_enums()
-    local enums = fs.glob(core.get_glob_regex('enum'))
+    local enums = core.get_files('enum')
     local pathlen = core._basepath:len() + 7 -- /enums/
     for _, enumPath in ipairs(enums) do
         local enumData = json.load_file(enumPath) --- @type nil|EnumDefinitionFile

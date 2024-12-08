@@ -57,11 +57,11 @@ local function resolve_file(type, subpath)
 end
 
 --- @param type ContentFileType
---- @return string
-local function get_glob_regex(type)
+--- @return string[]
+local function get_files(type)
     local path = resolve_file(type, '.*?\\')
     path = path:gsub('/', '\\\\')
-    return path
+    return fs.glob(path)
 end
 
 local version = {0, 5, 1}
@@ -82,8 +82,8 @@ usercontent.core = {
     get_path = get_path,
     --- Resolve the path to a specific content db file type
     resolve_file = resolve_file,
-    --- Generate a regex for an fs.glob call of everything within a file type's folder
-    get_glob_regex = get_glob_regex,
+    --- Get a list of files within a content editor folder
+    get_files = get_files,
     --- Whether the content editor part of the mod is enabled and loaded
     editor_enabled = false,
 }

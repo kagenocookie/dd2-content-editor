@@ -125,38 +125,26 @@ local function table_reverse(table)
 end
 
 ---Get an associative table keys, sorted
-local function get_sorted_table_keys(table)
+local function get_sorted_table_keys(tbl)
     local list = {}
     local n = 1
-    for k, v in pairs(table) do
+    for k, v in pairs(tbl) do
         list[n] = k
         n = n + 1
     end
-    for i = 1, n - 1 do
-        for j = i + 1, n - 1 do
-            if list[i] > list[j] then
-                list[i], list[j] = list[j], list[i]
-            end
-        end
-    end
+    table.sort(list)
     return list
 end
 
 ---Get an associative table values, sorted
-local function get_sorted_table_values(table)
+local function get_sorted_table_values(tbl)
     local list = {}
     local n = 1
-    for _, k in pairs(table) do
+    for _, k in pairs(tbl) do
         list[n] = k
         n = n + 1
     end
-    for i = 1, n - 1 do
-        for j = i + 1, n - 1 do
-            if list[i] > list[j] then
-                list[i], list[j] = list[j], list[i]
-            end
-        end
-    end
+    table.sort(list)
     return list
 end
 
@@ -674,27 +662,95 @@ local function enumerator_to_table(enumerator)
 end
 
 local t_enum = sdk.find_type_definition('System.Enum')
---- Use the game's native enum handler to convert an enum value to string. Alternative to constructing whole enum lookups when only a single value is needed
+--- Return a converter for converting an enum value to a string using the game's native enum handling. Alternative to constructing whole enum lookups when only a single value is needed
 --- @param enum_type string
---- @param value integer
---- @return string|nil
-local function enum_to_string(enum_type, value)
+--- @return nil|fun(value: integer): string
+local function enum_to_string(enum_type)
     local t = sdk.find_type_definition(enum_type)
     if not t or not t_enum:is_a(t_enum) then return nil end
     local v = t:create_instance()--[[@as any]]
     -- assumption: all enums have the non-static value field as their first field
     -- we could just assume "value__" but I'm not sure if it is the same in all games and will be the same forever
-    v[t:get_fields()[1]:get_name()] = value
-    return v:ToString()
+    local valueField = t:get_fields()[1]:get_name()
+    return function (value)
+        v[valueField] = value
+        return v:ToString()
+    end
+end
+
+--- @param str string
+--- @return integer
+function string_hash(str)
+    h = 5381;
+
+    for c in str:gmatch"." do
+        h = math.fmod(((h << 5) + h) + string.byte(c), 2147483648)
+    end
+    return h
+end
+
+local create_performance_timer = function ()
+    return {
+        _timestamps = {
+            { label = 'start', time = os.clock() }
+        },
+        _extras = nil,
+        --- @param label string
+        add = function(self, label)
+            self._timestamps[#self._timestamps+1] = { label = label, time = os.clock() }
+        end,
+        get_total = function(self) return self._timestamps[#self._timestamps].time - self._timestamps[1].time end,
+        group = function(self, from, to, label)
+            self._extras = self._extras or {}
+            local from_item = table_find(self._timestamps, function (item) return item.label == from end)
+            local to_item = table_find(self._timestamps, function (item) return item.label == to end)
+            if from_item and to_item then
+                self._extras[#self._extras+1] = (label or (from .. '-' .. to)) .. ': ' .. (to_item.time - from_item.time)
+            end
+        end,
+        --- @param threshold number|nil
+        to_string = function(self, threshold)
+            local output = 'Total time: ' .. (self._timestamps[#self._timestamps].time - self._timestamps[1].time) .. ' ['
+
+            for i, cur in ipairs(self._timestamps) do
+                local next = self._timestamps[i + 1]
+                if next then
+                    local diff = (next.time - cur.time)
+                    if not threshold or diff >= threshold then
+                        if i ~= 1 then output = output .. ', ' end
+                        output = output .. next.label .. ': ' .. diff
+                    end
+                end
+            end
+            output = output .. ']'
+            if self._extras then
+                output = output .. ' / ' .. table.concat(self._extras, ', ')
+            end
+            return output
+        end,
+        print = function(self, label, threshold)
+            local str = (label and label .. ': ' or '') .. self:to_string(threshold)
+            log.info(str)
+            print(str)
+        end,
+        print_total = function(self, label)
+            local str = (label and label .. ': ' or '') .. self:get_total() .. ' s'
+            log.info(str)
+            print(str)
+        end
+    }
 end
 
 usercontent.utils = {
     log = log_all,
-    string_join = string_join,
     get_irl_timestamp = get_irl_timestamp,
 
     float_round = float_round,
     chance = chance,
+    create_performance_timer = create_performance_timer,
+
+    string_join = string_join,
+    string_hash = string_hash,
 
     file_delete = file_delete,
     file_exists = file_exists,

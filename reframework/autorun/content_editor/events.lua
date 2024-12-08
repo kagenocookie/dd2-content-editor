@@ -56,7 +56,7 @@ end
 
 ---@param name EventName
 ---@param fn function
----Can import only a whitelisted set of entities instead of everything. Expected handling: whitelist == nil => import everything; otherwise, import only if whitelist.entity_type[id] is true; if the fetch is fast enough even for the full dataset, feel free to ignore this parameter and just check if next(udb.get_all_entities_map('entity_type'))
+---Request all active editors to fetch game data. Can be called more than once when editors are disabled and a new bundle gets enabled (whitelist will never be null in that case). Can import only a whitelisted set of entities instead of everything. Expected handling: whitelist == nil => import everything; otherwise, import only if whitelist.entity_type[id] is true; if the fetch is fast enough even for the full dataset, feel free to ignore this parameter and just check if next(udb.get_all_entities_map('entity_type'))
 ---@overload fun(name: 'get_existing_data', fn: fun(whitelist: nil|table<string,table<integer,true>>))
 ---@overload fun(name: 'bundles_loaded', fn: fun())
 ---@overload fun(name: 'ready', fn: fun()) The content DB is all ready and all initial bundles loaded

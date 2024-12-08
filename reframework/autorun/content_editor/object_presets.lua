@@ -33,7 +33,7 @@ local function define_preset(type, name, data)
 end
 
 local function refresh_available_presets()
-    local files = fs.glob(core.get_glob_regex('preset'))
+    local files = core.get_files('preset')
     for _, presetPath in ipairs(files) do
         local newPreset = json.load_file(presetPath)
         if newPreset and type(newPreset) == 'table' then

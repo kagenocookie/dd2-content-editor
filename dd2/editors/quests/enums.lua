@@ -8,7 +8,6 @@ local utils = require('content_editor.utils')
 ---@diagnostic disable: inject-field
 
 local CharacterID = usEnums.get_enum('app.CharacterID')
-CharacterID.set_display_labels(utils.map(CharacterID.values, function (val) return {val, CharacterID.valueToLabel[val] .. ' : ' .. utils.dd2.translate_character_name(val)} end))
 
 --- List of CharacterID enum values, filtered only to NPCs (ch3*)
 local NPCIDs = usEnums.create_subset(CharacterID, 'CharacterID_NPC', function (label) return label == 'Invalid' or label:sub(1,3) == 'ch3' and label:len() > 5 end)

@@ -12,11 +12,11 @@ local enums = require('content_editor.enums')
 local entity_tracker = {}
 
 --- @class EntityTypeConfig
---- @field import fun(import_data: EntityImportData|table, entity: DBEntity) Method that imports this type of entity into the game.
---- @field export fun(entity: DBEntity): EntityImportData Export the data into a serializable object; The core fields can be omitted (id, label, type) as they will be automatically added before saving.
---- @field delete nil|fun(entity: DBEntity): status: nil|'ok'|'error'|'not_deletable'|'forget' Delete / disable the entity from the game's data; forget: entity may not be fully deleted or reverted to default state, we can remove the entity record for it but will show a prompt to restart the game
---- @field generate_label nil|fun(entity: DBEntity): string
---- @field root_types string[] Types to automatically generate type data for
+--- @field import fun(import_data: EntityImportData|table, entity: DBEntity|table) Method that imports this type of entity into the game.
+--- @field export fun(entity: DBEntity|table): EntityImportData Export the data into a serializable object; The core fields can be omitted (id, label, type) as they will be automatically added before saving.
+--- @field delete nil|fun(entity: DBEntity|table): status: nil|'ok'|'error'|'not_deletable'|'forget' Delete / disable the entity from the game's data; forget: entity may not be fully deleted or reverted to default state, we can remove the entity record for it but will show a prompt to restart the game
+--- @field generate_label nil|fun(entity: DBEntity|table): string
+--- @field root_types string[]|nil Types to automatically generate type data for
 --- @field replaced_enum string|nil
 --- @field insert_id_range [integer, integer] This field should contain two [min, max] integers for allowed mod entity IDs; Will be used to define initial IDs for new bundles
 
@@ -321,7 +321,7 @@ local function load_single_bundle_safe(bundle, bundleImports)
 
     local success, result = pcall(function () load_single_bundle(bundle, bundleImports) end)
     if success then
-        print('Loaded bundle', bundle.name)
+        print('Loaded content bundle', bundle.name)
         return true
     elseif result then
         print('ERROR while loading bundle ' .. bundle.name .. ':')
@@ -384,7 +384,7 @@ end
 local storedBundles
 local function scan_stored_bundles(forceFresh)
     if storedBundles and not forceFresh then return storedBundles end
-    storedBundles = fs.glob(core.get_glob_regex('bundle'))
+    storedBundles = core.get_files('bundle')
     return storedBundles
 end
 
@@ -403,7 +403,9 @@ local function get_merged_unloaded_entities_map()
 end
 
 local function load_data_bundles()
+    local timer = utils.create_performance_timer()
     scan_stored_bundles()
+    timer:add('scan')
     local configData = internal.config.data
     local orders = configData.bundle_order
     enums.replace_items(bundles_enum, {}, false)
@@ -437,17 +439,26 @@ local function load_data_bundles()
         internal.config.save()
     end
 
+    timer:add('analyze')
     local bundleImports = {}
     for _, bundle in ipairs(orderedBundles) do
         allBundles[#allBundles+1] = bundle
         local settings = configData.bundle_settings[bundle.name]
         if not settings or not settings.disabled then
             load_single_bundle_safe(bundle, bundleImports)
+            timer:add(bundle.name)
         end
     end
+    timer:add('load')
 
     refresh_enums()
+    timer:add('enum refresh')
     events.emit('data_imported', bundleImports)
+    if internal.config.data.editor.devmode then
+        timer:add('batch imports')
+        timer:group('analyze', 'load', 'load total')
+        timer:print('Content editor bundles loaded')
+    end
 end
 
 --- @param entityData EntityImportData
@@ -1059,19 +1070,19 @@ local function generate_entity_label(entity)
 end
 
 local function finish_database_init()
+    local timer = utils.create_performance_timer()
     log.info('Initializing content editor type info...')
     events.emit('setup')
-    local timestamps = {os.clock()}
+    timer:add('setup')
     print('Initializing content editor type info...')
     typecache.load()
-    timestamps[#timestamps+1] = os.clock()
     for _, et in pairs(entity_types) do
         for _, t in ipairs(et.root_types or {}) do
             typecache.get(t)
         end
     end
 
-    timestamps[#timestamps+1] = os.clock()
+    timer:add('typecache')
     print('Starting content import for pre-existing game data...')
 
     -- this event is intended for plugins to fetch any current pre-existing game state and initialize the already present instances
@@ -1081,26 +1092,25 @@ local function finish_database_init()
     end
     events.emit('get_existing_data', whitelistedLoadEntities)
 
-    timestamps[#timestamps+1] = os.clock()
+    timer:add('existing data')
     print('All content entity types ready, starting load...')
     if core.editor_enabled then
         enums.refresh()
     end
+    timer:add('enum refresh')
 
     load_data_bundles()
     events.emit('bundles_loaded')
-    timestamps[#timestamps+1] = os.clock()
+    timer:add('bundle load')
 
     typecache.save_if_invalid()
     db_ready = true
     events.emit('ready')
-    timestamps[#timestamps+1] = os.clock()
+    timer:add('ready')
     if internal.config.data.editor.devmode then
-        local f = '' for i, n in ipairs(timestamps) do f = f .. ((timestamps[i + 1] or os.clock()) - n) .. ', ' end
-        -- read typecache, init root types, get_existing_data, load bundles, save typecache & ready
-        log.info('Content editor initialized in ' .. f .. ' seconds')
+        timer:print('Content editor initialized')
     else
-        log.info('Content editor initialized in ' .. (timestamps[#timestamps] - timestamps[1]) .. ' seconds')
+        timer:print_total('Content editor initialized')
     end
 end
 
