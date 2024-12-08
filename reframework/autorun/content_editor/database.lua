@@ -384,7 +384,7 @@ end
 local storedBundles
 local function scan_stored_bundles(forceFresh)
     if storedBundles and not forceFresh then return storedBundles end
-    storedBundles = core.get_files('bundle')
+    storedBundles = core.get_files('bundle', forceFresh)
     return storedBundles
 end
 

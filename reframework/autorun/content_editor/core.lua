@@ -13,7 +13,8 @@ local color_statuses = {
     success = 8,
 }
 
-local data_basepath = 'usercontent/'
+local data_basepath = 'usercontent'
+local data_basepath_slash = 'usercontent/'
 
 local status_colors = {
     [color_statuses.default] = 0xffffffff,
@@ -39,10 +40,20 @@ end
 --- @return string
 local function get_path(subpath)
     if subpath:sub(1, 1) == '/'  then
-        return data_basepath .. subpath:sub(2)
+        return data_basepath_slash .. subpath:sub(2)
     else
-        return data_basepath .. subpath
+        return data_basepath_slash .. subpath
     end
+end
+
+--- @param type ContentFileType|string
+--- @return string
+local function get_folder_name(type)
+    if type == 'enum' then return 'enums' end
+    if type == 'dump' then return 'dumps' end
+    if type == 'preset' then return 'presets' end
+    if type == 'bundle' then return 'bundles' end
+    return type
 end
 
 --- @param type ContentFileType
@@ -56,15 +67,29 @@ local function resolve_file(type, subpath)
     return get_path(subpath)
 end
 
+local globCache = nil
+
 --- @param type ContentFileType
+--- @param forceRescan boolean|nil
 --- @return string[]
-local function get_files(type)
-    local path = resolve_file(type, '.*?\\')
-    path = path:gsub('/', '\\\\')
-    return fs.glob(path)
+local function get_files(type, forceRescan)
+    if forceRescan or not globCache then
+        globCache = {}
+        local files = fs.glob(data_basepath .. '\\\\.*?\\.json$')
+        for _, f in ipairs(files) do
+            local mainPath = f:match('^' .. data_basepath .. '[\\/][^\\/]+')
+            if mainPath then
+                mainPath = mainPath:gsub('^' .. data_basepath .. '[\\/]', '')
+                globCache[mainPath] = globCache[mainPath] or {}
+                globCache[mainPath][#globCache[mainPath]+1] = f
+            end
+        end
+    end
+    local folder_name = get_folder_name(type)
+    return globCache[folder_name] or {}
 end
 
-local version = {0, 5, 1}
+local version = {0, 0, 0}
 
 --- @class ContentEditorCore
 usercontent.core = {

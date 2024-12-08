@@ -81,7 +81,7 @@ local editor_defs = {
             end
 
             if imgui.tree_node('Data dumps') then
-                if imgui.button('Dump enums: ' .. core._basepath .. 'dump/enums/*.json') then
+                if imgui.button('Dump enums: ' .. core._basepath .. '/dump/enums/*.json') then
                     enums.dump_all_enums()
                 end
 

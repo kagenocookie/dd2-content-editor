@@ -312,7 +312,7 @@ end
 
 local function refresh_modded_enums()
     local enums = core.get_files('enum')
-    local pathlen = core._basepath:len() + 7 -- /enums/
+    local pathlen = core._basepath:len() + 8 -- 'usercontent':len() + '/enums/':len() + 1 to skip the slash
     for _, enumPath in ipairs(enums) do
         local enumData = json.load_file(enumPath) --- @type nil|EnumDefinitionFile
         if enumData then
