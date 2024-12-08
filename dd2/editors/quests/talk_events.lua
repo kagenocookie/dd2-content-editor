@@ -242,56 +242,69 @@ end
 
 -- fetch current game data
 udb.events.on('get_existing_data', function (whitelist)
-    if whitelist and not whitelist.talk_event then return end
-
-    local enumerator = TalkEventManager._ResourceCatalog:get_MergedCatalog():GetEnumerator()
-    while enumerator:MoveNext() do
-        local kv = enumerator._current
-        --- @type TalkEventData
-        local entity = {
-            id = kv.key,
-            type = 'talk_event',
-            data = kv.value._Item,
-            questId = get_talk_event_enum_id_to_quest_id(kv.key)
-        }
-        udb.register_pristine_entity(entity)
+    local enumerator
+    if not whitelist or whitelist.talk_event then
+        enumerator = TalkEventManager._ResourceCatalog:get_MergedCatalog():GetEnumerator()
+        while enumerator:MoveNext() do
+            local kv = enumerator._current
+            --- @type TalkEventData
+            local entity = {
+                id = kv.key,
+                type = 'talk_event',
+                data = kv.value._Item,
+                questId = get_talk_event_enum_id_to_quest_id(kv.key)
+            }
+            if not whitelist or whitelist.talk_event[entity.id] then
+                udb.register_pristine_entity(entity)
+            end
+        end
     end
 
-    enumerator = TalkEventManager._QuestDialoguePackCatalog:GetEnumerator()
-    while enumerator:MoveNext() do
-        local kv = enumerator._current
-        --- @type QuestDialogueEntity
-        local entity = {
-            id = kv.key,
-            type = 'quest_dialogue_pack',
-            data = kv.value,
-        }
-        udb.register_pristine_entity(entity)
+    if not whitelist or whitelist.quest_dialogue_pack then
+        enumerator = TalkEventManager._QuestDialoguePackCatalog:GetEnumerator()
+        while enumerator:MoveNext() do
+            local kv = enumerator._current
+            --- @type QuestDialogueEntity
+            local entity = {
+                id = kv.key,
+                type = 'quest_dialogue_pack',
+                data = kv.value,
+            }
+            if not whitelist or whitelist.quest_dialogue_pack[entity.id] then
+                udb.register_pristine_entity(entity)
+            end
+        end
     end
 
-    -- note: both loops are identical, just need different enumerators
-    enumerator = TalkManager._PawnCommonTalkMonologueCatalog:get_MergedCatalog():GetEnumerator()
-    while enumerator:MoveNext() do
-        local kv = enumerator._current
-        --- @type PawnTalkData
-        local entity = {
-            id = kv.key,
-            type = 'pawn_talk_monologue',
-            data = kv.value._Item,
-        }
-        udb.register_pristine_entity(entity)
-    end
+    if not whitelist or whitelist.pawn_talk_monologue then
+        -- note: both loops are identical, just need different enumerators
+        enumerator = TalkManager._PawnCommonTalkMonologueCatalog:get_MergedCatalog():GetEnumerator()
+        while enumerator:MoveNext() do
+            local kv = enumerator._current
+            --- @type PawnTalkData
+            local entity = {
+                id = kv.key,
+                type = 'pawn_talk_monologue',
+                data = kv.value._Item,
+            }
+            if not whitelist or whitelist.pawn_talk_monologue[entity.id] then
+                udb.register_pristine_entity(entity)
+            end
+        end
 
-    enumerator = TalkManager._PawnQuestTalkMonologueCatalog:get_MergedCatalog():GetEnumerator()
-    while enumerator:MoveNext() do
-        local kv = enumerator._current
-        --- @type PawnTalkData
-        local entity = {
-            id = kv.key,
-            type = 'pawn_talk_monologue',
-            data = kv.value._Item,
-        }
-        udb.register_pristine_entity(entity)
+        enumerator = TalkManager._PawnQuestTalkMonologueCatalog:get_MergedCatalog():GetEnumerator()
+        while enumerator:MoveNext() do
+            local kv = enumerator._current
+            --- @type PawnTalkData
+            local entity = {
+                id = kv.key,
+                type = 'pawn_talk_monologue',
+                data = kv.value._Item,
+            }
+            if not whitelist or whitelist.pawn_talk_monologue[entity.id] then
+                udb.register_pristine_entity(entity)
+            end
+        end
     end
 end)
 

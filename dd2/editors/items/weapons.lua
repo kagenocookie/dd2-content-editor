@@ -45,7 +45,7 @@ udb.events.on('get_existing_data', function (whitelist)
     local enumerator = EquipmentManager.WeaponCatalog:GetEnumerator()
     while enumerator:MoveNext() do
         local id = enumerator._current.key
-        if not whitelist or whitelist[id] then
+        if not whitelist or whitelist.weapon[id] then
             local refPfb = enumerator._current.value
             local offsetSettings = EquipmentManager.WeaponSetting:getOffsetSettings(id)
             if offsetSettings and offsetSettings.ID == id then

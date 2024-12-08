@@ -54,9 +54,15 @@ local function emit_event(name, ...)
     -- print(name, 'TOTAL', os.clock() - t_start)
 end
 
+---`get_existing_data`: Called to request all active editors to fetch existing game data.
+---<br><br>If editor is enabled: only ever called once on game start with whitelist = nil, in which case all data should be fetched
+---<br>If editor disabled: whitelist is never null; called once on start and once whenever a new bundle gets enabled. Whitelist contains only entity IDs that are not yet known to the content editor database.
+---<br><br>If the fetch is fast enough even for the full dataset, feel free to ignore the whitelist and just check if `next(udb.get_all_entities_map('entity_type'))`
+---<br>`bundles_loaded`: Called after all bundles have finished loading (on start or full database refresh)
+---<br>`ready`: Called after the initial DB setup is finished
+---<br>`data_imported`: Called to request an import of a set of entities into the game's data; Intended as a bulk insert for better performance compared to importing directly in the entity's import handler
 ---@param name EventName
 ---@param fn function
----Request all active editors to fetch game data. Can be called more than once when editors are disabled and a new bundle gets enabled (whitelist will never be null in that case). Can import only a whitelisted set of entities instead of everything. Expected handling: whitelist == nil => import everything; otherwise, import only if whitelist.entity_type[id] is true; if the fetch is fast enough even for the full dataset, feel free to ignore this parameter and just check if next(udb.get_all_entities_map('entity_type'))
 ---@overload fun(name: 'get_existing_data', fn: fun(whitelist: nil|table<string,table<integer,true>>))
 ---@overload fun(name: 'bundles_loaded', fn: fun())
 ---@overload fun(name: 'ready', fn: fun()) The content DB is all ready and all initial bundles loaded

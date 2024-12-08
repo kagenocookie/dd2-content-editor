@@ -181,7 +181,9 @@ udb.events.on('get_existing_data', function (whitelist)
                 while enumerator:MoveNext() do
                     local item = enumerator._current
                     local styleHash = item.key
-                    add_style_entity(styleHash, name, root_item.key, styleHash, item.value)
+                    if not wl or wl[styleHash] then
+                        add_style_entity(styleHash, name, root_item.key, styleHash, item.value)
+                    end
                 end
             end
         end

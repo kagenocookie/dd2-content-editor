@@ -6,8 +6,6 @@ local import_handlers = require('content_editor.import_handlers')
 local gamedb = require('editors.events.events_gamedata')
 require('editors.events.scripted_events')
 
-local minimum_custom_event_id = 100000
-
 local SuddenQuestManager = sdk.get_managed_singleton('app.SuddenQuestManager') ---@type app.SuddenQuestManager
 local GenerateManager = sdk.get_managed_singleton('app.GenerateManager') ---@type app.GenerateManager
 
@@ -34,7 +32,7 @@ udb.events.on('get_existing_data', function (whitelist)
         if not whitelist or whitelist.event_context then
             for _, ctx in ipairs(catalog._QuestSuddenTableData._ContextDataArray:get_elements()) do
                 --- @cast ctx app.SuddenQuestContextData
-                local ignore = not not whitelist and not whitelist[ctx._SerialNum]
+                local ignore = whitelist and not whitelist.event_context[ctx._SerialNum] or false
                 if not ignore and ctx._SerialNum == 118 and udb.get_entity('event_context', 118) then
                     -- the basegame has a duplicate id for this one SuddenQuestContext...
                     -- I highly doubt they actually have a way to use the second one in any way, so I won't support it either, just pretend it doesn't exist
@@ -55,7 +53,7 @@ udb.events.on('get_existing_data', function (whitelist)
         if not whitelist or whitelist.event then
             for _, selectData in ipairs(catalog._QuestSuddenTableData._SelectDataArray:get_elements()) do
                 --- @cast selectData app.SuddenQuestSelectData
-                if not whitelist or whitelist[selectData._SerialNum] then
+                if not whitelist or whitelist.event[selectData._SerialNum] then
                     udb.register_pristine_entity({
                         selectData = selectData,
                         type = 'event',
@@ -103,14 +101,13 @@ udb.register_entity_type('event_context', {
     end,
     export = function (data)
         --- @cast data EventContext
-        --- @type Import.EventContext
         return {
             data = import_handlers.export(data.context, 'app.SuddenQuestContextData.ContextData')
         }
     end,
     delete = function (ctx)
         --- @cast ctx EventContext
-        if ctx.id < minimum_custom_event_id then
+        if not udb.is_custom_entity_id('event_context', ctx.id) then
             return 'not_deletable'
         end
 
@@ -131,7 +128,7 @@ udb.register_entity_type('event_context', {
         end
     end,
     root_types = {'app.SuddenQuestContextData'},
-    insert_id_range = {minimum_custom_event_id, 999000},
+    insert_id_range = {10000, 999000},
 })
 
 udb.register_entity_type('event', {
@@ -145,7 +142,6 @@ udb.register_entity_type('event', {
     root_types = {'app.SuddenQuestSelectData'},
     export = function (data)
         --- @cast data Event
-        --- @type Import.EventData
         return {
             data = import_handlers.export(data.selectData, 'app.SuddenQuestSelectData'),
             scriptEffects = data.scriptEffects,
@@ -153,7 +149,7 @@ udb.register_entity_type('event', {
     end,
     delete = function (event)
         --- @cast event Event
-        if event.id < minimum_custom_event_id then
+        if not udb.is_custom_entity_id('event', event.id) then
             return 'not_deletable'
         end
 
@@ -173,5 +169,5 @@ udb.register_entity_type('event', {
         local label = tostring(enums.get_enum('app.AIKeyLocation').get_label(entity.selectData._StartLocation))
         return tostring(entity.id) .. ' ' .. type .. ' - ' .. label
     end,
-    insert_id_range = {minimum_custom_event_id, 999000},
+    insert_id_range = {10000, 999000},
 })
