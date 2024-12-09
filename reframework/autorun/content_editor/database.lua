@@ -1084,6 +1084,9 @@ local function finish_database_init()
     timer:add('typecache')
     print('Starting content import for pre-existing game data...')
 
+    if core.editor_enabled then
+        enums.refresh()
+    end
     -- this event is intended for plugins to fetch any current pre-existing game state and initialize the already present instances
     local whitelistedLoadEntities = nil
     if use_global_entity_fetch_whitelist then
@@ -1093,9 +1096,6 @@ local function finish_database_init()
 
     timer:add('existing data')
     print('All content entity types ready, starting load...')
-    if core.editor_enabled then
-        enums.refresh()
-    end
     timer:add('enum refresh')
 
     load_data_bundles()

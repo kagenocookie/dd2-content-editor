@@ -156,21 +156,23 @@ local function create_flags_enum(enum, items_per_row_count)
     --- @type UIHandler
     return function (context)
         local value = context.get()
-
-        local isMultiline = false
-        local changed, changed2 = false, false
         if not enum then enum = enums.get_enum(context.data.classname) end
+        local valueCount = #enum.values
+
+        local isMultiline = items_per_row_count ~= nil and valueCount > items_per_row_count
+        local changed, changed2 = false, false
         imgui.indent(4)
         imgui.begin_rect()
         imgui.spacing()
         imgui.indent(4)
+        if isMultiline then
+            imgui.text(context.label)
+        end
         for i, flagValue in ipairs(enum.values) do
             local checked = (flagValue & value) ~= 0
             if i ~= 1 then
                 if items_per_row_count == nil or (i%items_per_row_count ~= 1) then
                     imgui.same_line()
-                else
-                    isMultiline = true
                 end
             end
             changed2, checked = imgui.checkbox(enum.get_label(flagValue), checked)
@@ -186,8 +188,6 @@ local function create_flags_enum(enum, items_per_row_count)
         end
 
         if isMultiline then
-            imgui.text(context.label)
-            imgui.spacing()
             imgui.spacing()
         else
             imgui.same_line()
@@ -207,9 +207,8 @@ local function resource_holder(resourceClassname)
     --- @type UIHandler
     return function (context)
         local res = context.get()
-        imgui.text(context.label)
         if type(res) == 'string' then
-            local changed, newpath = imgui.input_text('Resource path', res)
+            local changed, newpath = imgui.input_text(context.label .. ' (resource path)', res)
             if changed then
                 context.set(newpath)
                 return true
@@ -218,7 +217,7 @@ local function resource_holder(resourceClassname)
         end
 
         local curpath = res and res:get_ResourcePath() or ''
-        local changed, newpath = imgui.input_text('Resource path', context.data.newpath or curpath)
+        local changed, newpath = imgui.input_text(context.label .. ' (resource path)', context.data.newpath or curpath)
         if changed then
             context.data.newpath = newpath
         end
