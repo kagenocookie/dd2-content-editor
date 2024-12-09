@@ -48,7 +48,7 @@ end)
 udb.register_entity_type('job_param', {
     export = function (instance)
         --- @cast instance HumanParamsEntity
-        return { data = import_handlers.export(instance.runtime_instance, 'app.JobUniqueParameter') }
+        return { data = import_handlers.export(instance.runtime_instance, 'app.JobUniqueParameter', { raw = true }) }
     end,
     import = function (data, instance)
         --- @cast instance HumanParamsEntity
@@ -74,7 +74,7 @@ local function define_param_entity(entity_type, classname, labeler)
     udb.register_entity_type(entity_type, {
         export = function (instance)
             --- @cast instance HumanParamsEntity
-            return { data = import_handlers.export(instance.runtime_instance, classname) }
+            return { data = import_handlers.export(instance.runtime_instance, classname, { raw = true }) }
         end,
         import = function (data, instance)
             --- @cast instance HumanParamsEntity
