@@ -7,6 +7,7 @@ local enums = require('content_editor.enums')
 
 local definitions = require('content_editor.definitions')
 
+local jobEnum = enums.get_enum('app.Character.JobEnum')
 local CharacterManager = sdk.get_managed_singleton('app.CharacterManager')
 
 --- @class HumanParamsEntity : DBEntity
@@ -57,7 +58,7 @@ udb.register_entity_type('job_param', {
         CharacterManager:get_HumanParam().JobParam[field] = instance.runtime_instance
     end,
     generate_label = function (entity)
-        return 'Job ' .. entity.id .. ' params'
+        return 'Job params ' .. jobEnum.get_label(entity.id)
     end,
     insert_id_range = {0, 0},
     root_types = {'app.JobParameter'},
