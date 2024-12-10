@@ -28,6 +28,7 @@ local handlerType = {
     genericList = 5,
     nullableValue = 6,
     dictionary = 7,
+    genericEnumerable = 8,
 }
 
 --- @enum FieldFlags
@@ -68,6 +69,22 @@ local ignored_parents = {
     ["System.Enum"] = true,
 }
 
+local boxed_value_field, boxed_enum_field
+local function find_boxed_value_field()
+    local t = sdk.find_type_definition('System.Int32')
+    local fields = t:get_fields()
+    for _, f in ipairs(fields) do
+        if not f:is_static() then
+            boxed_value_field = f:get_name()
+            return boxed_value_field
+        end
+    end
+end
+
+local function find_boxed_enum_field()
+
+end
+
 --- @param typedef RETypeDefinition
 --- @param typecache table<string, TypeCacheData>
 local function build_typecache(typedef, typecache)
@@ -85,7 +102,11 @@ local function build_typecache(typedef, typecache)
         if typedef:is_a(type_enum) then
             local itemCount = 0
             for _, val in ipairs(typedef:get_fields()) do
-                if val:is_static() then itemCount = itemCount + 1 end
+                if val:is_static() then
+                    itemCount = itemCount + 1
+                elseif not boxed_enum_field then
+                    boxed_enum_field = val:get_name()
+                end
             end
             local runtimeType = typedef:get_runtime_type()
             if runtimeType then
@@ -174,6 +195,22 @@ local function build_typecache(typedef, typecache)
             typecache[fullname] = { type = handlerType.genericList, elementType = elementType, itemCount = 999 }
         else
             print('Unsupported list element type', elementType)
+            typecache[fullname] = readonly_cache_item
+        end
+        return
+    end
+
+    if fullname:sub(1, 34) == 'System.Collections.Generic.HashSet' then
+        listElementType = fullname:sub(38, -2)
+        local elemType = sdk.find_type_definition(listElementType)
+        if elemType then
+            if not typecache[listElementType] then
+                build_typecache(elemType, typecache)
+            end
+
+            typecache[fullname] = { type = handlerType.genericEnumerable, elementType = listElementType, itemCount = 999 }
+        else
+            print('Unsupported hashset element type', listElementType)
             typecache[fullname] = readonly_cache_item
         end
         return

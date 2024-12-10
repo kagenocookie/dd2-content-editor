@@ -262,6 +262,7 @@ editor.define_window('data_viewer', 'Data console', function (state)
         imgui.text('/Player will search for any transforms that contain the text "Player"')
         imgui.text('/Player:app.Character will search for any app.Character components that contain the text "Player"')
         imgui.text('/Player:app.Character::item:get_GameObject() will evaluate the function after :: on each matching item and return that value instead')
+        imgui.text('/:app.Character will find every currently active app.Character component irrelevant of name')
         imgui.text('Entering a ! prefix makes the result evaluate every frame instead of showing a cached result')
         imgui.end_rect(2)
     end

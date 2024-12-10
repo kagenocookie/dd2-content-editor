@@ -212,12 +212,19 @@ end
 local array_accessors = {
     length = function (arr)
         --- @cast arr SystemArray
-        -- return arr:get_size()
         return arr and arr.get_size and arr:get_size() or 0
     end,
-    get_elements = function (arr) return arr end,
-    get_elements_indexed = function (arr) return arr and arr.get_elements and arr--[[@as SystemArray]]:get_elements() or {} end,
-    remove_at = function (arr, idx)
+    foreach = function (arr)
+        local i = -1
+        return function ()
+            i = i + 1
+            if i < arr:get_size() then
+                return arr[i], i
+            end
+        end
+    end,
+    get_elements = function (arr) return arr and arr.get_elements and arr--[[@as SystemArray]]:get_elements() or {} end,
+    remove = function (arr, idx)
         --- @cast arr SystemArray
         return system_array_remove_at(arr, idx)
     end,
@@ -231,32 +238,53 @@ local array_accessors = {
 --- @type ArrayLikeAccessors
 local list_accessors = {
     length = function (list) return list:get_Count() end,
+    foreach = utils.list_iterator,
     get_elements = function (list)
-        local items = {}
-        for i = 0, list:get_Count() - 1 do items[i] = list[i] end
-        return items
-    end,
-    get_elements_indexed = function (list)
         local items = {}
         for i = 0, list:get_Count() - 1 do items[i + 1] = list[i] end
         return items
     end,
-    remove_at = function (list, idx) list:RemoveAt(idx) return list end,
+    remove = function (list, idx) list:RemoveAt(idx) return list end,
+    add = function (list, element) list:Add(element) return list end,
+}
+
+--- @type ArrayLikeAccessors
+local ienumerable_accessors = {
+    length = function (list) return list:get_Count() end,
+    foreach = utils.enumerate,
+    get_elements = function (list)
+        local items = {}
+        local it = list:GetEnumerator()
+        while it:MoveNext() do
+            items[#items+1] = it._current
+        end
+        pcall(items.call, items, 'Dispose')
+        return items
+    end,
+    remove = function (list, idx, value) if list.Remove then list:Remove(value) else print('Cannot remove from ', list:get_type_definition():get_full_name()) end return list end,
     add = function (list, element) list:Add(element) return list end,
 }
 
 --- @type ArrayLikeAccessors
 local table_accessors = {
     length = function (tbl) return #tbl end,
-    get_elements = function (tbl) return tbl end,
-    get_elements_indexed = function (tbl)
+    foreach = function (tbl)
+        local k, v
+        return function ()
+            k, v = next(tbl, k)
+            if k then
+                return v, k
+            end
+        end
+    end,
+    get_elements = function (tbl)
         local out = {}
         for _, v in pairs(tbl) do
             out[#out+1] = v
         end
         return out
     end,
-    remove_at = function (tbl, idx) table.remove(tbl, idx) return tbl end,
+    remove = function (tbl, idx) table.remove(tbl, idx) return tbl end,
     add = function (tbl, element) tbl[#tbl+1] = element return tbl end,
 }
 
@@ -282,6 +310,8 @@ local function get_arraylike_type_wrapper(classname)
         return array_accessors
     elseif meta.type == typecache.handlerTypes.genericList then
         return list_accessors
+    elseif meta.type == typecache.handlerTypes.genericEnumerable then
+        return ienumerable_accessors
     else
         print('ERROR: Unknown array-like classname: ' .. classname)
         return table_accessors
@@ -393,7 +423,7 @@ local function array_to_string(array, separator, arrayClassname, emptyString)
         arrayClassname = arrayClassname or array:get_type_definition():get_full_name()
         local wrapper = get_arraylike_type_wrapper(arrayClassname)
         if not wrapper then return 'invalid array type ' .. arrayClassname end
-        items = wrapper.get_elements_indexed(array)
+        items = wrapper.get_elements(array)
     end
     local str = table.concat(utils.map(items, function (item) return object_to_string(item) end), separator)
     if str == '' then return emptyString or 'empty' end
@@ -440,8 +470,7 @@ end
 --- @return any[]
 local function array_elements(array, classname)
     local wrapper = get_arraylike_type_wrapper(classname)
-    local items = wrapper.get_elements_indexed(array)
-    return items
+    return wrapper.get_elements(array)
 end
 
 --- comment
@@ -498,27 +527,6 @@ local function set_field(obj, field, value)
     end
 
     obj[field] = value
-end
-
-local update_funcs = {}
-
-local has_hooked_update_callback = false
---- @param callback fun(): boolean successful
-local function queue_execute_on_update(callback)
-    update_funcs[#update_funcs+1] = callback
-
-    if not has_hooked_update_callback then
-        has_hooked_update_callback = true
-        re.on_application_entry('UpdateBehavior', function ()
-            for i = #update_funcs, 1, -1 do
-                local func = update_funcs[i]
-                local success, retval = pcall(func)
-                if success and retval then
-                    table.remove(update_funcs, i)
-                end
-            end
-        end)
-    end
 end
 
 --- @generic T : table|REManagedObject
@@ -610,7 +618,6 @@ usercontent._ui_utils = {
     get_field = get_field,
     set_field = set_field,
 
-    queue_update_func = queue_execute_on_update,
     hook_game_load_or_reset = hook_game_load_or_reset,
 }
 return usercontent._ui_utils

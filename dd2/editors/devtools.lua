@@ -164,6 +164,9 @@ editor.define_window('dev_tools', 'Dev tools', function (state)
     if imgui.button('Stop all running custom effects') then
         usercontent.script_effects.stop_all_effects()
     end
+    if imgui.button('Set all current enemy HP to 1') then
+        ce_find('ch2:app.Monster::item._Chara:get_Hit():setHpValue(1.0, false)')
+    end
 end)
 
 local maxDistanceSqr = 50 * 50

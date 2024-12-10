@@ -240,6 +240,12 @@ local getter_prop_accessor = {
     set = function (object, value, fieldname) print('WARNING: Attempted to set read-only prop', object, fieldname, value) end
 }
 
+--- @type ObjectFieldAccessors
+local hashset_accessor = {
+    get = function (object, fieldname) return fieldname end,
+    set = function (object, newValue, current) object:Remove(current) object:Add(newValue) end
+}
+
 --- @param label string
 --- @return string
 local function generate_field_label(label)
@@ -359,12 +365,16 @@ local function create_arraylike_ui(meta, classname, label, array_access, setting
     local skip_root_tree_node = typesettings and typesettings.array_expander_disable or false
     if not meta.elementType then error('INVALID ARRAY: ' .. classname) return function () end end
     local elementAccessor = default_accessor
-    if not settings.is_raw_data and meta.type == typecache.handlerTypes.array then
-        local elementMeta = typecache.get(meta.elementType)
-        if elementMeta.type == typecache.handlerTypes.value then
-            elementAccessor = boxed_value_accessor
-        elseif elementMeta.type == typecache.handlerTypes.enum then
-            elementAccessor = boxed_enum_accessor
+    if not settings.is_raw_data then
+        if meta.type == typecache.handlerTypes.array then
+            local elementMeta = typecache.get(meta.elementType)
+            if elementMeta.type == typecache.handlerTypes.value then
+                elementAccessor = boxed_value_accessor
+            elseif elementMeta.type == typecache.handlerTypes.enum then
+                elementAccessor = boxed_enum_accessor
+            end
+        elseif meta.type == typecache.handlerTypes.genericEnumerable and classname:find('HashSet') then
+            elementAccessor = hashset_accessor
         end
     end
 
@@ -400,21 +410,23 @@ local function create_arraylike_ui(meta, classname, label, array_access, setting
         end
         if show then
             imgui.push_id(array.get_address and array:get_address() or tostring(array))
-            for idx, element in pairs(array_access.get_elements(array)) do
+            local index = 0
+            for element, key in array_access.foreach(array) do
+                index = index + 1
                 if element == nil then goto continue end
                 imgui.begin_rect()
-                imgui.push_id(idx)
+                imgui.push_id(type(key or element) == 'userdata' and index or (key or element))
                 if imgui.button('X') then
                     -- delete all child element containers and re-create them next iteration, that's the easiest way of ensuring we don't mess up the children index keys
                     ui_context.delete_children(context)
-                    context.set(array_access.remove_at(array, idx))
+                    context.set(array_access.remove(array, key, element))
                     imgui.tree_pop()
                     return true
                 end
 
                 imgui.same_line()
-                local isNewChildCtx = context.children[idx] == nil
-                local childCtx = create_field_editor(context, classname, idx, meta.elementType, tostring(idx), elementAccessor, settings, not expand_per_element)
+                local isNewChildCtx = context.children[key or element] == nil
+                local childCtx = create_field_editor(context, classname, key or element, meta.elementType, tostring(key or element), elementAccessor, settings, not expand_per_element)
                 if isNewChildCtx then
                     childCtx.ui = apply_ui_handler_overrides(childCtx.ui, classname, "__element", meta.elementType)
                 end
@@ -760,6 +772,10 @@ field_editor_factories = {
         local accessor = settings.is_raw_data and helpers.array_accessor('table') or helpers.array_accessor(classname) --[[@as ArrayLikeAccessors]]
         return create_arraylike_ui(meta, classname, label, accessor, settings)
     end,
+    [typecache.handlerTypes.genericEnumerable] = function (meta, classname, label, settings)
+        local accessor = settings.is_raw_data and helpers.array_accessor('table') or helpers.array_accessor(classname) --[[@as ArrayLikeAccessors]]
+        return create_arraylike_ui(meta, classname, label, accessor, settings)
+    end,
     [typecache.handlerTypes.dictionary] = function (meta, classname, label, settings)
         return dictionary_ui(meta, classname, label, settings)
     end,
@@ -985,8 +1001,9 @@ end
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
 --- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
+--- @param settings UISettings|nil
 --- @return boolean instanceChanged Whether the root field instance was changed
-local function show_entity_ui_editable(targetContainer, field, owner, label, classname, editorId)
+local function show_entity_ui_editable(targetContainer, field, owner, label, classname, editorId, settings)
     if not targetContainer then error('OI! ui needs a target and a parent!') return false end
 
     local target = targetContainer[field]
@@ -1013,7 +1030,45 @@ local function show_entity_ui_editable(targetContainer, field, owner, label, cla
             print('concrete types:', oldInstance:get_type_definition():get_full_name(), newInstance:get_type_definition():get_full_name())
         end
         targetContainer[field] = newInstance
-    end)
+    end, settings)
+    return changed
+end
+
+--- Show an editable lua table of entities
+--- @param targetContainer any The object containing the table
+--- @param field string|integer Field on the object for the table
+--- @param owner DBEntity|nil
+--- @param label string|nil
+--- @param classname string Edited object classname
+--- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
+--- @param settings UISettings|nil
+--- @return boolean instanceChanged Whether the root field instance was changed
+local function show_entity_list(targetContainer, field, owner, label, classname, editorId, settings)
+    if not targetContainer then error('OI! ui needs a target and a parent!') return false end
+
+    local target = targetContainer[field]
+    if target == nil then
+        imgui.text((label or field) .. ': null')
+        if classname then
+            imgui.same_line()
+            imgui.push_id(get_editor_id(editorId, targetContainer, label or classname, owner, targetContainer))
+            if imgui.button('Create') then
+                targetContainer[field] = helpers.create_instance(classname)
+                imgui.pop_id()
+                return true
+            end
+            imgui.pop_id()
+        end
+        return false
+    end
+
+    editorId = get_editor_id(editorId, targetContainer, label or classname, owner)
+    local rootCtx, isNew = ui_context.get_or_create_child(nil, field, target, label or '', nil, classname)
+    if isNew then
+        rootCtx.set = function (value) targetContainer[field] = value end
+        rootCtx.ui = create_arraylike_ui(typecache.get(classname .. '[]'), classname, label or classname, helpers.array_accessor('table'), settings or {})
+    end
+    changed = rootCtx:ui() or changed
     return changed
 end
 
@@ -1062,6 +1117,7 @@ usercontent._ui_handlers = {
     show_nested = show_object_nested_ui,
     show_readonly = show_entity_ui_readonly,
     show_editable = show_entity_ui_editable,
+    show_entity_list =show_entity_list,
     show_nullable = show_entity_ui_nullable,
 
     register_extension = register_extension,

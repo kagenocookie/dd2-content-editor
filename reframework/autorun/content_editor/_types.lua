@@ -47,9 +47,9 @@
 --- @alias ArrayLikeObject SystemArray|REManagedObject|table
 --- @class ArrayLikeAccessors
 --- @field length fun(arr: ArrayLikeObject): integer
---- @field get_elements fun(arr: ArrayLikeObject): table<integer, any> Get all array items in game indices (usually starting at 0)
---- @field get_elements_indexed fun(arr: ArrayLikeObject): any[] Get all array items in a lua numeric-indexed table (starting at 1)
---- @field remove_at fun(arr: ArrayLikeObject, index: integer): ArrayLikeObject Returns the new (or same) array-like object instance
+--- @field foreach fun(arr: ArrayLikeObject): fun(): value: any, key: any|nil Iterate through all array items in order
+--- @field get_elements fun(arr: ArrayLikeObject): any[] Get all array items in a lua numeric-indexed table (starting at 1)
+--- @field remove fun(arr: ArrayLikeObject, index: integer, value: any): ArrayLikeObject Returns the new (or same) array-like object instance
 --- @field add nil|fun(arr: ArrayLikeObject, object: any, arrayClassname: string): ArrayLikeObject Returns the new (or same) array-like object instance
 --- @field create nil|fun(classname: string): ArrayLikeObject Returns a new array-like object instance of the correct type
 

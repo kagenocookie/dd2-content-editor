@@ -336,7 +336,7 @@ importer_factories = {
             import = function (src, target)
                 if not src then return target end
                 if target == nil then
-                    return target
+                    target = helpers.create_generic_instance(fullname)
                 end
 
                 while target:get_Count() > #src do
