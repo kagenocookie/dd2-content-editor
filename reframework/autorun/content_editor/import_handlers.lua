@@ -122,7 +122,7 @@ local function boxed_enum_handler(handler)
         import = handler.import,
         export = function (src, target)
             if src ~= nil then
-                return handler.export(src.value__, target)
+                return handler.export(src[typecache.boxed_enum_field()], target)
             else
                 return target
             end
@@ -138,7 +138,7 @@ local function boxed_value_handler(handler)
         import = handler.import,
         export = function (src, target, options)
             if src ~= nil then
-                return handler.export(src.m_value, target, options)
+                return handler.export(src[typecache.boxed_value_field()], target, options)
             else
                 return target
             end

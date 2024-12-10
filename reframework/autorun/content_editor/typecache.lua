@@ -79,10 +79,18 @@ local function find_boxed_value_field()
             return boxed_value_field
         end
     end
+    return 'm_value'
 end
 
-local function find_boxed_enum_field()
+local function get_boxed_value_field()
+    if not boxed_value_field then
+        boxed_value_field = find_boxed_value_field()
+    end
+    return boxed_value_field
+end
 
+local function get_boxed_enum_field()
+    return boxed_enum_field or 'value__'
 end
 
 --- @param typedef RETypeDefinition
@@ -461,7 +469,6 @@ local function process_rsz()
     usercontent.editor.set_need_script_reset()
     cache = {}
     type_definitions.type_settings = {}
-
     local outputDefinitions = {}
     for _, data in pairs(rszData) do
         local name = data.name
@@ -469,7 +476,7 @@ local function process_rsz()
         local ignoredType = name == ''
             or (name:find('System.') == 1)
             or (name:find('via.') == 1)
-            or (#data.fields == 1 and data.fields[1].name == 'value__')
+            or (#data.fields == 1 and data.fields[1].name == get_boxed_enum_field())
             or name:sub(-2) == '[]'
             or name:find('!')
             or name:find('<')
@@ -554,6 +561,9 @@ usercontent._typecache = {
     clear = clear_type_cache,
     save = save_type_cache,
     save_if_invalid = save_if_invalid,
+
+    boxed_value_field = get_boxed_value_field,
+    boxed_enum_field = get_boxed_enum_field,
 
     process_rsz_data = process_rsz,
 

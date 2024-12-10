@@ -224,13 +224,13 @@ local default_accessor = {
 
 --- @type ObjectFieldAccessors
 local boxed_value_accessor = {
-    get = function (object, fieldname) return object[fieldname].m_value end,
+    get = function (object, fieldname) return object[fieldname][typecache.boxed_value_field()] end,
     set = function (object, value, fieldname) object[fieldname] = value end
 }
 
 --- @type ObjectFieldAccessors
 local boxed_enum_accessor = {
-    get = function (object, fieldname) return object[fieldname].value__ end,
+    get = function (object, fieldname) return object[fieldname][typecache.boxed_enum_field()] end,
     set = function (object, value, fieldname) object[fieldname] = value end
 }
 
@@ -1117,7 +1117,7 @@ usercontent._ui_handlers = {
     show_nested = show_object_nested_ui,
     show_readonly = show_entity_ui_readonly,
     show_editable = show_entity_ui_editable,
-    show_entity_list =show_entity_list,
+    show_entity_list = show_entity_list,
     show_nullable = show_entity_ui_nullable,
 
     register_extension = register_extension,
