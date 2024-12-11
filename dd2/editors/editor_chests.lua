@@ -56,7 +56,7 @@ sdk.hook(
             entity.runtime_instance = this
             import.import('app.Gm80_001Param', entity.params, this:get_GimmickParam())
         elseif core.editor_enabled and settings.load_unknown_chests then
-            print('Found new chest', id)
+            -- print('Found new chest', id)
             local pos = this:get_Trans():get_UniversalPosition()
             udb.register_pristine_entity({
                 id = id,

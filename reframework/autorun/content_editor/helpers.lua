@@ -434,8 +434,9 @@ end
 --- @param classname string
 --- @param whitelistedFlags FieldFlags
 --- @param includeClassname boolean|integer|nil false/0 = no class prefix, true/1/default = base name only, 2 = full namespaced classname
+--- @param fieldWhitelist string[]|nil List of fields to include
 --- @return fun(target: REManagedObject): string
-local function to_string_concat_fields(classname, whitelistedFlags, includeClassname)
+local function to_string_concat_fields(classname, whitelistedFlags, includeClassname, fieldWhitelist)
     whitelistedFlags = whitelistedFlags or typecache.fieldFlags.All
     local meta = typecache.get(classname)
     local funcs = {}
@@ -443,7 +444,7 @@ local function to_string_concat_fields(classname, whitelistedFlags, includeClass
         local name = f[1]
         local fc = f[2]
         local flags = f[3]
-        if (flags & whitelistedFlags) ~= 0 then
+        if (flags & whitelistedFlags) ~= 0 or (fieldWhitelist and utils.table_contains(fieldWhitelist, name)) then
             funcs[#funcs+1] = function (target)
                 return name .. '=' .. object_to_string(target[name], fc)
             end

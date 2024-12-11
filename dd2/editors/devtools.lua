@@ -14,6 +14,7 @@ local CharacterID = enums.get_enum('app.CharacterID')
 
 local storage = editor.persistent_storage.get('devtools', {
     show_locations = false,
+    loc_bookmarks = {},
 })
 
 local AIAreaManager = sdk.get_managed_singleton("app.AIAreaManager") ---@type app.AIAreaManager
@@ -139,16 +140,42 @@ end
 
 --#region IMGUI
 
+local bookmarkName = ''
 editor.define_window('dev_tools', 'Dev tools', function (state)
     local changed
     changed, state.pos_picker, state.pos_filter = ui.basic.filterable_enum_value_picker("Location", state.pos_picker, AIKeyLocation, state.pos_filter)
     if imgui.button('Teleport to AIKeyLocation') and state.pos_picker then
         warp_player(get_AIKeyLocation_uni_position(tonumber(state.pos_picker)))
     end
+    imgui.same_line()
+    if imgui.button('Bookmark location') and state.pos_picker then
+        storage.loc_bookmarks = storage.loc_bookmarks or {}
+        storage.loc_bookmarks[#storage.loc_bookmarks+1] = { id = state.pos_picker, label = bookmarkName }
+        editor.persistent_storage.save()
+    end
+    imgui.same_line()
+    imgui.set_next_item_width(imgui.calc_item_width() - 300)
+    bookmarkName = select(2, imgui.input_text('Bookmark label', bookmarkName))
+    if storage.loc_bookmarks and #storage.loc_bookmarks > 0 and imgui.tree_node('Bookmarked locations') then
+        imgui.begin_list_box('##Bookmarks', Vector2f.new(300, math.min((#storage.loc_bookmarks + 1) * (imgui.get_default_font_size() + 4), 400)))
+        for idx, loc in ipairs(storage.loc_bookmarks) do
+            if imgui.button(loc.label .. ' - ' .. AIKeyLocation.get_label(loc.id)) then
+                warp_player(get_AIKeyLocation_uni_position(loc.id))
+            end
+            imgui.same_line()
+            if imgui.button('X') then
+                table.remove(storage.loc_bookmarks, idx)
+            end
+        end
+        imgui.end_list_box()
+        imgui.tree_pop()
+    end
 
     changed, state.item_picker, state.item_filter = ui.basic.filterable_enum_value_picker("Item", state.item_picker, ItemID, state.item_filter)
     if imgui.button('Give player item') and state.item_picker then
-        give_item(state.item_picker, 1)
+        -- if selected item is gold, give 10k instead
+        local count = state.item_picker == 93 and 10000 or 1
+        give_item(state.item_picker, count)
     end
 
     changed, state.time_input = imgui.input_text("Time", state.time_input, 1)

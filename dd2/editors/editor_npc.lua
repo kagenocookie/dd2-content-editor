@@ -160,6 +160,14 @@ udb.register_entity_type('npc_appearance', {
 if core.editor_enabled then
     local ui = require('content_editor.ui')
     local editor = require('content_editor.editor')
+    local definitions = require('content_editor.definitions')
+    local helpers = require('content_editor.helpers')
+
+    definitions.override('', {
+        ['app.SentimentActionData.SentimentActionTable'] = {
+            toString = helpers.to_string_concat_fields('app.SentimentActionData.SentimentActionTable', 0, nil, {'_ActionID', '_Value'})
+        },
+    })
 
     editor.define_window('npc', 'NPCs', function (state)
         state.tab = select(2, ui.basic.tabs({'Character data', 'Advanced settings'}, state.tab or 1))
