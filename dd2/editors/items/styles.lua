@@ -56,7 +56,7 @@ local recordClasses = {
     MantleStyle = { styleDb = '_MantleDB', swap = 'app.MantleSwapItem', enum = 'app.MantleStyle', styleDict = 'MantleDict', slot = 5, styleField = '_MantleStyle', styleNoEnum = enums.get_virtual_enum('MantleStyleNo', {}) },
     BackpackStyle = { styleDb = '_BackpackDB', swap = 'app.BackpackSwapItem', enum = 'app.BackpackStyle', styleField = '_BackpackStyle' },
     UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_Style' },
-    FacewearStyle = { styleDb = '_FacewearDB', swap = 'app.FacewearSwapItem', enum = 'app.FacewearStyle', styleField = '_Style', furmaskIndex = 6 },
+    FacewearStyle = { styleDb = '_FacewearDB', swap = 'app.FacewearSwapItem', enum = 'app.FacewearStyle', styleDict = 'FaceDict', slot = 7, styleField = '_Style', styleNoEnum = enums.get_virtual_enum('FacewearStyleNo', {}), furmaskIndex = 6 },
     -- _BodySkinDB = {'app.BodySkinSwapItem', 'app.SkinStyle'},
     -- _BodyMuscleDB = {'app.BodyMuscleSwapItem', 'app.MuscleStyle'},
     -- _BodyMeshDB = {'app.BodyMeshSwapItem', 'app.BodyMeshStyle'}, -- species +  gender

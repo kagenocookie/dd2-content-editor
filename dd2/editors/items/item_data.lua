@@ -496,6 +496,7 @@ if core.editor_enabled then
                             if armordata._EquipCategory == 3 then return enums.get_enum('TopsStyleNo') end
                             if armordata._EquipCategory == 4 then return enums.get_enum('PantsStyleNo') end
                             if armordata._EquipCategory == 5 then return enums.get_enum('MantleStyleNo') end
+                            if armordata._EquipCategory == 7 then return enums.get_enum('FacewearStyleNo') end
                             return nil
                         else
                             return nil
