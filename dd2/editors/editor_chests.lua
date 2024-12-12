@@ -65,7 +65,6 @@ sdk.hook(
                 position = Vector3f.new(pos.x, pos.y, pos.z),
                 params = import.export(this:get_GimmickParam(), 'app.Gm80_001Param'),
             })
-            udb.get_entity_enum('chest').resort()
         end
     end
 )

@@ -127,7 +127,8 @@ PrepareFiles -Folder "experimental_editors/reframework/autorun" -FileList (
     "dd2/editors/|editor_ai.lua",
     "dd2/editors/|editor_chests.lua",
     "dd2/editors/|editor_sound_viewer.lua",
-    "dd2/editors/|editor_npc.lua"
+    "dd2/editors/|editor_npc.lua",
+    "dd2/editors/|editor_enemy.lua"
 )
 
 Set-Location _build

@@ -171,7 +171,8 @@ end
 --- Store a new entity in the database and mark it as pristine (unchanged)
 --- @param entity DBEntity
 local function register_pristine_entity(entity)
-    create_entity(entity, nil, true)
+    -- if we're no longer in the ready up phase, immediately resort because it's probably a runtime-only entity
+    create_entity(entity, nil, not db_ready)
     mark_entity_dirty(entity, false)
     return entity
 end

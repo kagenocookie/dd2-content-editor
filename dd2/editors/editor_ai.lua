@@ -108,7 +108,7 @@ if core.editor_enabled then
     local pawnAiGo, pawnAiData
     editor.define_window('ai_overview', 'AI Overview', function (state)
         pawnAiData = pawnAiData or sdk.get_managed_singleton('app.PawnManager'):get_AIData()
-        pawnAiGo = pawnAiGo and pawnAiGo:get_Valid() and pawnAiGo or ce_find('/app.PawnUpdateController:::item:get_GameObject()')
+        pawnAiGo = pawnAiGo and pawnAiGo:get_Valid() and pawnAiGo or ce_find(':app.PawnUpdateController::item:get_GameObject()', true)
         ui.handlers.show_readonly(pawnAiData, nil, 'Pawn AI data', 'app.PawnAIData')
         ui.handlers.show_readonly(pawnAiGo, nil, 'Pawn AI root controller', 'via.GameObject')
         imgui.spacing()
