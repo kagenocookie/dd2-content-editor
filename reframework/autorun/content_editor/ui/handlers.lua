@@ -780,12 +780,24 @@ field_editor_factories = {
         return dictionary_ui(meta, classname, label, settings)
     end,
     [typecache.handlerTypes.nullableValue] = function (meta, classname, label, settings)
-        --- @type UIHandler
-        local handler = function (context)
-            local childCtx = create_field_editor(context, classname, '_Value', meta.elementType, 'Value', default_accessor, settings)
-            return childCtx:ui()
+        if settings.is_raw_data then
+            local valueMeta = typecache.get(meta.elementType)
+            local handler = field_editor_factories[valueMeta.type](valueMeta, meta.elementType, label, settings)
+            return common.toggleable(handler, function (value) return value ~= nil end, function (context, toggle)
+                if toggle then
+                    context.set(helpers.create_instance(meta.elementType, true))
+                else
+                    context.set(nil)
+                end
+            end, nil, true)
+        else
+            --- @type UIHandler
+            local handler = function (context)
+                local childCtx = create_field_editor(context, classname, '_Value', meta.elementType, 'Value', default_accessor, settings)
+                return childCtx:ui()
+            end
+            return common.nullable_valuetype(meta.elementType, handler)
         end
-        return common.nullable_valuetype(meta.elementType, handler)
     end,
     [typecache.handlerTypes.readonly] = function ()
         return function (context)

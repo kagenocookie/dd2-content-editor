@@ -42,11 +42,11 @@ end
 local systemActivator = sdk.find_type_definition('System.Activator'):get_method('CreateInstance')
 local arrayActivator = sdk.find_type_definition('System.Array'):get_method('CreateInstance')
 
---- @param classname string|System.Type Classname, should be the element type if array and not the array type itself
+--- @param classname string|System.Type|RETypeDefinition Classname, should be the element type if array and not the array type itself
 --- @param arrayLength integer|nil If nil, creates a normal class instance, if a number then creates an array with that length
 --- @return REManagedObject|SystemArray|nil
 local function create_generic(classname, arrayLength)
-    local genType = type(classname) == 'string' and generic_types.typedef(classname) or classname
+    local genType = type(classname) == 'string' and generic_types.typedef(classname) or classname.get_type_definition and classname:get_type_definition():get_runtime_type() or classname
     if genType == nil then
         return nil
     end
@@ -151,7 +151,7 @@ end
 
 --- Create a new instance of an arbitrary engine type
 --- @param classname string
---- @param luaValue boolean|nil
+--- @param luaValue boolean|nil Whether we want a raw lua value and not a game compatible instance
 --- @return any|nil
 create_new_instance = function(classname, luaValue)
     local meta = typecache.get(classname)

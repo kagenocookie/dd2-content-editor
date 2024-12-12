@@ -265,13 +265,14 @@ end
 --- @param get_toggled fun(value: any, ctx: UIContainer): boolean
 --- @param set_toggled fun(value: UIContainer, toggle: boolean)
 --- @param inline boolean|nil
+--- @param nullable boolean|nil
 --- @return fun(context: UIContainer):(changed: boolean, childContext: UIContainer|nil)
-local function toggleable_value(innerHandler, get_toggled, set_toggled, inline)
+local function toggleable_value(innerHandler, get_toggled, set_toggled, inline, nullable)
     if inline == nil then inline = true end
     --- @type UIHandler
     return function (context)
         local value = context.get()
-        if value == nil then
+        if value == nil and not nullable then
             -- if the value is nil, leave the handling of doing a Create to the inner handler
             return innerHandler(context)
         end
