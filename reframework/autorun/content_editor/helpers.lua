@@ -366,6 +366,7 @@ local function _object_to_string_internal(item, classname, context)
         return typesettings.toString(item, context)
     end
 
+    local meta = typecache.get(classname)
     if type(item) == 'userdata' and item.ToString then
         local success, str = pcall(item.call, item, 'ToString()')
         if success then
@@ -374,7 +375,6 @@ local function _object_to_string_internal(item, classname, context)
                     typesettings = {}
                     type_settings.type_settings[classname] = typesettings
                 end
-                local meta = typecache.get(classname)
                 if meta.itemCount == 1 then
                     local field, class = meta.fields[1][1], meta.fields[1][2]
                         typesettings.toString = function (value)
@@ -390,7 +390,13 @@ local function _object_to_string_internal(item, classname, context)
             return item:get_type_definition():get_full_name() .. ' [ToString() failed]'
         end
     end
-    if type(item) == 'table' then return classname .. ' (raw data)' end
+    if type(item) == 'table' then
+        if meta.specialType == 1 and item and item['$uri'] then
+            return classname .. ' (raw data) - ' .. tostring(item['$uri'])
+        else
+            return classname .. ' (raw data)'
+        end
+    end
     return tostring(item)
 end
 

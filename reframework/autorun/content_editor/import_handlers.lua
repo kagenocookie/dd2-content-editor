@@ -543,7 +543,9 @@ importer_factories = {
                     end
                 end
                 -- TODO need to test whether propagating options is fine for all cases, or do we want to only propagate for whitelisted fields?
-                return fullExport(src, target, options)
+                local exported = fullExport(src, target, options)
+                exported['$uri'] = src and src.get_URI and src:get_URI() or src['$uri']
+                return exported
             end
         end
 

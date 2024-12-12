@@ -85,6 +85,7 @@ sdk.hook(
 if core.editor_enabled then
     local ui = require('content_editor.ui')
     local editor = require('content_editor.editor')
+    local helpers = require('content_editor.helpers')
 
     settings = editor.persistent_storage.get('enemies', settings)
 
@@ -112,6 +113,15 @@ if core.editor_enabled then
                     uiHandler = ui.handlers.common.enum_flags()
                 },
             }
+        },
+        ['app.StatusConditionImmunityParam'] = {
+            toString = helpers.to_string_concat_fields('app.StatusConditionImmunityParam', 0, true, {'_StatusConditionId', '_IsActive'})
+        },
+        ['app.StatusConditionParam'] = {
+            toString = helpers.to_string_concat_fields('app.StatusConditionParam', 0, true, {'_StatusConditionId', '_IsEnable'})
+        },
+        ['app.RegionEfficacyDetail'] = {
+            toString = helpers.to_string_concat_fields('app.RegionEfficacyDetail', 0, true, {'_EfficacyLevel'})
         },
     })
 
