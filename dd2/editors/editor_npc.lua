@@ -49,6 +49,11 @@ udb.events.on('get_existing_data', function (whitelist)
                 })
             end
         end
+
+        if core.editor_enabled then
+            udb.get_entity_enum('npc_data').orderByValue = false
+            udb.get_entity_enum('npc_data').resort()
+        end
     end
 
     if not whitelist or whitelist.npc_appearance then
