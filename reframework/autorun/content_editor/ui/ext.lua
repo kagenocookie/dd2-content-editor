@@ -12,6 +12,7 @@ local inputs = {}
 --- @type table<string, fun(entity: DBEntity, state: table): changed: boolean>
 local entity_editors = {}
 
+local tempNewBundle = ''
 ---@param obj DBEntity
 local function show_save_settings(obj)
     local curBundle = udb.get_entity_bundle(obj)
@@ -62,6 +63,22 @@ local function show_save_settings(obj)
             end
         else
             imgui.text_colored('This object has unsaved changes. Please select a bundle to persist changes', editor.get_color('danger'))
+            imgui.same_line()
+            if imgui.tree_node('Create new bundle') then
+                tempNewBundle = select(2, imgui.input_text('Name', tempNewBundle))
+                if tempNewBundle and tempNewBundle ~= '' then
+                    if imgui.button('Create & save') then
+                        local newB = udb.create_bundle(tempNewBundle)
+                        if newB then
+                            udb.set_entity_bundle(obj, newB.info.name)
+                            udb.set_active_bundle(newB.info.name)
+                            udb.save_bundle(newB.info.name)
+                            tempNewBundle = ''
+                        end
+                    end
+                end
+                imgui.tree_pop()
+            end
         end
     end
     imgui.spacing()
