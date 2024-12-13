@@ -29,11 +29,6 @@ udb.events.on('get_existing_data', function (whitelist)
                 end
             end
         end
-
-        if core.editor_enabled then
-            udb.get_entity_enum('npc_config').orderByValue = false
-            udb.get_entity_enum('npc_config').resort()
-        end
     end
 
     if not whitelist or whitelist.npc_config then
@@ -96,9 +91,10 @@ end)
 
 udb.register_entity_type('npc_config', {
     export = function (entity)
-        return { data = import_handlers.export(entity.runtime_instance), field = entity.field }
+        return { data = import_handlers.export(entity.runtime_instance, nil, { raw = true }), field = entity.field }
     end,
     import = function (data, entity)
+        entity.field = data.field
         local type = sdk.find_type_definition('app.NPCData'):get_field(data.field):get_type():get_full_name()
         entity.runtime_instance = import_handlers.import(type, data.data, entity.runtime_instance)
     end,
