@@ -252,7 +252,6 @@ importer_factories = {
 
     [typecache.handlerTypes.nullableValue] = function (meta, fullname)
         local typedef = sdk.find_type_definition(fullname)
-        local implicit = typedef:get_method('op_Implicit')
         local innerHandler = get_handler(meta.elementType, typecache.get(meta.elementType))
         --- @type ValueImporter
         return {
@@ -273,7 +272,7 @@ importer_factories = {
                     return target
                 else
                     target._HasValue = true
-                    target._Value = innerHandler.import(src, target)
+                    target._Value = innerHandler.import(src, target._Value)
                     return target
                 end
             end,
