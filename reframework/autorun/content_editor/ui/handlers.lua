@@ -577,7 +577,9 @@ local function dictionary_ui(meta, classname, label, settings)
                 return false
             end
 
-            imgui.tree_pop()
+            if not context.data._has_extra_expander then
+                imgui.tree_pop()
+            end
         end
 
         return changed
