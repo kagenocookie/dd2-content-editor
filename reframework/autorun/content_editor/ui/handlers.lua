@@ -196,12 +196,14 @@ object_handlers['via.Prefab'] = function (context)
         end
         return false
     end
+    local changed = false
     local path = pfb:get_Path()
     context.data.newpath = select(2, imgui.input_text('Path', context.data.newpath or path or ''))
     if context.data.newpath and context.data.newpath ~= path then
         if imgui.button('Change') then
             pfb:set_Path(context.data.newpath)
             context.data.newpath = nil
+            changed = true
         end
         imgui.same_line()
         if imgui.button('Cancel') then
@@ -209,7 +211,7 @@ object_handlers['via.Prefab'] = function (context)
         end
     end
 
-    return false
+    return changed
 end
 
 --- @type ObjectFieldAccessors
