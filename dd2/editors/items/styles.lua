@@ -346,6 +346,7 @@ definitions.override('styles', {
     ['app.MantleSwapItem'] = { fields = { _MantleStyle = { ui_ignore = true, import_ignore = true } } },
     ['app.BackpackSwapItem'] = { fields = { _BackpackStyle = { ui_ignore = true, import_ignore = true } } },
     ['app.UnderwearSwapItem'] = { fields = { _UnderwearStyle = { ui_ignore = true, import_ignore = true } } },
+    ['app.FacewearSwapItem'] = { fields = { _Style = { ui_ignore = true, import_ignore = true } } },
 })
 
 if core.editor_enabled then
