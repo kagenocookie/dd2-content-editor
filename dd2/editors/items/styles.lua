@@ -7,11 +7,29 @@ local enums = require('content_editor.enums')
 
 local definitions = require('content_editor.definitions')
 
+local generic_types = require('content_editor.generic_types')
+
 local CharacterManager = sdk.get_managed_singleton('app.CharacterManager') --- @type app.CharacterManager
 local PawnManager = sdk.get_managed_singleton('app.PawnManager') --- @type app.PawnManager
 local CharacterEditManager = sdk.get_managed_singleton('app.CharacterEditManager') --- @type app.CharacterEditManager
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.ItemManager
 local GuiManager = sdk.get_managed_singleton('app.GuiManager') --- @type app.GuiManager
+
+local exFurmaskDictType
+local function get_ex_furmask_dict_type()
+    if exFurmaskDictType then return exFurmaskDictType end
+
+    local rootType = CharacterEditManager._FurMaskMapExCatalog:GetType() ---@type System.Type
+    local exFurmaskType = rootType:GetGenericArguments()[1]:GetGenericArguments()[1]:GetGenericArguments()[1]
+    exFurmaskDictType = generic_types.get_clean_generic_classname(exFurmaskType:get_FullName()--[[@as string]])
+    generic_types.add(exFurmaskDictType, exFurmaskType)
+
+    exFurmaskType = exFurmaskType:GetGenericArguments()[1]
+    local subtype = generic_types.get_clean_generic_classname(exFurmaskType:get_FullName()--[[@as string]])
+    generic_types.add(subtype, exFurmaskType)
+
+    return exFurmaskDictType
+end
 
 --- @class StyleEntity : DBEntity
 --- @field variants table<string,app.TopsSwapItem|app.PantsSwapItem|app.MantleSwapItem|app.HelmSwapItem|app.UnderwearSwapItem|app.BackpackSwapItem|app.BackpackStyle>
@@ -21,12 +39,20 @@ local GuiManager = sdk.get_managed_singleton('app.GuiManager') --- @type app.Gui
 --- @class StyleData : EntityImportData
 --- @field data table<integer, table>
 --- @field furmasks table<string,string>|nil
+--- @field exFurmasks table<string,table<string,any>>|nil
 --- @field styleHash integer
 
-local variantKeys = {'2776536455', '1910070090'}
+local genders = {
+    Female = 1910070090,
+    Female_str = '1910070090',
+    Male = 2776536455,
+    Male_str = '2776536455',
+}
+
+local variantKeys = {genders.Male_str, genders.Female_str}
 local variantLabels = {
-    ['2776536455'] = 'Male (2776536455)',
-    ['1910070090'] = 'Female (1910070090)',
+    [genders.Male_str] = 'Male (2776536455)',
+    [genders.Female_str] = 'Female (1910070090)',
 }
 
 --- note to self: furmasks are on CharacterEditManager
@@ -67,6 +93,10 @@ local recordClasses = {
 local recordTypes = utils.get_sorted_table_keys(recordClasses) ---@type string[]
 
 local visorIds = {}
+
+local function dict_get_safe(dict, key)
+    return dict and dict:ContainsKey(key) and dict[key] or nil
+end
 
 -- the real implementation does an Array.Contains() on app.CharacterEditDefine.VisorControlEnable but we can't modify that
 local ptr_true = sdk.to_ptr(true)
@@ -160,8 +190,8 @@ udb.events.on('get_existing_data', function (whitelist)
                             local furmask
                             if type.furmaskIndex then
                                 local furmaskContainer = CharacterEditManager._FurMaskMapGenderCatalog[type.furmaskIndex]
-                                furmask = furmaskContainer and furmaskContainer:ContainsKey(variant) and furmaskContainer[variant]
-                                furmask = furmask and furmask:ContainsKey(styleHash) and furmask[styleHash] or nil
+                                furmask = furmaskContainer and dict_get_safe(furmaskContainer, variant)
+                                furmask = furmask and dict_get_safe(furmask, styleHash) or nil
                             end
                             add_style_entity(styleId, name, variant, styleHash, swapData, furmask)
                         else
@@ -191,6 +221,16 @@ udb.events.on('get_existing_data', function (whitelist)
     end
 end)
 
+local function get_ex_furmasks(furmaskIndex, styleHash)
+    local root = CharacterEditManager._FurMaskMapExCatalog[furmaskIndex]
+    if not root then return {} end
+    local male = dict_get_safe(dict_get_safe(root, genders.Male), styleHash)
+    local female = dict_get_safe(dict_get_safe(root, genders.Female), styleHash)
+
+    if male or female then return { [genders.Male_str] = male, [genders.Female_str] = female } end
+    return nil
+end
+
 for _, name in ipairs(recordTypes) do
     local record = recordClasses[name]
     local class = record.swap
@@ -205,10 +245,12 @@ for _, name in ipairs(recordTypes) do
                 furmasks[variantKeys[1]] = furmasks[variantKeys[1]] or 'null'
                 furmasks[variantKeys[2]] = furmasks[variantKeys[2]] or 'null'
             end
+            local exFurmasks = hasFurmasks and get_ex_furmasks(record.furmaskIndex, entity.styleHash) or nil
             return {
                 styleHash = entity.styleHash,
                 data = import_handlers.export_table(entity.variants, class),
                 furmasks = furmasks,
+                exFurmasks = exFurmasks and import_handlers.export_table(exFurmasks, get_ex_furmask_dict_type()) or nil,
             }
         end,
         import = function (data, entity)
@@ -245,6 +287,17 @@ for _, name in ipairs(recordTypes) do
                             CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)]:Remove(data.styleHash)
                         end
                     end
+                end
+            end
+            if record.furmaskIndex and data.exFurmasks then
+                local specificFurmasks = get_ex_furmasks(record.furmaskIndex, data.styleHash)
+                if data.exFurmasks[genders.Male_str] then
+                    CharacterEditManager._FurMaskMapExCatalog[record.furmaskIndex][genders.Male][data.styleHash] =
+                        import_handlers.import(get_ex_furmask_dict_type(), data.exFurmasks[genders.Male_str], specificFurmasks and specificFurmasks[genders.Male_str])
+                end
+                if data.exFurmasks[genders.Female_str] then
+                    CharacterEditManager._FurMaskMapExCatalog[record.furmaskIndex][genders.Female][data.styleHash] =
+                        import_handlers.import(get_ex_furmask_dict_type(), data.exFurmasks[genders.Female_str], specificFurmasks and specificFurmasks[genders.Female_str])
                 end
             end
 
@@ -298,6 +351,7 @@ definitions.override('styles', {
 if core.editor_enabled then
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
+    local helpers = require('content_editor.helpers')
 
     --- @param character app.Character
     local function forceRefresh(character, part)
@@ -366,6 +420,18 @@ if core.editor_enabled then
                         udb.mark_entity_dirty(selectedItem)
                     end
                 end
+
+                local specificFurmasks = get_ex_furmasks(recordData.furmaskIndex, selectedItem.styleHash)
+                specificFurmasks = specificFurmasks and specificFurmasks[variantKey]
+                if specificFurmasks then
+                    furmaskChanged = ui.handlers.show(specificFurmasks, selectedItem, 'Per-vocation furmasks', get_ex_furmask_dict_type(), state) or furmaskChanged
+                else
+                    if imgui.button('Add per-vocation furmasks') then
+                        CharacterEditManager._FurMaskMapExCatalog[recordData.furmaskIndex][tonumber(variantKey)][selectedItem.styleHash] = helpers.create_generic_instance(get_ex_furmask_dict_type())
+                        furmaskChanged = true
+                    end
+                end
+
                 if imgui.button('Force swap meshes') then
                     meshesChanged = true
                 end
