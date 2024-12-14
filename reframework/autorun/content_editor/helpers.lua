@@ -139,6 +139,24 @@ local function system_array_remove(org_array, item, elementType)
     return system_array_remove_at(org_array, idx, elementType)
 end
 
+--- @param org_array SystemArray
+--- @param filter fun(item: REManagedObject): boolean
+--- @param elementType string|nil
+--- @return SystemArray
+local function system_array_filtered(org_array, filter, elementType)
+    local newlist = {}
+    elementType = elementType or org_array:get_type_definition():get_full_name():sub(1, -3)
+
+    local len = org_array:get_size()
+    for i = 0, len - 1 do
+        local item = org_array[i]
+        if filter(item) then newlist[#newlist+1] = item end
+    end
+
+    if len == #newlist then return org_array end
+    return create_array(elementType, #newlist, newlist)
+end
+
 --- @param arrayContainer REManagedObject
 --- @param arrayField string
 --- @param item any
@@ -300,7 +318,7 @@ end
 
 --- @param classname string An engine classname or 'table' to get a lua accessor wrapper
 --- @return ArrayLikeAccessors
-local function get_arraylike_type_wrapper(classname)
+local function get_arraylike_accessor(classname)
     if classname == 'table' then
         return table_accessors
     end
@@ -316,6 +334,29 @@ local function get_arraylike_type_wrapper(classname)
         print('ERROR: Unknown array-like classname: ' .. classname)
         return table_accessors
     end
+end
+
+--- @param classname string An engine classname or 'table' to get a lua accessor wrapper
+--- @param wrapper { add: nil|fun(obj: any), remove: nil|fun(obj: any) }
+--- @return ArrayLikeAccessors
+local function get_wrapped_arraylike_accessor(classname, wrapper)
+    local accessor = get_arraylike_accessor(classname)
+    --- @type ArrayLikeAccessors
+    local wrapped = {
+        foreach = accessor.foreach,
+        get_elements = accessor.get_elements,
+        length = accessor.length,
+        create = accessor.create,
+        remove = function (arr, index, value)
+            if wrapper.remove then wrapper.remove(value) end
+            return accessor.remove(arr, index, value)
+        end,
+        add = function (arr, object, arrayClassname)
+            if wrapper.add then wrapper.add(object) end
+            return accessor.add(arr, object, arrayClassname)
+        end
+    }
+    return wrapped
 end
 
 --- @param item any
@@ -427,9 +468,9 @@ local function array_to_string(array, separator, arrayClassname, emptyString)
         items = array
     else
         arrayClassname = arrayClassname or array:get_type_definition():get_full_name()
-        local wrapper = get_arraylike_type_wrapper(arrayClassname)
-        if not wrapper then return 'invalid array type ' .. arrayClassname end
-        items = wrapper.get_elements(array)
+        local accessor = get_arraylike_accessor(arrayClassname)
+        if not accessor then return 'invalid array type ' .. arrayClassname end
+        items = accessor.get_elements(array)
     end
     local str = table.concat(utils.map(items, function (item) return object_to_string(item) end), separator)
     if str == '' then return emptyString or 'empty' end
@@ -476,8 +517,8 @@ end
 --- @param classname string
 --- @return any[]
 local function array_elements(array, classname)
-    local wrapper = get_arraylike_type_wrapper(classname)
-    return wrapper.get_elements(array)
+    local accessor = get_arraylike_accessor(classname)
+    return accessor.get_elements(array)
 end
 
 --- comment
@@ -607,12 +648,14 @@ usercontent._ui_utils = {
 
     create_array = create_array,
     is_arraylike = is_arraylike,
-    array_accessor = get_arraylike_type_wrapper,
+    array_accessor = get_arraylike_accessor,
+    array_accessor_wrapped = get_wrapped_arraylike_accessor,
     array_elements = array_elements,
     expand_system_array = expand_system_array,
     system_array_remove_at = system_array_remove_at,
     system_array_remove = system_array_remove,
     ensure_item_in_array = ensure_item_in_array,
+    system_array_filtered = system_array_filtered,
     clone = clone_object,
     change_type = change_type,
 

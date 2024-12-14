@@ -419,7 +419,10 @@ local function create_arraylike_ui(meta, classname, label, array_access, setting
                 if imgui.button('X') then
                     -- delete all child element containers and re-create them next iteration, that's the easiest way of ensuring we don't mess up the children index keys
                     ui_context.delete_children(context)
-                    context.set(array_access.remove(array, key, element))
+                    local newArray = array_access.remove(array, key, element)
+                    if newArray ~= array then
+                        context.set(newArray)
+                    end
                     imgui.tree_pop()
                     return true
                 end
@@ -442,8 +445,11 @@ local function create_arraylike_ui(meta, classname, label, array_access, setting
 
             if array_access.add and imgui.button('Add') then
                 local newElement = settings.is_raw_data and {} or helpers.create_instance(meta.elementType)
-                array = array_access.add(array, newElement, classname)
-                context.set(array)
+                local newArray = array_access.add(array, newElement, classname)
+                if newArray ~= array then
+                    array = newArray
+                    context.set(newArray)
+                end
                 ui_context.delete_children(context)
                 changed = true
             end
@@ -1054,8 +1060,10 @@ end
 --- @param classname string Edited object classname
 --- @param editorId any A key by which to identify this editor. If unspecified, the target object's address will be used.
 --- @param settings UISettings|nil
+--- @param onAdd nil|fun(obj: any, owner: DBEntity|nil)
+--- @param onRemove nil|fun(obj: any, owner: DBEntity|nil)
 --- @return boolean instanceChanged Whether the root field instance was changed
-local function show_entity_list(targetContainer, field, owner, label, classname, editorId, settings)
+local function show_object_list(targetContainer, field, owner, label, classname, editorId, settings, onAdd, onRemove)
     if not targetContainer then error('OI! ui needs a target and a parent!') return false end
 
     local target = targetContainer[field]
@@ -1065,7 +1073,7 @@ local function show_entity_list(targetContainer, field, owner, label, classname,
             imgui.same_line()
             imgui.push_id(get_editor_id(editorId, targetContainer, label or classname, owner, targetContainer))
             if imgui.button('Create') then
-                targetContainer[field] = helpers.create_instance(classname)
+                targetContainer[field] = {}
                 imgui.pop_id()
                 return true
             end
@@ -1076,9 +1084,20 @@ local function show_entity_list(targetContainer, field, owner, label, classname,
 
     editorId = get_editor_id(editorId, targetContainer, label or classname, owner)
     local rootCtx, isNew = ui_context.get_or_create_child(nil, field, target, label or '', nil, classname)
+    if rootCtx.object ~= target then
+        rootCtx.object = target
+    end
     if isNew then
+        rootCtx.owner = owner
         rootCtx.set = function (value) targetContainer[field] = value end
-        rootCtx.ui = create_arraylike_ui(typecache.get(classname .. '[]'), classname, label or classname, helpers.array_accessor('table'), settings or {})
+        -- to simplify the code, use a lua table wrapper and pretend it's an array type
+        -- with added callbacks so we can trigger partial data imports in real-time
+        local arrayClassname = classname .. '[]'
+        local accessorWrapper = helpers.array_accessor_wrapped('table', {
+            add = onAdd and function (obj) onAdd(obj, owner) end or nil,
+            remove = onRemove and function (obj) onRemove(obj, owner) end or nil,
+        })
+        rootCtx.ui = create_arraylike_ui(typecache.get(arrayClassname), arrayClassname, label or arrayClassname, accessorWrapper, settings or {})
     end
     changed = rootCtx:ui() or changed
     return changed
@@ -1129,7 +1148,7 @@ usercontent._ui_handlers = {
     show_nested = show_object_nested_ui,
     show_readonly = show_entity_ui_readonly,
     show_editable = show_entity_ui_editable,
-    show_entity_list = show_entity_list,
+    show_object_list = show_object_list,
     show_nullable = show_entity_ui_nullable,
 
     register_extension = register_extension,

@@ -122,7 +122,7 @@ PrepareFiles -Folder "weather_editor/reframework/autorun" -FileList (
     "dd2/|editors/weathers"
 )
 
-MakeModinfo "experimental_editors" "Experimental editors" 'v0.0.1' "WIP DD2 experimental editors (AI data, chests, sounds, NPCs, ...), not fully tested and functionality might change at some point"
+MakeModinfo "experimental_editors" "Experimental editors" 'v0.0.1' "WIP experimental editors (AI data, chests, sounds, NPCs, enemy data, ...), not fully tested and functionality might change at some point"
 PrepareFiles -Folder "experimental_editors/reframework/autorun" -FileList (
     "dd2/editors/|editor_ai.lua",
     "dd2/editors/|editor_chests.lua",
