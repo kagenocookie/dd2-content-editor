@@ -197,9 +197,8 @@ object_handlers['via.Prefab'] = function (context)
         return false
     end
     local path = pfb:get_Path()
-    local changed
-    changed, context.data.newpath = imgui.input_text('Path', context.data.newpath or path or '')
-    if changed and context.data.newpath and context.data.newpath ~= path then
+    context.data.newpath = select(2, imgui.input_text('Path', context.data.newpath or path or ''))
+    if context.data.newpath and context.data.newpath ~= path then
         if imgui.button('Change') then
             pfb:set_Path(context.data.newpath)
             context.data.newpath = nil
@@ -539,10 +538,11 @@ local function dictionary_ui(meta, classname, label, settings)
 
                     local newkey = newCtx.children.new_key.get()
                     local curKeyExists = newkey and (type(dict) == 'userdata' and dict:ContainsKey(newkey) or dict[newkey]) or false
-                    if newkey and not curKeyExists and imgui.button('Add') then
+                    if newkey and not curKeyExists and imgui.button('Add entry') then
                         local newvalue = newCtx.children.new_value.get()
-                        dict[newkey] = newvalue
+                        dict[newkey] = newvalue:add_ref()
                         items = nil
+                        changed = true
                     end
                     if imgui.is_item_hovered() then imgui.set_tooltip('If the entry already exists, it will be replaced with a new instance') end
                     imgui.tree_pop()

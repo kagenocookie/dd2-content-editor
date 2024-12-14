@@ -46,8 +46,10 @@ local arrayActivator = sdk.find_type_definition('System.Array'):get_method('Crea
 --- @param arrayLength integer|nil If nil, creates a normal class instance, if a number then creates an array with that length
 --- @return REManagedObject|SystemArray|nil
 local function create_generic(classname, arrayLength)
-    local genType = type(classname) == 'string' and generic_types.typedef(classname) or classname.get_type_definition and classname:get_type_definition():get_runtime_type() or classname
-    if genType == nil then
+    local genType = type(classname) == 'string' and generic_types.typedef(classname)
+        or classname.get_runtime_type and generic_types.typedef(classname:get_full_name())
+        or classname
+    if genType == nil or not classname then
         return nil
     end
 
@@ -215,7 +217,7 @@ create_new_instance = function(classname, luaValue)
     if meta.type == typecache.handlerTypes.array then
         return create_array(meta.elementType, 0)
     end
-    if meta.type == typecache.handlerTypes.genericList then
+    if meta.type == typecache.handlerTypes.genericList or meta.type == typecache.handlerTypes.dictionary then
         return create_generic(classname)
     end
     if meta.type == typecache.handlerTypes.readonly then

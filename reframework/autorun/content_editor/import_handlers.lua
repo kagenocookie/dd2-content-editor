@@ -355,13 +355,13 @@ importer_factories = {
     end,
 
     [typecache.handlerTypes.dictionary] = function (meta, fullname)
-        local typedef = usercontent.generics.typedef(fullname)
-        if not typedef then return import_export_ignore end
-        local keyMeta = typecache.get(meta.keyType)
+        local typedef = usercontent.generics.typedef(fullname) or sdk.find_type_definition(fullname)
+        if not typedef then print('[ContentEditor] Attempted import of unhandled dictionary type', fullname) return import_export_ignore end
 
         -- only allow strings and integer key types, ignore the rest
-        local isIntegerKey = helpers.is_integer_type(meta.keyType)
+        local isIntegerKey = helpers.is_integer_type(meta.keyType) or typecache.get(meta.keyType).type == 2
         if meta.keyType ~= 'System.String' and not isIntegerKey then
+            print('[ContentEditor] Attempted import of unsupported dictionary key type', meta.keyType, 'for dictionary', fullname)
             return import_export_ignore
         end
 
@@ -372,26 +372,25 @@ importer_factories = {
                 target = target or helpers.create_generic_instance(typedef)
                 -- remove any keys that aren't present in our import data
                 local it = target:GetEnumerator()
-                -- local keysToRemove = {}
+                local keysToRemove = {}
                 local handledKeys = {}
                 while it:MoveNext() do
                     local key = it._current.key
                     local importValue = src[tostring(key)]
-                    if importValue == nil then
+                    if importValue == nil or importValue == 'null' then
                         -- we can't modify collections while iterating through them, need to do that in a separate loop
-                        -- I'm thinking we want to keep existing values as is most of the time for mods, skip removal for now
-                        -- keysToRemove[#keysToRemove+1] = key
+                        keysToRemove[#keysToRemove+1] = key
                     else
                         handledKeys[key] = true
                         valueHandler.import(importValue, it._current.value)
                     end
                 end
-                -- for _, key in ipairs(keysToRemove) do target:Remove(key) end
+                for _, key in ipairs(keysToRemove) do target:Remove(key) end
                 for key, valueData in pairs(src) do
                     local realKey = isIntegerKey and tonumber(key) or key
                     if not handledKeys[realKey] then
                         if target:ContainsKey(realKey) then
-                            valueHandler.import(valueData, target[realKey])
+                            target[realKey] = valueHandler.import(valueData, target[realKey])
                         else
                             target[realKey] = valueHandler.import(valueData)
                         end
@@ -400,7 +399,7 @@ importer_factories = {
                 return target
             end,
             export = function (src, target, options)
-                if src == nil then return 'null' end
+                if src == nil then print('export null dict', fullname) return 'null' end
                 target = target or {}
 
                 for pair in utils.enumerate(src) do
@@ -409,7 +408,6 @@ importer_factories = {
                 return target
             end,
         }
-        -- return import_export_ignore
     end,
 
     [typecache.handlerTypes.object] = function (meta, fullname)
@@ -603,7 +601,7 @@ end
 --- @param table table The object to export
 --- @param classname string|nil Will be inferred from the given object if not specified
 --- @return table
-local function get_exported_array(table, classname)
+local function get_exported_table(table, classname)
     local list = {}
     if not table then return list end
     for i, item in pairs(table) do
@@ -615,7 +613,7 @@ end
 usercontent.import_handlers = {
     get_handler = get_handler,
     export = get_exported,
-    export_table = get_exported_array,
+    export_table = get_exported_table,
     import = import,
 
     create_conditional = conditional,

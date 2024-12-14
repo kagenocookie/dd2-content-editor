@@ -9,10 +9,20 @@ if usercontent.generics then return usercontent.generics end
 local function clean_generic_type_definition_name(typename)
     typename = typename:gsub('%[%[', '<['):gsub('%]%]', ']>') -- turn all [[ and ]] into <[ and ]>
     typename = typename:gsub(', [%a%d_\\.]+, [%a%d, =.]+%]', ']') -- remove all namespace+version+culture+token segments
-    typename = typename:gsub('%[([%a%d_,`<>\\.]+)%]', '%1') -- remove single [...] brackets around types
-    typename = typename:gsub('%[([%a%d_,`<>\\.]+)%]', '%1') -- repeat above to also handle nested generics
-    typename = typename:gsub('%[([%a%d_,`<>\\.]+)%]', '%1') -- repeat above to also handle nested generics
-    typename = typename:gsub('%[([%a%d_,`<>\\.]+)%[%]%]', '%1[]') -- a few types also have an array value for the last generic, handle that too
+    typename = typename:gsub('%[([%a%d+_,`<>\\.]+)%]', '%1') -- remove single [...] brackets around types
+    typename = typename:gsub('%[([%a%d+_,`<>\\.]+)%]', '%1') -- repeat above to also handle nested generics
+    typename = typename:gsub('%[([%a%d+_,`<>\\.]+)%]', '%1') -- repeat above to also handle nested generics
+    typename = typename:gsub('%[([%a%d+_,`<>\\.]+)%[%]%]', '%1[]') -- a few types also have an array value for the last generic, handle that too
+    return typename
+end
+
+--- @param typename string
+--- @return string
+local function clean_generic_type_name(typename)
+    -- this does some aditional replacements that may be required for custom runtime types compared to clean_generic_type_definition_name
+    typename = clean_generic_type_definition_name(typename)
+    typename = typename:gsub('%+', '.') -- a few types also have an array value for the last generic, handle that too
+    typename = typename:gsub(', [%a%d_\\.]+, [%a%d, =.]+$', '') -- remove all namespace+version+culture+token segments
     return typename
 end
 
@@ -117,7 +127,7 @@ local function add_generic_typedef(classname, runtimeType)
 end
 
 usercontent.generics = {
-    get_clean_generic_classname = clean_generic_type_definition_name,
+    get_clean_generic_classname = clean_generic_type_name,
     typedef = get_generic_typedef,
     add = add_generic_typedef,
 }
