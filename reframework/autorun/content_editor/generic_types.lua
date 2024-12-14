@@ -33,7 +33,11 @@ local generic_runtime_types_by_base_path = {}
 
 local basepathRegex = '^[a-zA-Z0-9+_.]*`%d<'
 
+local has_setup_generics = false
+
 local function setup_generic_type_assemblies()
+    local timer = os.clock()
+    has_setup_generics = true
     local asms = sdk.find_type_definition('System.AppDomain'):get_method('get_CurrentDomain'):call(nil):GetAssemblies()
     for _, asm in pairs(asms) do
         for _, t in pairs(asm:GetTypes()) do
@@ -52,6 +56,8 @@ local function setup_generic_type_assemblies()
             end
         end
     end
+    local setup_end = os.clock()
+    print('Generic type lookup setup in ' .. (setup_end - timer))
 end
 
 --- Find the runtime type for a generic classname (because REF doesn't natively know how to do that)<br>
@@ -63,7 +69,7 @@ local function get_generic_typedef(classname)
     local t = generic_runtime_types[classname]
     if t then return t end
 
-    if next(generic_runtime_types) == nil then
+    if not has_setup_generics then
         setup_generic_type_assemblies()
     end
 
