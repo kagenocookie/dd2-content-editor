@@ -66,7 +66,7 @@ udb.events.on('get_existing_data', function (whitelist)
 end)
 
 -- import quest data all at once instead of making new arrays one by one for each entity
-udb.events.on('data_imported', function (data)
+udb.events.on('entities_created', function (data)
     --- @cast data QuestDBImportData
 
     local catalog = gamedb.get_first_catalog()

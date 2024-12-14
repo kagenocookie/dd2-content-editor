@@ -153,7 +153,7 @@ if core.editor_enabled then
         ui.basic.setting_checkbox('Load unknown entities', settings, 'load_unknown_entities', editor.persistent_storage.save,
             'All enemies will be saved into the content editor database for editing purposes when they load.\nHaving this enabled may affect performance when enemies are spawned, best only enabled when you actually need it.')
         ui.basic.setting_checkbox('Live inject changes', settings, 'live_inject_enabled', editor.persistent_storage.save,
-            'Inject changes into all newly spawned enemies.\nExpect slowness until further notice, not recommended for actual gameplay yet.')
+            'Inject changes into all newly spawned enemies.\nNOT RECOMMENDED for actual gameplay yet, expect slowness until further notice.')
 
         if imgui.button('Find all currently active enemies') then
             for _, m in ipairs(ce_find(':app.Monster') or {}) do

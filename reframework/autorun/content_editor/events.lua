@@ -4,7 +4,7 @@ if usercontent.events then return usercontent.events end
 ---@type table<string, function[]>
 local events = {}
 
----@alias EventName 'get_existing_data'|'bundles_loaded'|'ready'|'enum_updated'|'bundle_created'|'data_imported'|'setup'
+---@alias EventName 'get_existing_data'|'bundles_loaded'|'ready'|'enum_updated'|'bundle_created'|'entities_created'|'entities_updated'|'setup'
 
 ---@param name string
 ---@param fn function
@@ -63,7 +63,7 @@ end
 ---
 ---`bundles_loaded`: Called after all bundles have finished loading (on start or full database refresh)
 ---
----`data_imported`: Called to request an import of a set of entities into the game's data. Table keys represent entity types.
+---`entities_created`, `entities_updated`: Called to request an import of a set of entities into the game's data. Table keys represent entity types.
 ---<br>Intended as a bulk insert for cases where importing one by one in the entity's import handler directly is less performant.
 ---
 ---`ready`: Called after the initial DB setup is finished and bundles are all loaded
@@ -75,7 +75,8 @@ end
 ---@overload fun(name: 'setup', fn: fun())
 ---@overload fun(name: 'enum_updated', fn: fun(enum: EnumSummary))
 ---@overload fun(name: 'bundle_created', fn: fun(bundle: BundleRuntimeData))
----@overload fun(name: 'data_imported', fn: fun(entities: table<string,DBEntity[]>))
+---@overload fun(name: 'entities_created', fn: fun(entities: table<string,DBEntity[]>))
+---@overload fun(name: 'entities_updated', fn: fun(entities: table<string,DBEntity[]>))
 local function register_event_ext(name, fn) register_event(name, fn) end
 
 ---@param name EventName

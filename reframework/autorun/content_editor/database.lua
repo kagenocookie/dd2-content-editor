@@ -22,6 +22,10 @@ local entity_tracker = {}
 
 --- @alias ImportActionType 'create'|'update'|'delete'
 
+--- @class ImportBatch
+--- @field created table<string, DBEntity[]>
+--- @field updated table<string, DBEntity[]>
+
 --- @type table<string, EntityTypeConfig>
 local entity_types = {}
 
@@ -81,6 +85,7 @@ local databundle_dir = core.get_path('bundles/')
 --- Create a new entity
 --- @param entity DBEntity
 --- @param bundleName string|nil
+--- @param _skipResortEnum boolean|nil
 --- @return DBEntity
 local function create_entity(entity, bundleName, _skipResortEnum)
     local trackedEntity = entity_tracker[entity]
@@ -272,6 +277,7 @@ local function export_entity(entity)
 end
 
 --- @param bundle DataBundle
+--- @param bundleImports ImportBatch
 local function load_single_bundle(bundle, bundleImports)
     local bundleEntities = {}
     for _, data in ipairs(bundle.data or {}) do
@@ -285,10 +291,11 @@ local function load_single_bundle(bundle, bundleImports)
         local newEntity = import_entity(loader, data, previousInstance)
         newEntity = create_entity(newEntity, bundle.name, true)
         entity_tracker[newEntity].dirty = false
-        if newEntity ~= previousInstance then
-            bundleImports[data.type] = bundleImports[data.type] or {}
-            bundleImports[data.type][#bundleImports[data.type]+1] = newEntity
-        end
+
+        local eventSet = newEntity ~= previousInstance and bundleImports.created or bundleImports.updated
+        eventSet[data.type] = eventSet[data.type] or {}
+        eventSet[data.type][#eventSet[data.type]+1] = newEntity
+
         bundleEntities[#bundleEntities+1] = newEntity
     end
 
@@ -314,6 +321,9 @@ local function load_single_bundle(bundle, bundleImports)
     return true
 end
 
+--- @param bundle DataBundle
+--- @param bundleImports ImportBatch
+--- @return boolean success
 local function load_single_bundle_safe(bundle, bundleImports)
     if internal.config.data.editor.devmode then
         load_single_bundle(bundle, bundleImports)
@@ -441,7 +451,7 @@ local function load_data_bundles(forceRescan)
     end
 
     timer:add('analyze')
-    local bundleImports = {}
+    local bundleImports = { created = {}, updated = {} } ---@type ImportBatch
     for _, bundle in ipairs(orderedBundles) do
         allBundles[#allBundles+1] = bundle
         local settings = configData.bundle_settings[bundle.name]
@@ -454,7 +464,12 @@ local function load_data_bundles(forceRescan)
 
     refresh_enums()
     timer:add('enum refresh')
-    events.emit('data_imported', bundleImports)
+    if next(bundleImports.created) then
+        events.emit('entities_created', bundleImports.created)
+    end
+    if next(bundleImports.updated) then
+        events.emit('entities_updated', bundleImports.updated)
+    end
     if internal.config.data.editor.devmode then
         timer:add('batch imports')
         timer:group('analyze', 'load', 'load total')
@@ -474,7 +489,7 @@ local function load_entity(entityData, bundleName)
     local importer = entity_types[entityData.type]
     if bundle and importer then
         local newEntity = create_entity(import_entity(importer, entityData), bundleName)
-        events.emit('data_imported', { [entityData.type] = {newEntity} })
+        events.emit('entities_created', { [entityData.type] = {newEntity} })
         entity_enums[entityData.type].resort()
         return newEntity
     end
@@ -845,7 +860,7 @@ local function reload_entity(type, id)
     if newEntity ~= entity then
         print('WARNING received new entity instance on reloading entity... This might not be good?', type, id)
     end
-    events.emit('data_imported', { [type] = {newEntity} })
+    events.emit('entities_updated', { [type] = {newEntity} })
     entity_tracker[newEntity].dirty = false
 end
 
@@ -897,13 +912,18 @@ local function set_bundle_enabled(bundleName, enabled)
     settings.disabled = not enabled
     internal.config.data.bundle_settings[bundleName] = settings
     if enabled then
-        local bundleImports = {}
+        local bundleImports = { created = {}, updated = {} } ---@type ImportBatch
         if use_global_entity_fetch_whitelist then
             events.emit('get_existing_data', get_unloaded_bundle_entities_map_impl(allBundleEntry, {}))
         end
         if load_single_bundle_safe(allBundleEntry, bundleImports) then
             refresh_enums()
-            events.emit('data_imported', bundleImports)
+            if next(bundleImports.created) then
+                events.emit('entities_created', bundleImports.created)
+            end
+            if next(bundleImports.updated) then
+                events.emit('entities_updated', bundleImports.updated)
+            end
         else
             re.msg('Failed to import re-enabled bundle ' .. bundleName)
         end
@@ -1043,14 +1063,14 @@ local function clone_as_new_entity(entity, bundle)
     return insert_new_entity(entity.type, bundle, data)
 end
 
---- Triggers the import function of the entity, to force apply any changes made to the entity
+--- Triggers the import function of the entity, to force apply any changes made to it. Will re-trigger the `entities_updated` event.
 --- @param entity DBEntity
 --- @return boolean success
 local function reimport_entity(entity)
     local tt = entity_types[entity.type]
     if tt then
         tt.import(tt.export(entity), entity)
-        events.emit('data_imported', {[entity.type] = { entity }})
+        events.emit('entities_updated', {[entity.type] = { entity }})
         return true
     end
     return false
@@ -1193,6 +1213,11 @@ re.on_draw_ui(function ()
             imgui.text_colored('Some changes need a script reset.', core.get_color('danger'))
         end
 
+        if imgui.button('Refresh bundles') then
+            reload_all_bundles()
+        end
+        if imgui.is_item_hovered() then imgui.set_tooltip('This will reload all data bundles from disk and re-import them into the game. \nAny unsaved changes will be lost. In case of issues, reset scripts can be more reliable.') end
+        imgui.same_line()
         if imgui.button('Editor: ' .. (internal.config.data.editor.enabled and 'enabled' or 'disabled')) then
             internal.config.data.editor.enabled = not internal.config.data.editor.enabled
             if internal.config.data.editor.enabled then

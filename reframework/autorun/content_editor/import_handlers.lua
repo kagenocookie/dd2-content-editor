@@ -605,6 +605,7 @@ end
 --- @return table
 local function get_exported_array(table, classname)
     local list = {}
+    if not table then return list end
     for i, item in pairs(table) do
         list[i] = get_exported(item, classname)
     end

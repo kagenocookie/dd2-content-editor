@@ -444,7 +444,7 @@ end)
 --- @field quest_processor QuestProcessorData[]|nil
 
 -- import quest data all at once instead of making new arrays one by one for each entity
-udb.events.on('data_imported', function (data)
+local function updateEntitySet(data)
     --- @cast data QuestDBImportData
 
     if data.quest then
@@ -452,7 +452,9 @@ udb.events.on('data_imported', function (data)
             gamedb.upsert_quest_entity(e)
         end
     end
-end)
+end
+udb.events.on('entities_created', updateEntitySet)
+udb.events.on('entities_updated', updateEntitySet)
 
 udb.register_entity_type('quest', {
     import = function (data, instance)

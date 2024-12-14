@@ -37,7 +37,7 @@ udb.events.on('get_existing_data', function (whitelist)
     end
 end)
 
-udb.events.on('data_imported', function (data)
+udb.events.on('entities_created', function (data)
     if data.shop and #data.shop > 0 then
         ItemManager.ItemShopData._Params = helpers.expand_system_array(
             ItemManager.ItemShopData._Params,
