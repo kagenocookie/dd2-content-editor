@@ -132,7 +132,7 @@ local recordTypes = utils.get_sorted_table_keys(armorCatalogs)
 for armorMeshType, fieldData in pairs(armorCatalogs) do
     local sourceEnum = enums.get_enum(fieldData[1].enum).valueToLabel
     for i, entry in ipairs(fieldData) do
-        local components = { dict = 'a' }
+        local components = { }
         if entry.speciesGenderDict then
             components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Human][genders.Female], hashCatalog = entry.hashCatalog, name = entry.name .. '_Human_Female' }
             components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Human][genders.Male], hashCatalog = entry.hashCatalog, name = entry.name .. '_Human_Male' }
@@ -155,7 +155,8 @@ for armorMeshType, fieldData in pairs(armorCatalogs) do
                 for _, comp in ipairs(entry.components) do
                     instance[comp.name] = import_handlers.import('app.PrefabController', import_data[comp.name], instance[comp.name])
                     if instance[comp.name] then
-                        local entryId = comp.hashCatalog and CharacterEditManager[comp.hashCatalog][instance.id] or instance.id
+                        local idLookup = comp.hashCatalog and CharacterEditManager[comp.hashCatalog]
+                        local entryId = idLookup and idLookup:ContainsKey(instance.id) and idLookup[instance.id] or instance.id
                         comp.dict[entryId] = instance[comp.name]
                     end
                 end
@@ -209,7 +210,7 @@ udb.events.on('get_existing_data', function (whitelist)
                         entity[hashField] = deformerHash
 
                         for _, comp in ipairs(fields.components) do
-                            local pfbCtrl = comp.dict[deformerHash]
+                            local pfbCtrl = comp.dict:ContainsKey(deformerHash) and comp.dict[deformerHash]
                             if pfbCtrl then
                                 entity[comp.name] = pfbCtrl
                             end
