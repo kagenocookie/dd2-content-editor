@@ -122,6 +122,7 @@ object_handlers['via.GameObject'] = function (context)
     if ui.treenode_suffix('Components', comps and '(' .. tostring(#comps) .. ')' or '') then
         imgui.same_line()
         if imgui.button('Refresh components') then context.data.components = nil end
+        context.data.filter = select(2, imgui.input_text('Filter components', context.data.filter or ''))
         if not context.data.components then
             comps = go:get_Components():get_elements()
             context.data.components = comps
@@ -130,7 +131,10 @@ object_handlers['via.GameObject'] = function (context)
         for i, comp in ipairs(comps) do
             context.data.compdata[i] = context.data.compdata[i] or {}
             local compType = comp:get_type_definition()
-            usercontent._ui_handlers.show_nested(comp, context, compType:get_name(), compType:get_full_name(), true)
+            local compName = compType:get_full_name()
+            if not context.data.filter or context.data.filter == '' or compName:find(context.data.filter) then
+                usercontent._ui_handlers.show_nested(comp, context, compType:get_name(), compName, true)
+            end
         end
         imgui.tree_pop()
     end
@@ -560,7 +564,7 @@ local function dictionary_ui(meta, classname, label, settings)
                     local it = dict:GetEnumerator()
                     items = {}
                     while it:MoveNext() do
-                        local key = type(it._current.key) == 'userdata' and it._current.key:add_ref() or it._current.key
+                        local key = type(it._current.key) == 'userdata' and it._current.key.add_ref and it._current.key:add_ref() or it._current.key
                         local value = type(it._current.value) == 'userdata' and it._current.value.add_ref and it._current.value:add_ref() or it._current.value
                         items[#items+1] = { key, value }
                     end
