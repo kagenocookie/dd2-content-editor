@@ -94,6 +94,8 @@ local recordTypes = utils.get_sorted_table_keys(recordClasses) ---@type string[]
 
 local visorIds = {}
 
+local styleItemLookups = nil
+
 local function dict_get_safe(dict, key)
     return dict and dict:ContainsKey(key) and dict[key] or nil
 end
@@ -143,8 +145,7 @@ sdk.hook(
             end
             return sdk.PreHookResult.SKIP_ORIGINAL
         end
-    end,
-    function (ret) return thread.get_hook_storage().rv or ret end
+    end
 )
 
 local function add_style_entity(id, entityType, variant_id, styleHash, runtime_instance, furmask)
@@ -307,11 +308,42 @@ for _, name in ipairs(recordTypes) do
         end,
         generate_label = function (entity)
             --- @cast entity StyleEntity
-            if entity.styleHash then
-                return (styleHashEnum[entity.styleHash] or (name .. ' ' .. entity.id)) .. ' #' .. tostring(entity.styleHash)
-            else
-                return name .. ' ' .. entity.id
+            if not entity.styleHash then return name .. ' ' .. entity.id end
+
+            local styleName = (styleHashEnum[entity.styleHash] or (name .. ' ' .. entity.id))
+            if not styleItemLookups then
+                -- construct item lookup table
+                styleItemLookups = {}
+                for pair in utils.enumerate(ItemManager._ItemDataDict) do
+                    local itemId = pair.key---@type integer
+                    local item = pair.value
+                    --- @cast item app.ItemArmorParam
+                    if item:get_DataType() == 3 and item._StyleNo ~= 0 then
+                        if not styleItemLookups[item._EquipCategory] then styleItemLookups[item._EquipCategory] = {} end
+                        if styleItemLookups[item._EquipCategory][item._StyleNo] then
+                            local previousValid = ItemManager.isValidItem(styleItemLookups[item._EquipCategory][item._StyleNo])
+                            local newValid = ItemManager.isValidItem(itemId)
+                            if previousValid ~= newValid and newValid then
+                                styleItemLookups[item._EquipCategory][item._StyleNo] = itemId
+                            elseif newValid and previousValid then
+                                print('Two item IDs were found valid for style entry', item._StyleNo, 'category', item._EquipCategory, 'previous ID', styleItemLookups[item._EquipCategory][item._StyleNo], 'newId', itemId)
+                            end
+                        else
+                            styleItemLookups[item._EquipCategory][item._StyleNo] = itemId
+                        end
+                    end
+                end
             end
+
+            local itemId = record.slot and styleItemLookups[record.slot] and styleItemLookups[record.slot][entity.id]
+            if itemId then
+                styleName = styleName .. ' ' .. tostring(ItemManager:getItemData(itemId):get_Name())
+            end
+
+            if entity.id ~= entity.styleHash then
+                styleName = styleName .. ' #' .. tostring(entity.styleHash)
+            end
+            return styleName
         end,
         delete = function (entity)
             --- @cast entity StyleEntity

@@ -1081,7 +1081,7 @@ end
 --- @return string
 local function generate_entity_label(entity)
     -- labels are meaningless if the editor isn't enabled
-    if not core.editor_enabled then return '<disabled>' end
+    if not core.editor_enabled then return '<labels disabled>' end
     local tt = entity_types[entity.type]
     if tt then
         return tt.generate_label and tt.generate_label(entity) or entity.label or 'unlabeled'
