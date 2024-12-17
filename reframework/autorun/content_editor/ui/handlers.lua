@@ -879,7 +879,7 @@ local create_editor = function(parentContext, childKey, currentValue, classname,
         settings = utils.table_assign({
             is_raw_data = type(currentValue) == 'table',
             hide_nonserialized = type(currentValue) == 'table',
-        }, settings or {})
+        }, settings or (parentContext and parentContext.data.ui_settings) or {})
         setup_context_ui(ctx, classname, label, settings, doExpander or false)
         -- print('Created new editor context', ui_context.get_absolute_path(ctx), tostring(currentValue))
     end

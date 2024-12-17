@@ -7,7 +7,7 @@ if usercontent._ui_contexts then return usercontent._ui_contexts end
 -- Not necessarily fun for a public API but since it's primarily just internal, ¯\_(ツ)_/¯
 
 --- @class UIContainer
---- @field data table
+--- @field data table|{ui_settings: UISettings|nil, classname: string|nil}
 --- @field object any|nil
 --- @field owner DBEntity|nil
 --- @field ui UIHandler|nil
