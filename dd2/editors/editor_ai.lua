@@ -126,6 +126,22 @@ if core.editor_enabled then
         ['app.AIBlackBoardFormationCollection'] = { uiHandler = handle_ai_bb_collection('app.AIBlackBoardFormationCollection'), },
         ['app.AIBlackBoardNpcCollection'] = { uiHandler = handle_ai_bb_collection('app.AIBlackBoardNpcCollection'), },
         ['app.AIBlackBoardSituationCollection'] = { uiHandler = handle_ai_bb_collection('app.AIBlackBoardSituationCollection'), },
+        ['app.AIDecision'] = {
+            toString = function (value)
+                return helpers.to_string(value:get_ActionPack())
+            end
+        },
+        ['app.DecisionPack.Decision'] = {
+            toString = function (value)
+                return helpers.to_string(value._ActInterPack)
+            end
+        },
+        ['app.ActInterPackData'] = {
+            toString = function (value)
+                local actionPack = value._Pack.ActInterNodeList
+                return table.concat(utils.map(actionPack:get_elements(), function (action) return action._Command._Process:get_type_definition():get_name() end), ', ')
+            end
+        },
         ['app.CatchController.CatchTypeEnum[]'] = {
             toString = function (value)
                 return helpers.array_to_string(value, ', ', 'app.CatchController.CatchTypeEnum[]', '<none>')
