@@ -45,6 +45,10 @@ if core.editor_enabled then
         return function (ctx)
             local changed = false
             local collection = ctx.get()
+            if not collection then
+                imgui.text(ctx.label .. ': null')
+                return false
+            end
             for _, field in ipairs(meta.fields) do
                 local fname = field[1]
                 local fclass = field[2]
