@@ -76,7 +76,8 @@ local editor_defs = {
             end
             imgui_wrappers.tooltip('Optional description that should accompany your mods')
             local devmodeChanged = imgui_wrappers.setting_checkbox('Debug mode', config.data.editor, 'devmode', config.save, "Show some additional options used for editor development, remove some error handling, add more logging.\nBest left off unless you know what you're doing.")
-            if devmodeChanged then
+            local show_property_labels = imgui_wrappers.setting_checkbox('Show explicit property labels', config.data.editor, 'show_prop_labels', config.save, "Show distinction between property and basic fields in labels.\ne.g. 'Prop/Character' instead of just 'Character' for backing fields.")
+            if devmodeChanged or show_property_labels then
                 set_need_script_reset()
             end
 

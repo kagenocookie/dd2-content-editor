@@ -25,6 +25,7 @@ local defines = {
 --- @field hide_nonserialized boolean
 --- @field is_raw_data boolean
 --- @field is_readonly boolean|nil
+--- @field no_nonserialized_indicator boolean|nil
 
 --- @type table<string, UIHandler>
 local object_handlers = {
@@ -115,8 +116,12 @@ object_handlers['via.GameObject'] = function (context)
         imgui.text('GameObject is null')
         return false
     end
+    if not go:get_Valid() then
+        imgui.text(context.label .. ': Invalid GameObject')
+        return false
+    end
 
-    imgui.text('GameObject ' .. go:get_Name())
+    imgui.text(context.label .. ': GameObject ' .. go:get_Name())
 
     local comps = context.data.components
     if ui.treenode_suffix('Components', comps and '(' .. tostring(#comps) .. ')' or '') then
@@ -251,6 +256,8 @@ local hashset_accessor = {
     set = function (object, newValue, current) object:Remove(current) object:Add(newValue) end
 }
 
+local editorConfig
+
 --- @param label string
 --- @return string
 local function generate_field_label(label)
@@ -258,7 +265,11 @@ local function generate_field_label(label)
     if label:sub(1,1) == '<' then
         local name = label:match('<([a-zA-Z0-9_]+)>k__BackingField')
         if name then
-            return name .. '/Prop'
+            if not editorConfig then editorConfig = usercontent.__internal.config.data.editor end
+            if editorConfig.show_prop_labels then
+                return 'Prop/' .. name
+            end
+            return name
         end
     end
     return label
@@ -717,6 +728,7 @@ field_editor_factories = {
                     fields[#fields+1] = { name, type, flags, sublabel, overrides and overrides.accessors or default_accessor }
                 end
             end
+            local fieldsFilterable = #fields > 10
 
             --- @type UIHandler
             return function (context)
@@ -739,12 +751,21 @@ field_editor_factories = {
                     end
                 end
 
+                if fieldsFilterable then
+                    imgui.indent(6)
+                    if imgui.calc_item_width() > 300 then imgui.set_next_item_width(300) end
+                    context.data.field_filter = select(2, imgui.input_text('Filter fields', context.data.field_filter or ''))
+                    imgui.unindent(6)
+                end
                 for fieldIdx, subfieldData in ipairs(fields) do
                     local subfield = subfieldData[1]
                     local subtype = subfieldData[2]
                     local flags = subfieldData[3]
                     local sublabel = subfieldData[4]
                     local access = settings.hide_nonserialized and default_accessor or subfieldData[5]
+                    if context.data.field_filter and context.data.field_filter ~= '' and not sublabel:lower():find(context.data.field_filter:lower()) then
+                        goto continue
+                    end
 
                     local childCtx = create_field_editor(context, classname, subfield, subtype, sublabel, access, settings)
 
@@ -754,7 +775,8 @@ field_editor_factories = {
                     end
 
                     imgui.push_id(fieldIdx)
-                    if nonSerialized then
+                    local showUnserializedIndicator = nonSerialized and not settings.no_nonserialized_indicator
+                    if showUnserializedIndicator then
                         imgui.indent(-14)
                         imgui.text_colored("*", core.get_color('info'))
                         if imgui.is_item_hovered() then
@@ -766,7 +788,7 @@ field_editor_factories = {
                     local childChanged = childCtx:ui()
                     imgui.pop_id()
 
-                    if nonSerialized then
+                    if showUnserializedIndicator then
                         imgui.pop_style_color(1)
                         imgui.unindent(-14)
                     else
@@ -996,11 +1018,12 @@ end
 --- @param label string|nil
 --- @param classname string|nil Edited object classname, will be inferred from target if not specified
 --- @param editorId any A key by which to identify this editor or a table. If unspecified, the label or target object's address will be used as a key.
+--- @param settings UISettings|nil
 --- @return boolean changed
-local function show_entity_ui(target, owner, label, classname, editorId)
+local function show_entity_ui(target, owner, label, classname, editorId, settings)
     if not target then imgui.text_colored((label or 'Target') .. ' is null', core.get_color('error')) return false end
 
-    return show_root_entity(target, owner, label, classname, editorId)
+    return show_root_entity(target, owner, label, classname, editorId, nil, settings)
 end
 
 --- Show an entity in a read-only state (read only not yet fully implemented)
@@ -1167,6 +1190,7 @@ usercontent._ui_handlers = {
     _internal = {
         apply_overrides = apply_ui_handler_overrides,
         create_field_editor = create_field_editor,
+        generate_field_label = generate_field_label,
         accessors = {
             default = default_accessor,
             boxed_enum_accessor = boxed_enum_accessor,

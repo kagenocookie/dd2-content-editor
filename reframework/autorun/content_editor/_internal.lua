@@ -16,6 +16,7 @@ local utils = require('content_editor.utils')
 --- @field selected_editor_tab_index number
 --- @field author_name string
 --- @field devmode boolean|nil
+--- @field show_prop_labels boolean|nil
 --- @field author_description string|nil
 --- @field active_bundle string|nil
 --- @field next_editor_id integer
@@ -45,6 +46,7 @@ local config = {
         windows = {},
         storage = {},
         next_editor_id = 1,
+        show_prop_labels = false,
     },
     bundle_order = {},
     bundle_settings = {},

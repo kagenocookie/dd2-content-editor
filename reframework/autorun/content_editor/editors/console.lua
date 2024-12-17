@@ -14,9 +14,11 @@ local max_history = 50
 
 local console_ctx = ui.context.create_root({}, nil, 'console', '__console')
 
+local console_ui_settings = { no_nonserialized_indicator = true }
+
 ---@param obj REManagedObject|ValueType
 local function display_managed(obj, state)
-    ui.handlers.show(obj, nil, nil, nil, state)
+    ui.handlers.show(obj, nil, nil, nil, state, console_ui_settings)
 end
 
 local result_cache = {}
