@@ -754,7 +754,7 @@ field_editor_factories = {
                 if fieldsFilterable then
                     imgui.indent(6)
                     if imgui.calc_item_width() > 300 then imgui.set_next_item_width(300) end
-                    context.data.field_filter = select(2, imgui.input_text('Filter fields', context.data.field_filter or ''))
+                    context.data.field_filter = select(2, imgui.input_text('<Filter fields>', context.data.field_filter or ''))
                     imgui.unindent(6)
                 end
                 for fieldIdx, subfieldData in ipairs(fields) do

@@ -2061,6 +2061,12 @@ definitions.override('dd2', {
             'app.StatusConditionActionParamWet',
         }
     },
+    ['app.AIDecisionModule'] = {
+        abstract = {
+            'app.DecisionEvaluationModule',
+            'app.ThinkTableModule',
+        },
+    },
     ['app.QuestUniqueParamData.Data'] = {
         fields = { _IDValue = { import_ignore = true } }
     },
