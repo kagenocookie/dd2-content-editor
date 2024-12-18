@@ -221,33 +221,36 @@ local function register(register_extension)
             else
                 local isRaw = type(value) ~= 'userdata'
                 local currentPath = not isRaw and value:get_Path() or ''
-                if not ctx.data.userdata_picker then ctx.data.userdata_picker = currentPath end
-                _, ctx.data.userdata_picker = imgui.input_text('Change userdata source file', ctx.data.userdata_picker)
-                if ctx.data.userdata_picker and (value == nil or ctx.data.userdata_picker ~= currentPath) then
-                    if imgui.button('Change file') then
-                        local newData = sdk.create_userdata('via.UserData', ctx.data.userdata_picker)
-                        if isRaw then
-                            ctx.data._ref_userdata = newData
-                            ctx.set(ctx.data.userdata_picker)
+                if currentPath ~= '' and imgui.tree_node(currentPath) then
+                    if not ctx.data.userdata_picker then ctx.data.userdata_picker = currentPath end
+                    _, ctx.data.userdata_picker = imgui.input_text('Change userdata source file', ctx.data.userdata_picker)
+                    if ctx.data.userdata_picker and (value == nil or ctx.data.userdata_picker ~= currentPath) then
+                        if imgui.button('Change file') then
+                            local newData = sdk.create_userdata('via.UserData', ctx.data.userdata_picker)
+                            if isRaw then
+                                ctx.data._ref_userdata = newData
+                                ctx.set(ctx.data.userdata_picker)
+                                changed = true
+                            else
+                                ctx.set(newData)
+                                changed = true
+                            end
+                        end
+                    end
+                    if allowNew then
+                        if imgui.button('Create new') then
+                            ctx.set(isRaw and {} or usercontent._ui_utils.create_instance(classname or ctx.data.classname))
+                            ctx.data.userdata_picker = ''
                             changed = true
-                        else
-                            ctx.set(newData)
+                        end
+                        imgui.same_line()
+                        if imgui.button('Clone current') then
+                            ctx.set(helpers.clone(ctx.data._ref_userdata or value, classname or ctx.data.classname, isRaw))
+                            ctx.data.userdata_picker = ''
                             changed = true
                         end
                     end
-                end
-                if allowNew then
-                    if imgui.button('Create new') then
-                        ctx.set(isRaw and {} or usercontent._ui_utils.create_instance(classname or ctx.data.classname))
-                        ctx.data.userdata_picker = ''
-                        changed = true
-                    end
-                    imgui.same_line()
-                    if imgui.button('Clone current') then
-                        ctx.set(helpers.clone(ctx.data._ref_userdata or value, classname or ctx.data.classname, isRaw))
-                        ctx.data.userdata_picker = ''
-                        changed = true
-                    end
+                    imgui.tree_pop()
                 end
                 imgui.spacing()
                 changed = handler(ctx) or changed

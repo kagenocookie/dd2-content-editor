@@ -68,6 +68,10 @@ local function linecount(text)
     return count
 end
 
+local function lineHeight(lines)
+    return 6 + lines * imgui.get_default_font_size()
+end
+
 ---@param text string
 local function isMultiline(text)
     return not not text:find('\n')
@@ -202,27 +206,31 @@ ce_find = function (text, single)
     return e
 end
 
+--- @param state table
+--- @param text string
 local function add_to_exec_list(state, text)
     table.insert(state.open_entries, 1, {text = text, id = math.random(1, 99999999)})
     state.history = state.history or {}
-    table.insert(state.history, 1, text)
-    while #state.history > max_history do
-        table.remove(state.history, max_history)
+    if state.history[1] ~= text then
+        table.insert(state.history, 1, text)
+        while #state.history > max_history do
+            table.remove(state.history, max_history)
+        end
     end
     editor.persistent_storage.save()
 end
 
 local last_result_string = nil
 
-editor.define_window('data_viewer', 'Data console', function (state)
+editor.define_window('data_viewer', 'Console', function (state)
     local confirm = imgui.button('Run')
     imgui.same_line()
     if imgui.button('?') then state.toggleInfo = not state.toggleInfo end
     imgui.same_line()
     if state.multiline then
         local w = imgui.calc_item_width()
-        local lines = state.input and math.min(maxlines, linecount(state.input)) or 1
-        state.input = select(2, imgui.input_text_multiline('##data_viewer', state.input or '', Vector2f.new(w, 6 + lines * 18)))
+        local h = state.input and lineHeight(math.min(maxlines, linecount(state.input))) or 1
+        state.input = select(2, imgui.input_text_multiline('##data_viewer', state.input or '', Vector2f.new(w, h)))
     else
         state.input = select(2, imgui.input_text('##data_viewer', state.input or ''))
     end

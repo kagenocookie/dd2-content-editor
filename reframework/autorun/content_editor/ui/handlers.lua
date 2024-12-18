@@ -946,7 +946,7 @@ local function get_editor_id(editorId, target, label, owner, fallback)
         if type(editorId) == 'string' or type(editorId) == 'number' then return editorId end
         if type(editorId) == 'table' then
             local idKey = '_id' .. label
-            editorId[idKey] = editorId[idKey] or math.random(1, 1000000)
+            editorId[idKey] = editorId[idKey] or (target and type(target) == 'userdata' and target.get_address and target:get_address()) or math.random(1, 1000000)
             return editorId[idKey]
         end
         print('Could not determine editor id', editorId, owner, label)

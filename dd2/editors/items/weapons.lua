@@ -58,7 +58,7 @@ udb.events.on('get_existing_data', function (whitelist)
 
     if not core.editor_enabled then return end
     for id, label in pairs(OriginalWeaponIDs) do
-        if not udb.get_entity('weapon', id) then
+        if id ~= 0 and not udb.get_entity('weapon', id) then
             weaponEnum.set_display_label(id, '[group] ' .. label, false)
         end
     end
