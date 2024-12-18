@@ -220,7 +220,7 @@ udb.register_entity_type('message_group', {
     generate_label = function (entity)
         return 'Message group ' .. entity.id
     end,
-    insert_id_range = {1, 4294967200},
+    insert_id_range = {10, 4294967200, 1},
     root_types = {},
 })
 

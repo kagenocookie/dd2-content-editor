@@ -18,7 +18,7 @@ local entity_tracker = {}
 --- @field generate_label nil|fun(entity: DBEntity|table): string
 --- @field root_types string[]|nil Types to automatically generate type data for
 --- @field replaced_enum string|nil
---- @field insert_id_range [integer, integer] This field should contain two [min, max] integers for allowed mod entity IDs; Will be used to define initial IDs for new bundles
+--- @field insert_id_range [integer, integer, integer|nil] This field should contain a [min, max, rounding|nil] integer set for allowed mod entity IDs; Will be used to define initial IDs for new bundles
 
 --- @alias ImportActionType 'create'|'update'|'delete'
 
@@ -240,7 +240,8 @@ end
 local function generate_random_initial_insert_id(entity_type)
     local et = entity_types[entity_type]
     if et then
-        return math.floor(math.random(et.insert_id_range[1], et.insert_id_range[2])/100)*100
+        local rounding = et.insert_id_range[3] or 10
+        return math.floor(math.random(et.insert_id_range[1], et.insert_id_range[2])/rounding)*rounding
     end
     return 9999
 end

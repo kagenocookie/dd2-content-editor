@@ -66,7 +66,7 @@ udb.register_entity_type('domain_query_generate_table', {
     end,
     root_types = {'app.DomainQueryGenerateTable'},
     replaced_enum = 'app.DomainQueryGenerateRequestID',
-    insert_id_range = {1000, 99999},
+    insert_id_range = {1000, 9999900},
 })
 
 if core.editor_enabled then

@@ -37,7 +37,7 @@ udb.register_entity_type('script_effect', {
         entity.effect_type = data--[[@as any]].effect_type
         return entity
     end,
-    insert_id_range = {1, 999990000},
+    insert_id_range = {10, 999990000},
     delete = function () return 'ok' end,
     root_types = {},
 })

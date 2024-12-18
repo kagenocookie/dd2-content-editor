@@ -68,7 +68,7 @@ udb.register_entity_type('shop', {
         --- @cast entity ItemShopData
         return 'Shop ' .. entity.id .. ': ' .. entity.runtime_instance:get_ShopName()
     end,
-    insert_id_range = {1000, 999000},
+    insert_id_range = {1000, 999000, 1},
     root_types = {'app.ItemShopParam'},
 })
 
@@ -139,7 +139,7 @@ local function register_partial_entity_array(parent_entity, partial_type_name, e
             return 'ok'
         end,
         root_types = {},
-        insert_id_range = {1, 65000}
+        insert_id_range = {10, 999000, 1}
     })
 end
 
