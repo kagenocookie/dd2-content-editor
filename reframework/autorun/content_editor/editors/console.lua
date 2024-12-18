@@ -69,7 +69,7 @@ local function linecount(text)
 end
 
 local function lineHeight(lines)
-    return 6 + lines * imgui.get_default_font_size()
+    return 6 + lines * (imgui.get_default_font_size() + 2)
 end
 
 ---@param text string
