@@ -253,7 +253,13 @@ local getter_prop_accessor = {
 --- @type ObjectFieldAccessors
 local hashset_accessor = {
     get = function (object, fieldname) return fieldname end,
-    set = function (object, newValue, current) object:Remove(current) object:Add(newValue) end
+    set = function (object, newValue, current) object--[[@as any]]:Remove(current) object--[[@as any]]:Add(newValue) end
+}
+
+--- @type ObjectFieldAccessors
+local component_go_accessor = {
+    get = function (object) return object--[[@as any]]:get_GameObject() end,
+    set = function () print('Error: GameObject reference not editable') end
 }
 
 local editorConfig
@@ -718,6 +724,7 @@ field_editor_factories = {
 
             --- @type [string, string, FieldFlags, string, ObjectFieldAccessors ][]
             local fields = {}
+            local fieldCount = 0
             for _, subfield in ipairs(meta.fields or {}) do
                 local flags = subfield[3]
                 if (flags & typecache.fieldFlags.UIEnable) ~= 0 then
@@ -725,10 +732,11 @@ field_editor_factories = {
                     local type = subfield[2]
                     local overrides = fieldSettings[name]
                     local sublabel = format_field_label(overrides and overrides.label or generate_field_label(name), label)
-                    fields[#fields+1] = { name, type, flags, sublabel, overrides and overrides.accessors or default_accessor }
+                    fieldCount = fieldCount + 1
+                    fields[fieldCount] = { name, type, flags, sublabel, overrides and overrides.accessors or default_accessor }
                 end
             end
-            local fieldsFilterable = #fields > 10
+            local fieldsFilterable = fieldCount > 10
 
             --- @type UIHandler
             return function (context)
@@ -751,11 +759,18 @@ field_editor_factories = {
                     end
                 end
 
+                if meta.specialType == 3 then
+                    create_field_editor(context, classname, '__go', 'via.GameObject', 'GameObject', component_go_accessor, settings):ui()
+                    imgui.spacing()
+                end
                 if fieldsFilterable then
                     imgui.indent(6)
                     if imgui.calc_item_width() > 300 then imgui.set_next_item_width(300) end
                     context.data.field_filter = select(2, imgui.input_text('<Filter fields>', context.data.field_filter or ''))
                     imgui.unindent(6)
+                end
+                if fieldCount == 0 and context.data._has_extra_expander then
+                    imgui.text_colored('<no fields to be found here>', core.get_color('disabled'))
                 end
                 for fieldIdx, subfieldData in ipairs(fields) do
                     local subfield = subfieldData[1]

@@ -16,6 +16,7 @@ if usercontent._typecache then return usercontent._typecache end
 local specialType = {
     userdata = 1,
     resource = 2,
+    component = 3,
 }
 
 --- @enum HandlerType
@@ -50,6 +51,7 @@ local generic_types = require("content_editor.generic_types")
 local type_enum = sdk.find_type_definition('System.Enum')
 local type_userdata = sdk.find_type_definition('via.UserData')
 local type_resourceHolder = sdk.find_type_definition('via.ResourceHolder')
+local type_component = sdk.find_type_definition('via.Component')
 local currentTypecacheVersion = 1
 
 local readonly_cache_item = { type = handlerType.readonly, itemCount = 1 }
@@ -411,6 +413,8 @@ local function build_typecache(typedef, typecache)
         objectCacheEntry.specialType = specialType.userdata
     elseif typedef:is_a(type_resourceHolder) then
         objectCacheEntry.specialType = specialType.resource
+    elseif typedef:is_a(type_component) then
+        objectCacheEntry.specialType = specialType.component
     end
 end
 
