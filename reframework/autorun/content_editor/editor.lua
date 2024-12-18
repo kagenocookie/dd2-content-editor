@@ -58,6 +58,8 @@ local function set_need_script_reset()
     internal.need_script_reset = true
 end
 
+local edited_window_id
+local edited_window_name
 --- @type table<string, WindowDefinition>
 local editor_defs = {
     user = {
@@ -86,6 +88,37 @@ local editor_defs = {
                     enums.dump_all_enums()
                 end
 
+                imgui.tree_pop()
+            end
+
+            if #config.data.editor.windows > 0 and imgui.tree_node('Open editor windows') then
+                for i, wnd in ipairs(config.data.editor.windows) do
+                    if imgui.button('X') then
+                        table.remove(config.data.editor.windows, i)
+                        config.save()
+                    end
+                    imgui.same_line()
+                    local rename = imgui.button('Rename##'..wnd.id)
+                    imgui.same_line()
+                    imgui.text('#' .. wnd.id .. ': ' .. wnd.title .. ' (' .. wnd.name .. ')')
+                    if rename or wnd.id == edited_window_id then
+                        if rename and wnd.id == edited_window_id then
+                            edited_window_id = nil
+                        else
+                            if wnd.id ~= edited_window_id then
+                                edited_window_id = wnd.id
+                                edited_window_name = wnd.title
+                            end
+
+                            edited_window_name = select(2, imgui.input_text('New name##'..wnd.id, edited_window_name))
+                            if edited_window_name ~= wnd.title and imgui.button('Confirm') then
+                                wnd.title = edited_window_name
+                                config.save()
+                                edited_window_id = nil
+                            end
+                        end
+                    end
+                end
                 imgui.tree_pop()
             end
         end
