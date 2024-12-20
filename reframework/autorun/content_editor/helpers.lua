@@ -96,18 +96,25 @@ end
 --- @param org_array SystemArray
 --- @param appended_items REManagedObject[]
 --- @param elementType string|nil
+--- @param prepend boolean|nil
 --- @return SystemArray
-local function expand_system_array(org_array, appended_items, elementType)
+local function expand_system_array(org_array, appended_items, elementType, prepend)
     local added_len = #appended_items
     if added_len == 0 then return org_array end
 
     local arr_len = org_array:get_size()
-    elementType = elementType or org_array:get_type_definition():get_full_name():sub(1, -3)
-    local arr = create_array(elementType, arr_len + added_len, org_array:get_elements())
-    --- @cast arr SystemArray
-    for i = 1, added_len do
-        arr[arr_len + i - 1] = appended_items[i]
+    local newElements = org_array:get_elements()
+    if prepend then
+        for i = 1, added_len do
+            table.insert(newElements, i, appended_items[i])
+        end
+    else
+        for i = 1, added_len do
+            newElements[arr_len + i] = appended_items[i]
+        end
     end
+    elementType = elementType or org_array:get_type_definition():get_full_name():sub(1, -3)
+    local arr = create_array(elementType, arr_len + added_len, newElements)
     return arr
 end
 

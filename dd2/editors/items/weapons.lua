@@ -83,9 +83,9 @@ udb.register_entity_type('weapon', {
         if instance.offsets then
             instance.offsets.ID = data.id
             local offSettings = EquipmentManager.WeaponSetting.DefaultSetting
-            if offSettings:getOffsetSettings(data.id) == nil then
-                instance.offsets.ID = data.id
-                offSettings.OffsetSettings = helpers.expand_system_array(offSettings.OffsetSettings, { instance.offsets })
+            local effectiveSettings = offSettings:getOffsetSettings(data.id)
+            if effectiveSettings == nil or effectiveSettings.ID ~= data.id then
+                offSettings.OffsetSettings = helpers.expand_system_array(offSettings.OffsetSettings, { instance.offsets }, nil, true)
             end
         end
     end,
@@ -238,7 +238,7 @@ if core.editor_enabled then
                 else
                     selectedItem.offsets = import_handlers.import('app.WeaponSetting.OffsetSetting', { ID = selectedItem.id })
                 end
-                EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.expand_system_array(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, { selectedItem.offsets })
+                EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.expand_system_array(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, { selectedItem.offsets }, nil, true)
                 changed = true
             end
             if effectiveOffsets then

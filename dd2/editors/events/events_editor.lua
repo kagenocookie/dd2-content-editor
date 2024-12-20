@@ -10,8 +10,6 @@ local editor = require('content_editor.editor')
 
 local gamedb = require('editors.events.events_gamedata')
 
-local minimum_custom_event_id = 100000
-
 --- @param ctx EventContext
 --- @param entity app.SuddenQuestEntity|nil
 local function show_event_context(ctx, entity)
@@ -244,7 +242,7 @@ editor.define_window('events', 'Events', function (state)
                     imgui.push_id(id)
                     local label = eventsEnum.labels[idx] or tostring(id)
                     if events_filter == '' or not label or label:find(events_filter) ~= nil then
-                        if id >= minimum_custom_event_id then
+                        if udb.is_custom_entity_id('event', id) then
                             if imgui.button('Delete') then
                                 udb.delete_entity(evt, editor.active_bundle)
                                 imgui.pop_id()
@@ -270,7 +268,7 @@ editor.define_window('events', 'Events', function (state)
                     local label = tostring(id) .. '  ' .. enums.get_enum('CharacterID_NPC').get_label(ctx.context._NpcID) .. ' ' .. (ctx.label or '')
                     if events_filter == '' or not label or label:find(events_filter) ~= nil then
                         imgui.push_id(id)
-                        if id >= minimum_custom_event_id then
+                        if udb.is_custom_entity_id('event_context', id) then
                             if imgui.button('Delete') then
                                 udb.delete_entity(ctx, editor.active_bundle)
                                 imgui.pop_id()
