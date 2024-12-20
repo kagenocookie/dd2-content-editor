@@ -129,24 +129,32 @@ local armorCatalogs = {
 }
 local recordTypes = utils.get_sorted_table_keys(armorCatalogs)
 
+local componentsInited = false
+local function initComponents()
+    if componentsInited then return end
+    componentsInited = true
+    for armorMeshType, fieldData in pairs(armorCatalogs) do
+        for i, entry in ipairs(fieldData) do
+            local components = { }
+            if entry.speciesGenderDict then
+                components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Human][genders.Female], hashCatalog = entry.hashCatalog, name = entry.name .. '_Human_Female' }
+                components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Human][genders.Male], hashCatalog = entry.hashCatalog, name = entry.name .. '_Human_Male' }
+                components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Beastren][genders.Female], hashCatalog = entry.hashCatalog, name = entry.name .. '_Beastren_Female' }
+                components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Beastren][genders.Male], hashCatalog = entry.hashCatalog, name = entry.name .. '_Beastren_Male' }
+            elseif entry.speciesDict then
+                components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Human], keys = { species.Human }, name = entry.name .. '_Human' }
+                components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Beastren], keys = { species.Beastren }, name = entry.name .. '_Beastren' }
+            else
+                components[#components+1] = { dict = CharacterEditManager[entry.dict], keys = {}, name = entry.name }
+            end
+            entry.components = components
+            armorCatalogs[armorMeshType][i].components = components
+        end
+    end
+end
+
 for armorMeshType, fieldData in pairs(armorCatalogs) do
     local sourceEnum = enums.get_enum(fieldData[1].enum).valueToLabel
-    for i, entry in ipairs(fieldData) do
-        local components = { }
-        if entry.speciesGenderDict then
-            components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Human][genders.Female], hashCatalog = entry.hashCatalog, name = entry.name .. '_Human_Female' }
-            components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Human][genders.Male], hashCatalog = entry.hashCatalog, name = entry.name .. '_Human_Male' }
-            components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Beastren][genders.Female], hashCatalog = entry.hashCatalog, name = entry.name .. '_Beastren_Female' }
-            components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Beastren][genders.Male], hashCatalog = entry.hashCatalog, name = entry.name .. '_Beastren_Male' }
-        elseif entry.speciesDict then
-            components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Human], keys = { species.Human }, name = entry.name .. '_Human' }
-            components[#components+1] = { dict = CharacterEditManager[entry.dict][species.Beastren], keys = { species.Beastren }, name = entry.name .. '_Beastren' }
-        else
-            components[#components+1] = { dict = CharacterEditManager[entry.dict], keys = {}, name = entry.name }
-        end
-        entry.components = components
-        armorCatalogs[armorMeshType][i].components = components
-    end
 
     udb.register_entity_type(armorMeshType, {
         insert_id_range = {1000, 360000},
@@ -195,6 +203,7 @@ for armorMeshType, fieldData in pairs(armorCatalogs) do
 end
 
 udb.events.on('get_existing_data', function (whitelist)
+    initComponents()
     for armorMeshType, fieldData in pairs(armorCatalogs) do
         local fullIgnore = whitelist and not whitelist[armorMeshType]
         if fullIgnore then goto continue end
