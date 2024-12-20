@@ -141,7 +141,7 @@ udb.register_entity_type('item_data', {
         end
         return 'ok'
     end,
-    insert_id_range = {30000, 65000},
+    insert_id_range = {30000, 65000, 5},
     -- basegame item IDs go up to 10512
     -- there seems to be a ushort conversion somewhere in the game, so assuming max id 65536 for now
     -- specifically app.ItemManager:isUseEnable(int), called from some native code, ID 140000 was sent as 8928
