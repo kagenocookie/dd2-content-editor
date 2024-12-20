@@ -179,6 +179,7 @@ if core.editor_enabled then
             imgui.indent(8)
             imgui.begin_rect()
             state.subtype = select(2, ui.basic.tabs({'Buy lists', 'Sell lists', 'Base shop data'}, state.subtype or 1))
+            imgui.push_id(state.subtype or 0)
             if state.subtype == 3 then
                 imgui.text_colored('The base shop data view is intended for modifying the basic data or eventually adding new shops, as it fully replaces all data.\nIf you wish to only add items to an existing shop, consider using the buy lists and sell lists views instead.\nThat way multiple mods can add items to the same shop', core.get_color('disabled'))
                 imgui.spacing()
@@ -243,6 +244,7 @@ if core.editor_enabled then
                     end
                 end
             end
+            imgui.pop_id()
             imgui.end_rect(4)
             imgui.unindent(8)
         end

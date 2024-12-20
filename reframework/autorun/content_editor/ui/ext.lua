@@ -146,7 +146,8 @@ local function entity_picker(type, state, storage_key, label, filter)
     local changed, newVal
     if activeEntityOnly then
         if filter then
-            filter = (function (entity) return udb.get_entity_bundle(entity) == editor.active_bundle and filter(entity) end)
+            local org_filter = filter
+            filter = (function (entity) return udb.get_entity_bundle(entity) == editor.active_bundle and org_filter(entity) end)
         else
             filter = function (entity) return udb.get_entity_bundle(entity) == editor.active_bundle end
         end
