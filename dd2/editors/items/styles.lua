@@ -314,6 +314,7 @@ for _, name in ipairs(recordTypes) do
             if not styleItemLookups then
                 -- construct item lookup table
                 styleItemLookups = {}
+                local isValidItemFunc = sdk.find_type_definition('app.ItemManager'):get_method('isValidItem')
                 for pair in utils.enumerate(ItemManager._ItemDataDict) do
                     local itemId = pair.key---@type integer
                     local item = pair.value
@@ -321,8 +322,8 @@ for _, name in ipairs(recordTypes) do
                     if item:get_DataType() == 3 and item._StyleNo ~= 0 then
                         if not styleItemLookups[item._EquipCategory] then styleItemLookups[item._EquipCategory] = {} end
                         if styleItemLookups[item._EquipCategory][item._StyleNo] then
-                            local previousValid = ItemManager.isValidItem(styleItemLookups[item._EquipCategory][item._StyleNo])
-                            local newValid = ItemManager.isValidItem(itemId)
+                            local previousValid = isValidItemFunc:call(nil, styleItemLookups[item._EquipCategory][item._StyleNo])
+                            local newValid = isValidItemFunc:call(nil, itemId)
                             if previousValid ~= newValid and newValid then
                                 styleItemLookups[item._EquipCategory][item._StyleNo] = itemId
                             elseif newValid and previousValid then
@@ -337,7 +338,12 @@ for _, name in ipairs(recordTypes) do
 
             local itemId = record.slot and styleItemLookups[record.slot] and styleItemLookups[record.slot][entity.id]
             if itemId then
-                styleName = styleName .. ' ' .. tostring(ItemManager:getItemData(itemId):get_Name())
+                local data = ItemManager:getItemData(itemId)
+                if data  then
+                    styleName = styleName .. ' ' .. tostring(data:get_Name())
+                else
+                    log.info('Failed to get item data ' .. itemId)
+                end
             end
 
             if entity.id ~= entity.styleHash then
