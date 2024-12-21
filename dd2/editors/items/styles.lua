@@ -415,6 +415,9 @@ if core.editor_enabled then
         ['app.BackpackPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.FacewearPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.BeardPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
+        ['app.MantlePartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
+        ['app.HeadPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
+        ['app.charaedit.ch000.Define.FaceJointMaskFlag'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.CharacterEditDefine.VisorControlFlag'] = { uiHandler = ui.handlers.common.enum_flags(enums.get_enum('app.CharacterEditDefine.VisorControlFlag')) },
     })
 
