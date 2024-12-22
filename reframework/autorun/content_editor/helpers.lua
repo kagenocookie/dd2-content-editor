@@ -246,7 +246,7 @@ local array_accessors = {
         return function ()
             i = i + 1
             if i < arr:get_size() then
-                return arr[i], i
+                return arr[i] or 'null', i
             end
         end
     end,
