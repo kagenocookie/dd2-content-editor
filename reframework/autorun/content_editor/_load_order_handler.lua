@@ -3,6 +3,7 @@ return function (udb)
     if type(usercontent) == "nil" then usercontent = {} end
 
     return function ()
+        imgui.text('Loaded content bundles:')
         for idx, bundle in ipairs(udb.bundles_order_list) do
             imgui.push_id(bundle.name)
             -- TODO reorder should check if any entities are touched by both the reoredered bundles,

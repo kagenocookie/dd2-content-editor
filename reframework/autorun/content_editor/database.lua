@@ -44,6 +44,9 @@ local activeBundles = {}
 --- @type DataBundle[] List of all bundles sorted by load order
 local allBundles = {}
 
+--- @type EntityImportData[]
+local unknownEntities = {}
+
 local bundles_enum = enums.create_enum({}, 'UserdataBundles')
 
 local db_ready = false
@@ -176,6 +179,10 @@ end
 --- Store a new entity in the database and mark it as pristine (unchanged)
 --- @param entity DBEntity
 local function register_pristine_entity(entity)
+    if not entity.id then
+        print('ERROR: attempted to register pristine entity with null ID; not storing entity of type', entity.type)
+        return entity
+    end
     -- if we're no longer in the ready up phase, immediately resort because it's probably a runtime-only entity
     create_entity(entity, nil, not db_ready)
     mark_entity_dirty(entity, false)
@@ -285,6 +292,7 @@ local function load_single_bundle(bundle, bundleImports)
         local loader = entity_types[data.type]
         if not loader then
             print('ERROR: No known loader for entity type ' .. data.type)
+            unknownEntities[#unknownEntities+1] = data
             return false
         end
 
@@ -1234,6 +1242,18 @@ re.on_draw_ui(function ()
             if imgui.button('Toggle editor windows') then
                 internal.config.data.editor.show_window = not internal.config.data.editor.show_window
                 internal.config.save()
+            end
+        end
+        if #unknownEntities > 0 then
+            imgui.push_style_color(0, core.get_color('danger'))
+            if imgui.tree_node('Unknown entity types found, required loaders may be missing') then
+                imgui.pop_style_color(1)
+                for _, unknown in ipairs(unknownEntities) do
+                    imgui.text(tostring(unknown.type) .. ' ID: ' .. tostring(unknown.id))
+                end
+                imgui.tree_pop()
+            else
+                imgui.pop_style_color(1)
             end
         end
         load_order_handler()
