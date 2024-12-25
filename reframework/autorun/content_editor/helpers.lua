@@ -109,12 +109,11 @@ local function expand_system_array(org_array, appended_items, elementType, prepe
     local newElements = org_array:get_elements()
     if prepend then
         for i = 1, added_len do
-            table.insert(newElements, arr_len + i, appended_items[i])
+            table.insert(newElements, i, appended_items[i])
         end
         return create_array(elementType, arr_len + added_len, newElements)
     else
         local arr = create_array(elementType, arr_len + added_len, newElements)
-        --- @cast arr SystemArray
         for i = 1, added_len do
             arr[arr_len + i - 1] = appended_items[i]
         end
