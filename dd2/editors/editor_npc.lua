@@ -4,7 +4,12 @@ local enums = require('content_editor.enums')
 local utils = require('content_editor.utils')
 local import_handlers = require('content_editor.import_handlers')
 
-local CharacterID = enums.get_enum('app.CharacterID', false)
+local CharacterID
+local function get_chara_enum()
+    if CharacterID then return CharacterID end
+    CharacterID = enums.get_enum('app.CharacterID', false)
+    return CharacterID
+end
 
 udb.events.on('get_existing_data', function (whitelist)
     local NPCManager = sdk.get_managed_singleton('app.NPCManager') ---@type app.NPCManager
@@ -16,7 +21,7 @@ udb.events.on('get_existing_data', function (whitelist)
                 if charaData._SubNPC then
                     local mainNpc = udb.get_entity('npc_data', id)
                     if not udb.get_entity('npc_data', id) then
-                        print('WARNING: Main and sub NPC are out of order', id, CharacterID.get_label(id))
+                        print('WARNING: Main and sub NPC are out of order', id, get_chara_enum().get_label(id))
                     else
                         mainNpc.sub_instance = charaData
                     end
@@ -117,9 +122,9 @@ udb.register_entity_type('npc_data', {
     root_types = {'app.CharacterData'},
     generate_label = function (entity)
         if entity.runtime_instance._SubNPC then
-            idstr = (CharacterID.valueToLabel[entity.id - 1] or 'chUnknown') .. ' SUB'
+            idstr = (get_chara_enum().valueToLabel[entity.id - 1] or 'chUnknown') .. ' SUB'
         else
-            idstr = CharacterID.valueToLabel[entity.id] or 'chUnknown'
+            idstr = get_chara_enum().valueToLabel[entity.id] or 'chUnknown'
         end
         local name = entity.runtime_instance:get_Name()
         return idstr .. ' : ' .. name .. ' (' .. entity.id .. ')'
@@ -137,7 +142,7 @@ udb.register_entity_type('npc_appearance', {
     end,
     root_types = {'app.charaedit.ch000.AppearanceData', 'app.charaedit.ch000.CostumeData'},
     generate_label = function (entity)
-        local idstr = CharacterID.valueToLabel[entity.id] or 'chUnknown'
+        local idstr = get_chara_enum().valueToLabel[entity.id] or 'chUnknown'
         local name = utils.dd2.translate_character_name(entity.id)
         return idstr .. ' : ' .. name .. ' (' .. entity.id .. ')'
     end,
