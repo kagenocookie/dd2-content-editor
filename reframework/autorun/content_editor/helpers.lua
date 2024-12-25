@@ -102,20 +102,24 @@ local function expand_system_array(org_array, appended_items, elementType, prepe
     local added_len = #appended_items
     if added_len == 0 then return org_array end
 
+    elementType = elementType or org_array:get_type_definition():get_full_name():sub(1, -3)
     local arr_len = org_array:get_size()
+    if arr_len == 0 then return create_array(elementType, added_len, appended_items) end
+
     local newElements = org_array:get_elements()
     if prepend then
         for i = 1, added_len do
-            table.insert(newElements, i, appended_items[i])
+            table.insert(newElements, arr_len + i, appended_items[i])
         end
+        return create_array(elementType, arr_len + added_len, newElements)
     else
+        local arr = create_array(elementType, arr_len + added_len, newElements)
+        --- @cast arr SystemArray
         for i = 1, added_len do
-            newElements[arr_len + i] = appended_items[i]
+            arr[arr_len + i - 1] = appended_items[i]
         end
+        return arr
     end
-    elementType = elementType or org_array:get_type_definition():get_full_name():sub(1, -3)
-    local arr = create_array(elementType, arr_len + added_len, newElements)
-    return arr
 end
 
 --- @param org_array SystemArray
@@ -143,9 +147,10 @@ end
 --- @param elementType string|nil
 --- @return SystemArray
 local function system_array_remove(org_array, item, elementType)
-    local idx = utils.table_index_of(org_array, item)
-    if idx == 0 then return org_array end
-    return system_array_remove_at(org_array, idx, elementType)
+    for i, v in pairs(org_array) do
+        if v == item then return system_array_remove_at(org_array, i, elementType) end
+    end
+    return org_array
 end
 
 --- @param org_array SystemArray
