@@ -223,7 +223,7 @@ udb.events.on('get_existing_data', function (whitelist)
 end)
 
 local function get_ex_furmasks(furmaskIndex, styleHash)
-    local root = CharacterEditManager._FurMaskMapExCatalog[furmaskIndex]
+    local root = dict_get_safe(CharacterEditManager._FurMaskMapExCatalog, furmaskIndex)
     if not root then return {} end
     local male = dict_get_safe(dict_get_safe(root, genders.Male), styleHash)
     local female = dict_get_safe(dict_get_safe(root, genders.Female), styleHash)
