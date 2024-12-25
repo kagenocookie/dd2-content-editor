@@ -96,6 +96,11 @@ udb.events.on('get_existing_data', function (whitelist)
                 end
             end
         end
+
+        if core.editor_enabled then
+            udb.get_entity_enum('npc_appearance').orderByValue = false
+            udb.get_entity_enum('npc_appearance').resort()
+        end
     end
 end)
 
@@ -176,11 +181,14 @@ if core.editor_enabled then
     })
 
     editor.define_window('npc', 'NPCs', function (state)
-        state.tab = select(2, ui.basic.tabs({'Character data', 'Advanced settings'}, state.tab or 1))
+        state.tab = select(2, ui.basic.tabs({'Character data', 'NPC appearance', 'Advanced settings'}, state.tab or 1))
         if state.tab == 1 then
             state.characters = state.characters or {}
             editor.embed_window('npc_character_data', 1, state.characters)
         elseif state.tab == 2 then
+            state.appearances = state.appearances or {}
+            editor.embed_window('npc_appearance', 2, state.appearances)
+        elseif state.tab == 3 then
             state.configs = state.configs or {}
             editor.embed_window('npc_configs', 3, state.configs)
         end
@@ -189,21 +197,28 @@ if core.editor_enabled then
     editor.define_window('npc_character_data', 'NPC Character data', function (state)
         local selected = ui.editor.entity_picker('npc_data', state, nil, 'NPC')
         if selected then
-            local appearance = udb.get_entity('npc_appearance', selected.id)
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()
-            if appearance and imgui.tree_node('Appearance') then
-                ui.editor.show_entity_editor(appearance, state)
-                imgui.tree_pop()
-            end
             ui.editor.show_entity_editor(selected, state)
             imgui.end_rect(4)
             imgui.unindent(8)
         end
     end)
 
-    editor.define_window('npc_configs', 'NPC advanced settings', function (state)
+    editor.define_window('npc_appearance', 'NPC Appearance', function (state)
+        local selected = ui.editor.entity_picker('npc_appearance', state, nil, 'NPC')
+        if selected then
+            imgui.spacing()
+            imgui.indent(8)
+            imgui.begin_rect()
+            ui.editor.show_entity_editor(selected, state)
+            imgui.end_rect(4)
+            imgui.unindent(8)
+        end
+    end)
+
+    editor.define_window('npc_configs', 'NPC Advanced Settings', function (state)
         local selected = ui.editor.entity_picker('npc_config', state, nil, 'NPC')
         if selected then
             imgui.spacing()
@@ -245,6 +260,50 @@ if core.editor_enabled then
 
     ui.editor.set_entity_editor('npc_appearance', function (entity, state)
         local changed = false
+        imgui.indent(8)
+        imgui.spacing()
+        imgui.begin_rect()
+        local costumeId
+        local appearanceId
+        if entity.costumes then
+            state.costumeToApply = state.costumeToApply or 1
+            local costumeIds = utils.get_sorted_table_keys(utils.dictionary_to_table(entity.costumes))
+            if entity.costumes:get_Count() > 1 then
+                state.costumeToApply = tonumber(select(2, imgui.combo('Costume index', state.costumeToApply or 1, utils.map(costumeIds, tostring))))
+            end
+            costumeId = costumeIds[state.costumeToApply] or select(2, next(costumeIds))
+        end
+        -- if entity.appearances then
+        --     state.appearanceToApply = state.appearanceToApply or 1
+        --     local appearanceIds = utils.get_sorted_table_keys(utils.dictionary_to_table(entity.appearances))
+        --     if entity.appearances:get_Count() > 1 then
+        --         state.appearanceToApply = tonumber(select(2, imgui.combo('Appearance index', state.appearanceToApply or 1, utils.map(appearanceIds, tostring))))
+        --     end
+        --     appearanceId = appearanceIds[state.appearanceToApply] or select(2, next(appearanceIds))
+        -- end
+
+        if (costumeId or appearanceId) and imgui.button('Apply costume') then
+            local searchString = get_chara_enum().valueToLabel[entity.id]
+            local swapper = ce_find(searchString .. ':app.PartSwapper', true) ---@type app.PartSwapper|nil
+            if swapper then
+                local CharacterEditManager = sdk.get_managed_singleton('app.CharacterEditManager')---@type app.CharacterEditManager
+                if costumeId and entity.costumes:ContainsKey(costumeId) then
+                    CharacterEditManager:copyFromCostumeToMeta(entity.costumes[costumeId], swapper._Meta)
+                    swapper:requestSwap()
+                end
+                -- not sure how to force refresh appearance, as this doesn't seem to work, commenting out for now
+                -- if appearanceId and entity.appearances:ContainsKey(appearanceId) then
+                --     CharacterEditManager:copyFromAppearanceToMeta(entity.appearances[appearanceId], swapper._Meta)
+                --     swapper:swapHair()
+                -- end
+            end
+        end
+        if imgui.is_item_hovered() then
+            imgui.set_tooltip('This will immediately refresh the costume worn by the NPC.\nTo refresh appearance data, leave the area to force them to respawn.')
+        end
+        imgui.end_rect(2)
+        imgui.spacing()
+        imgui.unindent(8)
         changed = ui.handlers.show(entity.costumes, entity, nil, nil, state)
         changed = ui.handlers.show(entity.appearances, entity, nil, nil, state) or changed
         return changed
