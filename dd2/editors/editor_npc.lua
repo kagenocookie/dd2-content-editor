@@ -299,7 +299,7 @@ if core.editor_enabled then
             end
         end
         if imgui.is_item_hovered() then
-            imgui.set_tooltip('This will immediately refresh the costume worn by the NPC.\nTo refresh appearance data, leave the area to force them to respawn.')
+            imgui.set_tooltip('This will immediately refresh the costume worn by the NPC using the edited data.\nTo refresh appearance data, leave the area to force them to respawn.')
         end
         imgui.end_rect(2)
         imgui.spacing()
