@@ -349,6 +349,10 @@ for _, name in ipairs(recordTypes) do
             if entity.id ~= entity.styleHash then
                 styleName = styleName .. ' #' .. tostring(entity.styleHash)
             end
+            if record.enum then
+                local hashEnum = enums.get_enum(record.enum)
+                hashEnum.set_display_label(entity.styleHash, styleName)
+            end
             return styleName
         end,
         delete = function (entity)
