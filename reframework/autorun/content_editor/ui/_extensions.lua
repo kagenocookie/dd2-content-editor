@@ -321,12 +321,20 @@ local function register(register_extension)
             if not entity then
                 local val = ctx.get()
                 local id = type(val) == 'userdata' and val:ToString() or 'ID ' .. tostring(val)
-                imgui.text_colored('Linked entity not found: ' .. entity_type .. ' (from  ' .. id .. ')', core.get_color('danger'))
+                if val ~= data.ignoreId then
+                    imgui.text_colored('Linked entity not found: ' .. entity_type .. ' (from  ' .. id .. ')', core.get_color('danger'))
+                end
             else
                 local label = labeler and labeler(entity, ctx) or 'Linked ' .. entity.type .. ' ' .. entity.id .. ': ' .. tostring(entity.label or usercontent.database.generate_entity_label(entity))
                 imgui.push_style_color(0, core.get_color('info'))
                 local show = imgui.tree_node(label)
                 imgui.pop_style_color(1)
+                if data.editorWindow then
+                    imgui.same_line()
+                    if imgui.button('Open in new window') then
+                        usercontent.editor.open_editor_window(data.editorWindow, type(data.editorState) == 'function' and data.editorState(ctx) or data.editorState, entity_type, ctx.get())
+                    end
+                end
                 if show then
                     draw_callback(entity, ctx)
                     imgui.tree_pop()

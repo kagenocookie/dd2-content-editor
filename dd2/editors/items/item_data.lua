@@ -501,7 +501,11 @@ if core.editor_enabled then
                         else
                             return nil
                         end
-                    end)
+                    end),
+                    extensions = { { type = 'button', label = 'Open in new window', action = function(ctx)
+                        local entityType = ({ [2] = 'HelmStyle', [3] = 'TopsStyle', [4] = 'PantsStyle', [5] = 'MantleStyle', [7] = 'FacewearStyle' })[ctx.parent.get()._EquipCategory]
+                        editor.open_editor_window('styles', { style_type = entityType }, entityType, ctx.get())
+                    end } }
                 },
                 _IconNo = { extensions = { { type = 'tooltip', text = 'For custom items, icon number should be equal to the item ID' } } },
                 _Job = { uiHandler = ui.handlers.common.enum_flags(ItemJobFlags, 5) },

@@ -10,7 +10,7 @@ if core.editor_enabled then
     local editor = require('content_editor.editor')
 
     editor.define_window('items', 'Items', function (state)
-        state.subtab = select(2, ui.basic.tabs({'Item data', 'Styles', 'Armor catalogs', 'Weapon catalogs', 'Item combinations'}, state.subtab))
+        state.subtab = select(2, ui.basic.tabs({'Item data', 'Styles', 'Mesh catalogs', 'Weapon catalogs', 'Item combinations'}, state.subtab))
         if state.subtab == 1 then
             state.item_data = state.item_data or {}
             editor.embed_window('item_data', 1, state.item_data)

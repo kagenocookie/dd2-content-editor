@@ -180,9 +180,11 @@ local function add_editor_tab(window_type_id)
 end
 
 --- @param window_type_id string
---- @param initial_state nil|EditorState
+--- @param initial_state nil|table
+--- @param preselectEntityType string|nil
+--- @param preselectId integer|nil
 --- @return integer|nil windowId The ID of the new editor window or nil if window failed to create
-local function open_editor_window(window_type_id, initial_state)
+local function open_editor_window(window_type_id, initial_state, preselectEntityType, preselectId)
     local editorDefinition = editor_defs[window_type_id]
     if not editorDefinition then
         print('ERROR: Unknown editor type: ' .. window_type_id)
@@ -194,6 +196,9 @@ local function open_editor_window(window_type_id, initial_state)
     state.id = internal.config._get_next_editor_id()
     state.name = window_type_id
     state.title = state.title or editorDefinition.title
+    if preselectEntityType and preselectId then
+        usercontent.ui.editor.set_selected_entity_picker_entity(state, preselectEntityType, preselectId)
+    end
     config.data.editor.windows[#config.data.editor.windows + 1] = state
     config.save()
     return state.id

@@ -208,14 +208,20 @@ udb.events.on('get_existing_data', function (whitelist)
             local root_dict = CharacterEditManager[type.styleDb]:GetEnumerator()
             while root_dict:MoveNext() do
                 local root_item = root_dict._current
+                local variantId = root_item.key
                 local enumerator = root_item.value:GetEnumerator()
                 while enumerator:MoveNext() do
                     local item = enumerator._current
                     local styleHash = item.key
                     if not wl or wl[styleHash] then
-                        add_style_entity(styleHash, name, root_item.key, styleHash, item.value)
+                        add_style_entity(styleHash, name, variantId, styleHash, item.value)
                     end
                 end
+            end
+
+            if core.editor_enabled then
+                udb.get_entity_enum(name).orderByValue = false
+                udb.get_entity_enum(name).resort()
             end
         end
         ::continue::

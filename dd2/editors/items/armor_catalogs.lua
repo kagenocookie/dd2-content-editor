@@ -252,6 +252,7 @@ end)
 if core.editor_enabled then
     local ui = require('content_editor.ui')
     local editor = require('content_editor.editor')
+    local definitions = require('content_editor.definitions')
 
     local styleMatchResults
     --- @param character app.Character
@@ -312,12 +313,15 @@ if core.editor_enabled then
             end
         end
     end
-    for armorMeshType, _ in pairs(armorCatalogs) do
+    for armorMeshType, typeData in pairs(armorCatalogs) do
         ui.editor.set_entity_editor(armorMeshType, showArmorEditor)
+        definitions.override('', {
+            [typeData[1].enum] = { extensions = { { type = 'linked_entity', entity_type = armorMeshType, ignoreId = 0, editorWindow = 'armor_catalogs', editorState = { part_type = armorMeshType } } } }
+        })
     end
 
-    editor.define_window('armor_catalogs', 'Armor catalogs', function (state)
-        _, state.part_type, state.part_type_filter = ui.basic.combo_filterable('Part type', state.part_type, recordTypes, state.part_type_filter or '')
+    editor.define_window('armor_catalogs', 'Mesh catalogs', function (state)
+        _, state.part_type, state.part_type_filter = ui.basic.combo_filterable('Mesh type', state.part_type, recordTypes, state.part_type_filter or '')
         if state.part_type then
             local recordData = armorCatalogs[state.part_type]
 
