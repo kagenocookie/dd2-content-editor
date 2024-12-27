@@ -420,6 +420,25 @@ local function register(register_extension)
         end
     end)
 
+    register_extension('button', function (handler, data)
+        local action = data.action ---@type fun(ctx: UIContainer): boolean|nil
+        local label = data.label or 'Action'
+        if not action then return handler end
+        local tooltip = data.tooltip ---@type string
+
+        --- @type UIHandler
+        return function (ctx)
+            local changed = handler(ctx)
+            if imgui.button(label) then
+                changed = action(ctx) or changed
+            end
+            if tooltip and imgui.is_item_hovered() then
+                imgui.set_tooltip(tooltip)
+            end
+            return changed
+        end
+    end)
+
 end
 
 return register
