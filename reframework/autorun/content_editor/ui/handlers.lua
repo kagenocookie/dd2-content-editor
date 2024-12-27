@@ -258,7 +258,7 @@ local hashset_accessor = {
 
 --- @type ObjectFieldAccessors
 local component_go_accessor = {
-    get = function (object) return object--[[@as any]]:get_GameObject() end,
+    get = function (object) return object and object:get_Valid() and object--[[@as any]]:get_GameObject() or nil end,
     set = function () print('Error: GameObject reference not editable') end
 }
 
