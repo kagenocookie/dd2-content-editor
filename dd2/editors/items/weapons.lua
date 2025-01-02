@@ -21,13 +21,14 @@ local weapon_to_item_id = sdk.find_type_definition('app.ItemManager'):get_method
 
 -- TODO: some sort of override for the weapon ID -> category/group conversion?
 
-local function register_entity(id, prefabContainer, offsets)
+local function register_entity(id, prefabContainer, offsets, label)
     --- @type WeaponEntity
     local entity = {
         id = id,
         type = 'weapon',
         offsets = offsets,
         prefab = prefabContainer,
+        label = label,
     }
     udb.create_entity(entity, nil, true)
     udb.mark_entity_dirty(entity, false)
@@ -56,9 +57,15 @@ udb.events.on('get_existing_data', function (whitelist)
         end
     end
 
-    if not core.editor_enabled then return end
     for id, label in pairs(OriginalWeaponIDs) do
-        if id ~= 0 and not udb.get_entity('weapon', id) then
+        if id ~= 0 and (not whitelist or whitelist.weapon[id]) and not udb.get_entity('weapon', id) then
+            local offsets = EquipmentManager.WeaponSetting:getOffsetSettings(id)
+            if offsets and offsets.ID == id then
+                register_entity(id, nil, offsets, '[group] ' .. label)
+            elseif core.editor_enabled then
+                weaponEnum.set_display_label(id, '[group] ' .. label, false)
+            end
+        elseif core.editor_enabled then
             weaponEnum.set_display_label(id, '[group] ' .. label, false)
         end
     end
