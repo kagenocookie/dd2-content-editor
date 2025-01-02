@@ -65,8 +65,6 @@ udb.events.on('get_existing_data', function (whitelist)
             elseif core.editor_enabled then
                 weaponEnum.set_display_label(id, '[group] ' .. label, false)
             end
-        elseif core.editor_enabled then
-            weaponEnum.set_display_label(id, '[group] ' .. label, false)
         end
     end
 end)
