@@ -1,0 +1,12 @@
+{
+    "data": {
+        "": {
+			"_MeshID": 0,
+			"_SkinID": 0,
+			"_SwapMeshID": 0,
+			"_SwapSkinID": 0,
+			"_UseChain": true
+        }
+    },
+    "type": "HairStyle"
+}

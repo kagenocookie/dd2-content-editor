@@ -73,6 +73,7 @@ local variantLabels = {
 --- @field styleField string
 --- @field styleNoEnum EnumSummary|nil
 --- @field furmaskIndex integer|nil
+--- @field genderShared boolean|nil
 
 --- @type table<string, StyleRecordType>
 local recordClasses = {
@@ -83,12 +84,22 @@ local recordClasses = {
     BackpackStyle = { styleDb = '_BackpackDB', swap = 'app.BackpackSwapItem', enum = 'app.BackpackStyle', styleField = '_BackpackStyle' },
     UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_Style' },
     FacewearStyle = { styleDb = '_FacewearDB', swap = 'app.FacewearSwapItem', enum = 'app.FacewearStyle', styleDict = 'FaceDict', slot = 7, styleField = '_Style', styleNoEnum = enums.get_virtual_enum('FacewearStyleNo', {}), furmaskIndex = 6 },
-    -- _BodySkinDB = {'app.BodySkinSwapItem', 'app.SkinStyle'},
-    -- _BodyMuscleDB = {'app.BodyMuscleSwapItem', 'app.MuscleStyle'},
-    -- _BodyMeshDB = {'app.BodyMeshSwapItem', 'app.BodyMeshStyle'}, -- species +  gender
-    -- _BodyHairDB = {'app.BodyHairSwapItem', nil}, -- uint + uint
-    -- _HeadMeshDB = {'app.HeadMeshSwapItem', 'app.HeadStyle'}, -- species + gender + headstyle
-    -- _HeadSkinDB = {'app.HeadSkinSwapItem', 'app.SkinStyle'}, -- species + gender + skinstyle
+
+    HairStyle = { styleDb = '_HairDB', swap = 'app.HairSwapItem', enum = 'app.HairStyle', styleField = '_HairStyle', styleNoEnum = enums.get_virtual_enum('HairStyleNo', {}), genderShared = true },
+    BeardStyle = { styleDb = '_BeardDB', swap = 'app.BeardSwapItem', enum = 'app.BeardStyle', styleField = '_BeardStyle', styleNoEnum = enums.get_virtual_enum('BeardStyleNo', {}) },
+    BodyHairStyle = { styleDb = '_BodyHairDB', swap = 'app.BodyHairSwapItem', enum = 'app.BodyHairStyle', styleField = '_BodyHairStyle', styleNoEnum = enums.get_virtual_enum('BodyHairStyleNo', {}) },
+    EyeLeftStyle = { styleDb = '_EyeLeftDB', swap = 'app.EyeLeftSwapItem', enum = 'app.EyeStyle', styleField = '_EyeStyle', styleNoEnum = enums.get_virtual_enum('EyeLeftStyleNo', {}), genderShared = true },
+    EyeRightStyle = { styleDb = '_EyeRightDB', swap = 'app.EyeRightSwapItem', enum = 'app.EyeStyle', styleField = '_EyeStyle', styleNoEnum = enums.get_virtual_enum('EyeRightStyleNo', {}), genderShared = true },
+
+    -- these have a different dictionary layout and fields, would need to figure out how to handle nicely
+    -- species + gender
+    -- BodyMesh = { styleDb = '_BodyMeshDB', swap = 'app.BodyMeshSwapItem', enum = 'app.MeshStyle', styleField = '__', styleNoEnum = enums.get_virtual_enum('BodyMeshStyleNo', {}) },
+    -- gender + style
+    -- BodyMuscle = { styleDb = '_BodyMuscleDB', swap = 'app.BodyMuscleSwapItem', enum = 'app.MeshStyle', styleField = '_Muscle', styleNoEnum = enums.get_virtual_enum('BodyMuscleStyleNo', {}) },
+    -- species + gender + style
+    -- HeadMesh = { styleDb = '_HeadMeshDB', swap = 'app.HeadMeshSwapItem', enum = 'app.HeadStyle', styleField = '_HeadStyle', styleNoEnum = enums.get_virtual_enum('HeadMeshStyleNo', {}) },
+    -- BodySkin = { styleDb = '_BodySkinDB', swap = 'app.BodySkinSwapItem', enum = 'app.SkinStyle', styleField = '_SkinStyle', styleNoEnum = enums.get_virtual_enum('BodySkinStyleNo', {}) },
+    -- HeadSkin = { styleDb = '_HeadSkinDB', swap = 'app.HeadSkinSwapItem', enum = 'app.SkinStyle', styleField = '_SkinStyle', styleNoEnum = enums.get_virtual_enum('HeadSkinStyleNo', {}) },
 }
 local recordTypes = utils.get_sorted_table_keys(recordClasses) ---@type string[]
 
@@ -203,8 +214,23 @@ udb.events.on('get_existing_data', function (whitelist)
                     end
                 end
             end
+        elseif type.genderShared then
+            -- for cases where there's no lookup dictionary, use hash == nr here
+            local root_dict = CharacterEditManager[type.styleDb]:GetEnumerator()
+            while root_dict:MoveNext() do
+                local root_item = root_dict._current
+                local styleHash = root_item.key
+                if not wl or wl[styleHash] then
+                    add_style_entity(styleHash, name, '', styleHash, root_item.value)
+                end
+            end
+
+            if core.editor_enabled then
+                udb.get_entity_enum(name).orderByValue = false
+                udb.get_entity_enum(name).resort()
+            end
         else
-            -- underwears and backpacks don't have distinct style numbers, use hash == nr here
+            -- we could manually parse the enums, but there's the issue of these IDs getting lost after script reset for custom stuff, and I don't wanna add alternative workarounds for it here
             local root_dict = CharacterEditManager[type.styleDb]:GetEnumerator()
             while root_dict:MoveNext() do
                 local root_item = root_dict._current
@@ -270,7 +296,9 @@ for _, name in ipairs(recordTypes) do
                 local variant = import_handlers.import(class, variantImport, entity.variants[variantKey])
                 entity.variants[variantKey] = variant
                 variant[record.styleField] = data.id
-                if variant then
+                if record.genderShared then
+                    CharacterEditManager[record.styleDb][data.id] = variant
+                elseif variant then
                     CharacterEditManager[record.styleDb][tonumber(variantKey)][data.id] = variant
                     hasVisor = hasVisor
                         or variant._VisorControl and variant._VisorControl ~= 0
@@ -384,8 +412,12 @@ for _, name in ipairs(recordTypes) do
                 ItemManager[record.styleDict]:Remove(entity.id)
             end
 
-            for variantKey, _ in pairs(entity.variants or {}) do
-                CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(entity.id)
+            if record.genderShared then
+                CharacterEditManager[record.styleDb]:Remove(entity.id)
+            else
+                for variantKey, _ in pairs(entity.variants or {}) do
+                    CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(entity.id)
+                end
             end
 
             return 'ok'
@@ -404,6 +436,8 @@ definitions.override('styles', {
     ['app.BackpackSwapItem'] = { fields = { _BackpackStyle = { ui_ignore = true, import_ignore = true } } },
     ['app.UnderwearSwapItem'] = { fields = { _UnderwearStyle = { ui_ignore = true, import_ignore = true } } },
     ['app.FacewearSwapItem'] = { fields = { _Style = { ui_ignore = true, import_ignore = true } } },
+    ['app.BeardSwapItem'] = { fields = { _BeardStyle = { ui_ignore = true, import_ignore = true } } },
+    ['app.HairSwapItem'] = { fields = { _HairStyle = { ui_ignore = true, import_ignore = true } } },
 })
 
 if core.editor_enabled then
@@ -446,14 +480,18 @@ if core.editor_enabled then
         imgui.text('Style hash: ' .. tostring(selectedItem.styleHash))
         local variantIds = utils.get_sorted_table_keys(selectedItem.variants)
         local variantIdLabels = utils.map(variantIds, function (value) return variantLabels[value] or value end)
-        state.variant_id = select(2, imgui.combo('Variant', state.variant_id, variantIdLabels))
+        if not recordData.genderShared then
+            state.variant_id = select(2, imgui.combo('Variant', state.variant_id, variantIdLabels))
+        end
         local furmaskChanged, meshesChanged, stylesChanged = false, false, false
         if state.variant_id and variantIds[state.variant_id] then
             local variantKey = variantIds[state.variant_id]
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()
-            imgui.text('Selected variant')
+            if not recordData.genderShared then
+                imgui.text('Selected variant')
+            end
             if recordData.furmaskIndex then
                 local furmask = selectedItem.furmasks and selectedItem.furmasks[variantKey]
                 local path = furmask and furmask:get_ResourcePath()
