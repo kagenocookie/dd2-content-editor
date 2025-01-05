@@ -1,5 +1,5 @@
 if type(usercontent) == 'nil' then usercontent = {} end
-if usercontent.prefabs and usercontent.prefabs.presets then return usercontent.prefabs.presets end
+if usercontent.prefabs then return usercontent.prefabs end
 
 -- this may not be thread safe?
 

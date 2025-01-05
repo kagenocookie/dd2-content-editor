@@ -137,6 +137,7 @@ local function create_enum_summary_from_table(labelToValue, enumName, orderByVal
     result.set_display_label = function(value, displayLabel, shouldResort)
         if not result.valueToDisplayLabels then result.valueToDisplayLabels = {} end
         if result.valueToLabel[value] then
+            if result.valueToDisplayLabels[value] == displayLabel then return end
             result.valueToDisplayLabels[value] = displayLabel
             local idx = result.find_index_by_value(value)
             if idx > 0 then

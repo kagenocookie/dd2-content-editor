@@ -311,6 +311,15 @@ for _, name in ipairs(recordTypes) do
             if record.styleDict then
                 ItemManager[record.styleDict][data.id] = entity.styleHash
             end
+
+            if record.enum then
+                local hashEnum = enums.get_enum(record.enum)
+                if not hashEnum.valueToLabel[entity.styleHash] then
+                    hashEnum.labelToValue[tostring(entity.styleHash)] = entity.styleHash
+                    hashEnum.valueToLabel[entity.styleHash] = tostring(entity.styleHash)
+                    hashEnum.set_display_label(entity.styleHash, entity.label)
+                end
+            end
         end,
         generate_label = function (entity)
             --- @cast entity StyleEntity
