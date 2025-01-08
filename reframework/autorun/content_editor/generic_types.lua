@@ -70,6 +70,7 @@ local function get_generic_typedef(classname)
     if t then return t end
 
     if not has_setup_generics then
+        usercontent.core.log_debug('Generating generic type data because of type', classname)
         setup_generic_type_assemblies()
     end
 

@@ -163,6 +163,7 @@ local function is_assoc_table(tbl)
     return type(tbl) == 'table' and next(tbl) ~= 1
 end
 
+---Shallow copy data from the source table into the target table.
 ---@generic TSrc : table
 ---@generic TTarget : table
 ---@param target TTarget

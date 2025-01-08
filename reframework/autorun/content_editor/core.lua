@@ -69,7 +69,7 @@ end
 
 local globCache = nil
 
---- @param type ContentFileType
+--- @param type ContentFileType|string
 --- @param forceRescan boolean|nil
 --- @return string[]
 local function get_files(type, forceRescan)
@@ -91,6 +91,21 @@ end
 
 local version = {0, 0, 0}
 
+local isDebug = nil
+local function log_debug(...)
+    if isDebug == nil then
+        if usercontent.__internal then
+            isDebug = usercontent.__internal.config.data.editor.devmode == true
+        else
+            return
+        end
+    end
+    if not isDebug then return end
+    print('[DEBUG] Content editor:', ...)
+    -- local args = {...}
+    log.info('[DEBUG] Content editor: ' .. table.concat({...}, '\t'))
+end
+
 --- @class ContentEditorCore
 usercontent.core = {
     --- Active mod version {major, minor, patch}
@@ -111,6 +126,8 @@ usercontent.core = {
     get_files = get_files,
     --- Whether the content editor part of the mod is enabled and loaded
     editor_enabled = false,
+    --- Log a message to both console and log file if content editor debug mode is enabled
+    log_debug = log_debug,
 }
 
 require('content_editor.utils')

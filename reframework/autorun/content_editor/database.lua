@@ -288,6 +288,7 @@ end
 --- @param bundleImports ImportBatch
 local function load_single_bundle(bundle, bundleImports)
     local bundleEntities = {}
+    core.log_debug('Loading bundle', bundle.name)
     for _, data in ipairs(bundle.data or {}) do
         local loader = entity_types[data.type]
         if not loader then
@@ -1123,12 +1124,14 @@ local function finish_database_init()
         whitelistedLoadEntities = get_merged_unloaded_entities_map()
     end
     events.emit('get_existing_data', whitelistedLoadEntities)
+    core.log_debug('Fetched all existing data')
 
     timer:add('existing data')
     print('All content entity types ready, starting load...')
     timer:add('enum refresh')
 
     load_data_bundles()
+    core.log_debug('Loaded all bundles')
     events.emit('bundles_loaded')
     timer:add('bundle load')
 
