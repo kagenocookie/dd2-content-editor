@@ -428,6 +428,42 @@ local function register(register_extension)
         end
     end)
 
+    register_extension('autotranslate', function (handler)
+        local translations
+        --- @type UIHandler
+        return function (ctx)
+            if not translations then translations = usercontent.ui.translation end
+            if not ctx.data.autotranslation then
+                if translations then
+                    local text = ctx.get()
+                    if ctx.data.classname == 'System.Guid' then
+                        local msgText = MessageManager:getMessage(text)
+                        if msgText and msgText ~= '' then
+                            text = msgText
+                        else
+                            text = translations.translate('message_not_found_guid', 'editor')
+                        end
+                    end
+                    ctx.data.autotranslation = translations.translate_t('auto_translation', 'editor', { text = translations.per_word_translate(text) })
+                else
+                    ctx.data.autotranslation = ''
+                end
+            end
+
+            local changed = handler(ctx)
+            if ctx.data.autotranslation ~= '' then
+                imgui.text_colored(tostring(ctx.data.autotranslation), core.get_color('info'))
+
+                ui.tooltip(translations.translate('auto_translation_tooltip', 'editor'))
+                imgui.same_line()
+                if imgui.button('Refresh translation') then
+                    ctx.data.autotranslation = nil
+                end
+            end
+            return changed
+        end
+    end)
+
     register_extension('button', function (handler, data)
         local action = data.action ---@type fun(ctx: UIContainer): boolean|nil
         local label = data.label or 'Action'

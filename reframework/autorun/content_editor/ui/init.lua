@@ -7,6 +7,7 @@ if not core.editor_enabled then
 end
 
 local basic = require('content_editor.ui.imgui_wrappers')
+local translation = require('content_editor.ui.translation')
 local editor_ext = require('content_editor.ui.ext')
 local handlers = require('content_editor.ui.handlers')
 local context = require('content_editor.ui.context')
@@ -16,5 +17,6 @@ usercontent.ui = {
     editor = editor_ext,
     handlers = handlers,
     context = context,
+    translation = translation,
 }
 return usercontent.ui

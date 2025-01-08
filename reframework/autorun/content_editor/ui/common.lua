@@ -1,5 +1,5 @@
-if type(_quest_DB) == 'nil' then _quest_DB = {} end
-if _quest_DB._common_handlers then return _quest_DB._common_handlers end
+if type(usercontent) == 'nil' then usercontent = {} end
+if usercontent._common_handlers then return usercontent._common_handlers end
 
 local core = require('content_editor.core')
 local ui = require('content_editor.ui.imgui_wrappers')
@@ -393,7 +393,7 @@ end
 --- @type UIHandler
 local function stringHandler(context)
     local curstr = context.get()
-    local changed, newvalue = imgui.input_text(context.label, curstr)
+    local changed, newvalue = imgui.input_text(context.label, curstr or '')
     if changed then
         local isRaw = type(curstr) == 'string' or type(curstr) ~= 'userdata' and curstr == nil and type(context.parent) == 'table'
         context.set(isRaw and newvalue or sdk.create_managed_string(newvalue))
@@ -441,7 +441,7 @@ end
 
 local translatable_guid_field = { extensions = { { type = 'translate_guid' } } }
 
-_quest_DB._common_handlers = {
+usercontent._common_handlers = {
     int = create_int,
     int_slider = create_int_slider,
     float = create_float,
@@ -483,4 +483,4 @@ _quest_DB._common_handlers = {
     }
 }
 
-return _quest_DB._common_handlers
+return usercontent._common_handlers

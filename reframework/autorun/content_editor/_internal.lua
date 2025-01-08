@@ -22,6 +22,7 @@ local utils = require('content_editor.utils')
 --- @field next_editor_id integer
 --- @field tabs table<string, EditorState>
 --- @field windows EditorState[]
+--- @field language string
 --- @field storage nil|table<string, any>
 
 --- @alias EditorState _EditorStateDefaults|table
@@ -47,6 +48,7 @@ local config = {
         storage = {},
         next_editor_id = 1,
         show_prop_labels = false,
+        language = 'en',
     },
     bundle_order = {},
     bundle_settings = {},

@@ -29,7 +29,7 @@ local function imgui_tooltip(text, color, prefix)
     if not prefix then
         imgui.same_line()
     end
-    imgui.text_colored("(?)", color or 0xffffaaaa)
+    imgui.text_colored("(?)", type(color) == 'number' and color or 0xffffaaaa)
     if imgui.is_item_hovered() then
         imgui.set_tooltip(text)
     end
