@@ -1143,6 +1143,16 @@ local function finish_database_init()
         timer:print('Content editor initialized')
     else
         timer:print_total('Content editor initialized')
+
+        if #unknownEntities > 0 then
+            local missingTypes = {}
+            for _, unknown in ipairs(unknownEntities) do
+                missingTypes[unknown.type] = true
+            end
+            local types = table.concat(utils.get_sorted_table_keys(missingTypes), '\n')
+            print('Missing entity type loaders', types)
+            re.msg('Installed bundles contain unknown entity types.\nYou may have forgotten to enable an editor.\nEntity types:\n' .. types)
+        end
     end
 end
 
