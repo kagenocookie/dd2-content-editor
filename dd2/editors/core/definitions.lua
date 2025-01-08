@@ -1,3 +1,4 @@
+local core = require('content_editor.core')
 local definitions = require('content_editor.definitions')
 
 local offset_QuestActionParamBase_Param = sdk.find_type_definition('app.quest.action.QuestActionBase'):get_field('_Param'):get_offset_from_base()
@@ -2258,3 +2259,14 @@ definitions.override('dd2', {
         fieldOrder = {'<Key>k__BackingField', '_CurrentPhase'},
     }
 })
+
+if core.editor_enabled then
+    definitions.override('', {
+        ['app.TempStatusFlag`1<app.HitController.TempStatus>'] = {
+            fields = {
+                Data = { uiHandler = usercontent.ui.handlers.common.enum_flags(enums.get_enum('app.HitController.TempStatus'), 5) },
+                PrevData = { uiHandler = usercontent.ui.handlers.common.enum_flags(enums.get_enum('app.HitController.TempStatus'), 5) },
+            },
+        }
+    })
+end

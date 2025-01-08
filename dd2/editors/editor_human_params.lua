@@ -6,20 +6,22 @@ local utils = require('content_editor.utils')
 local enums = require('content_editor.enums')
 
 local definitions = require('content_editor.definitions')
+local per_field = require('content_editor.helpers.per_field_singleton')
 
 local jobEnum = enums.get_enum('app.Character.JobEnum')
-local CharacterManager = sdk.get_managed_singleton('app.CharacterManager')
+local CharacterManager = sdk.get_managed_singleton('app.CharacterManager') ---@type app.CharacterManager
 
 --- @class HumanParamsEntity : DBEntity
 --- @field runtime_instance REManagedObject|table
 
-local function register_entity(id, type, runtime_instance)
+local function register_entity(id, type, runtime_instance, extra_data)
     --- @type HumanParamsEntity
     local entity = {
         id = id,
         type = type,
         runtime_instance = runtime_instance,
     }
+    if extra_data then entity = utils.table_assign(entity, extra_data) end
     return udb.register_pristine_entity(entity)
 end
 
@@ -28,10 +30,18 @@ udb.events.on('get_existing_data', function ()
     -- always fetch everything, don't re-fetch if we've already fetched
     if next(udb.get_all_entities_map('job_param')) then return end
 
-    local paramData = CharacterManager:get_HumanParam() ---@type REManagedObject|table
+    local paramData = CharacterManager:get_HumanParam()
     for i = 1, 10 do
         local field = string.format('Job%02dParameter', i)
         register_entity(i, 'job_param', paramData.JobParam[field])
+    end
+
+    for jobId, abilityParam in ipairs(paramData.AbilityParam.JobAbilityParameters:get_elements()) do
+        --- @cast abilityParam app.AbilityParameter.JobAbilityParameter
+        for _, ability in ipairs(abilityParam.Abilities:get_elements()) do
+            --- @cast ability app.AbilityParameter.Ability
+            register_entity(ability.AbilityID, 'ability_param', ability, { jobId = jobId })
+        end
     end
 
     for _, e in ipairs(paramData.SpecialBuffParam.BrothelParams:get_elements()) do register_entity(e.CharaID, 'brothel_param', e) end
@@ -44,6 +54,8 @@ udb.events.on('get_existing_data', function ()
     register_entity(1, 'interact_param', paramData.InteractData)
     register_entity(1, 'stamina_param', paramData.StaminaParam)
     register_entity(1, 'speed_param', paramData.SpeedParam)
+    register_entity(1, 'item_shortcut_param', paramData.ItemShortcutParam)
+    register_entity(1, 'possession_param', paramData.PossessionParam)
 end)
 
 udb.register_entity_type('job_param', {
@@ -54,8 +66,9 @@ udb.register_entity_type('job_param', {
     import = function (data, instance)
         --- @cast instance HumanParamsEntity
         instance.runtime_instance = import_handlers.import('app.JobUniqueParameter', data.data, instance.runtime_instance)
-        local field = string.format('Job%02dParameter', instance.id)
-        CharacterManager:get_HumanParam().JobParam[field] = instance.runtime_instance
+        -- putting the data back in shouldn't be needed since we always fetch the existing data beforehand and custom job params aren't supported
+        -- local field = string.format('Job%02dParameter', instance.id)
+        -- CharacterManager:get_HumanParam().JobParam[field] = instance.runtime_instance
     end,
     generate_label = function (entity)
         return 'Job params ' .. jobEnum.get_label(entity.id)
@@ -64,9 +77,36 @@ udb.register_entity_type('job_param', {
     root_types = {'app.JobParameter'},
 })
 
+local getAbilityName = sdk.find_type_definition('app.GUIBase'):get_method('getAbilityName')
+
+udb.register_entity_type('ability_param', {
+    export = function (instance)
+        return {
+            data = import_handlers.export(instance.runtime_instance, 'app.AbilityParameter.Ability', { raw = true }),
+            jobId = instance.jobId,
+        }
+    end,
+    import = function (data, instance)
+        instance.runtime_instance = import_handlers.import('app.AbilityParameter.Ability', data.data, instance.runtime_instance)
+        instance.jobId = data.jobId
+    end,
+    generate_label = function (entity)
+        local jobName = jobEnum.get_label(entity.jobId)
+        local abilityEnum = enums.get_enum('app.HumanAbilityID')
+        local enumLabel = abilityEnum.get_label(entity.id)
+        local name = getAbilityName:call(nil, entity.id)
+        return jobName .. ' - ' .. enumLabel .. ' ' .. name
+    end,
+    insert_id_range = {0, 0},
+    root_types = {'app.AbilityParameter.Ability'},
+})
+
 local entity_classmap = {
     job_param = 'app.JobUniqueParameter',
+    ability_param = 'app.AbilityParameter.Ability',
+    human_action_param = 'app.HumanActionParameter'
 }
+
 --- @param entity_type string
 --- @param classname string
 --- @param labeler nil|fun(ent: HumanParamsEntity): string
@@ -115,6 +155,8 @@ define_param_entity('stamina_param', 'app.HumanStaminaParameter')
 define_param_entity('speed_param', 'app.HumanSpeedParameter')
 define_param_entity('interact_param', 'app.HumanInteractiveObjectData')
 
+per_field.create('human_action_param', 'app.HumanActionParameter', function () return CharacterManager:get_HumanParam().ActionParam end)
+
 definitions.override('human_params', {
     ['app.JobUniqueParameter'] = {
         abstract = {
@@ -152,6 +194,11 @@ definitions.override('human_params', {
             return enums.get_enum('app.HumanStaminaParameter.ConsumeData.ActionTypeEnum').get_label(value.ActionType) .. ' ' .. enums.get_enum('app.HumanStaminaParameter.ConsumeData.SubActionTypeEnum').get_label(value.SubActionType)
         end
     },
+    ['app.AbilityParameter.Ability'] = {
+        fields = {
+            Comment = { extensions = { { type = 'autotranslate' } } }
+        },
+    },
 })
 
 if core.editor_enabled then
@@ -175,13 +222,19 @@ if core.editor_enabled then
             imgui.indent(8)
             imgui.begin_rect()
             ui.editor.show_entity_metadata(selectedParams)
-            local displayType
             if param_type == 'job_param' then
-                displayType = string.format('app.Job%02dParameter', selectedParams.id)
+                local displayType = string.format('app.Job%02dParameter', selectedParams.id)
+                ui.handlers.show_editable(selectedParams, 'runtime_instance', selectedParams, nil, displayType)
+            elseif param_type == 'human_action_param' then
+                imgui.end_rect(4)
+                imgui.unindent(8)
+                imgui.spacing()
+                state.human_action_param = state.human_action_param or {}
+                ui.editor.show_entity_editor(selectedParams, state.human_action_param)
             else
-                displayType = entity_classmap[param_type]
+                local displayType = entity_classmap[param_type]
+                ui.handlers.show_editable(selectedParams, 'runtime_instance', selectedParams, nil, displayType)
             end
-            ui.handlers.show_editable(selectedParams, 'runtime_instance', selectedParams, nil, displayType)
             imgui.end_rect(4)
             imgui.unindent(8)
             imgui.spacing()
