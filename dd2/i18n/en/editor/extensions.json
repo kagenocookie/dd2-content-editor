@@ -1,5 +1,5 @@
 {
 	"auto_translation": "Translation: $text",
-	"auto_translation_tooltip": "These translations are not automatic, but rely on provided translation data.\nTranslations are taken from the data/usercontent/i18n/{language}/word_translations.json file.\nIf you find something's missing, feel free to add more words to the file and consider submitting a pull request on github.",
+	"auto_translation_tooltip": "These translations are not automatic, but rely on simple word replacement with provided translation data.\nTranslations are taken from the data/usercontent/i18n/{language}/word_translations.json file.\nIf you find something's missing, feel free to add more words to the file and consider submitting a pull request on github.",
 	"message_not_found_guid": "Message for the given Guid could not be resolved"
 }
