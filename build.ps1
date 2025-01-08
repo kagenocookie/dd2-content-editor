@@ -84,7 +84,8 @@ PrepareFiles -Folder "content_editor/reframework/autorun" -FileList (
 PrepareFiles -Folder "content_editor/reframework/data/usercontent" -FileList (
     "dd2/|enums",
     "dd2/|presets",
-    "dd2/|rsz"
+    "dd2/|rsz",
+    "dd2/|i18n"
 )
 
 
