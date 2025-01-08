@@ -11,6 +11,10 @@ local function get_chara_enum()
     return CharacterID
 end
 
+local per_field = require('content_editor.helpers.per_field_singleton')
+
+per_field.create('npc_config', 'app.NPCData', function () return sdk.get_managed_singleton('app.NPCManager'):get_NPCConfig() end)
+
 udb.events.on('get_existing_data', function (whitelist)
     local NPCManager = sdk.get_managed_singleton('app.NPCManager') ---@type app.NPCManager
 
@@ -37,24 +41,6 @@ udb.events.on('get_existing_data', function (whitelist)
     end
 
     if not whitelist or whitelist.npc_config then
-        local config = NPCManager:get_NPCConfig()
-        local fields = config:get_type_definition():get_fields()
-        for _, field in ipairs(fields) do
-            local name = field:get_name()
-            local id = utils.string_hash(name)
-            if not whitelist or whitelist.npc_config[id] then
-                local cleanName = name:gsub('^_', '')
-                local typename = field:get_type():get_name()
-                udb.register_pristine_entity({
-                    id = id,
-                    type = 'npc_config',
-                    label = cleanName == typename and typename or (typename .. ' ( ' .. cleanName .. ')'),
-                    field = name,
-                    runtime_instance = config[name]
-                })
-            end
-        end
-
         if core.editor_enabled then
             udb.get_entity_enum('npc_data').orderByValue = false
             udb.get_entity_enum('npc_data').resort()
@@ -103,19 +89,6 @@ udb.events.on('get_existing_data', function (whitelist)
         end
     end
 end)
-
-udb.register_entity_type('npc_config', {
-    export = function (entity)
-        return { data = import_handlers.export(entity.runtime_instance, nil, { raw = true }), field = entity.field }
-    end,
-    import = function (data, entity)
-        entity.field = data.field
-        local type = sdk.find_type_definition('app.NPCData'):get_field(data.field):get_type():get_full_name()
-        entity.runtime_instance = import_handlers.import(type, data.data, entity.runtime_instance)
-    end,
-    root_types = {'app.NPCData'},
-    insert_id_range = {0,0}
-})
 
 udb.register_entity_type('npc_data', {
     export = function (entity)
@@ -253,10 +226,6 @@ if core.editor_enabled then
     --     imgui.text_colored('NPC extra data seems to contain the active runtime data ', core.get_color('info'))
     --     return ui.handlers.show(entity.runtime_instance, entity, nil, 'app.NPCManager.CharacterDataEx', state)
     -- end)
-
-    ui.editor.set_entity_editor('npc_config', function (entity, state)
-        return ui.handlers.show(entity.runtime_instance, entity, nil, nil, state)
-    end)
 
     ui.editor.set_entity_editor('npc_appearance', function (entity, state)
         local changed = false

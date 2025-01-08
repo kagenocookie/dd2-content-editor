@@ -289,8 +289,9 @@ end
 --- @param entity DBEntity
 --- @param state table
 --- @param expandTreeLabel string|nil Label to display for a tree view. Will be shown plainly without a tree if nil.
+--- @param noMetadata boolean|nil Whether to also show the entity's metadata (save/bundle settings); default false
 --- @return boolean changed
-local function show_entity_editor(entity, state, expandTreeLabel)
+local function show_entity_editor(entity, state, expandTreeLabel, noMetadata)
     local editorFunc = entity_editors[entity.type]
     if not editorFunc then
         imgui.text_colored('No editor defined for entity type ' .. entity.type, editor.get_color('warning'))
@@ -303,7 +304,9 @@ local function show_entity_editor(entity, state, expandTreeLabel)
         imgui.push_id(entity.type .. entity.id)
     end
 
-    show_entity_metadata(entity)
+    if not noMetadata then
+        show_entity_metadata(entity)
+    end
     local success, changed
     if config.data.editor.devmode then
         success, changed = true, editorFunc(entity, state)
