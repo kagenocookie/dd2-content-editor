@@ -295,19 +295,18 @@ local function load_single_bundle(bundle, bundleImports)
             print('ERROR: No known loader for entity type ' .. data.type)
             unknownEntities[#unknownEntities+1] = data
             data._bundle = bundle.name
-            return false
+        else
+            local previousInstance = entities_by_id[data.type][data.id]
+            local newEntity = import_entity(loader, data, previousInstance)
+            newEntity = create_entity(newEntity, bundle.name, true)
+            entity_tracker[newEntity].dirty = false
+
+            local eventSet = newEntity ~= previousInstance and bundleImports.created or bundleImports.updated
+            eventSet[data.type] = eventSet[data.type] or {}
+            eventSet[data.type][#eventSet[data.type]+1] = newEntity
+
+            bundleEntities[#bundleEntities+1] = newEntity
         end
-
-        local previousInstance = entities_by_id[data.type][data.id]
-        local newEntity = import_entity(loader, data, previousInstance)
-        newEntity = create_entity(newEntity, bundle.name, true)
-        entity_tracker[newEntity].dirty = false
-
-        local eventSet = newEntity ~= previousInstance and bundleImports.created or bundleImports.updated
-        eventSet[data.type] = eventSet[data.type] or {}
-        eventSet[data.type][#eventSet[data.type]+1] = newEntity
-
-        bundleEntities[#bundleEntities+1] = newEntity
     end
 
     --- @type BundleRuntimeData
