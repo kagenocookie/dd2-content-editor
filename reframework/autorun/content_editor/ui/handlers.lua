@@ -562,7 +562,14 @@ local function dictionary_ui(meta, classname, label, settings)
                     create_field_editor(newCtx, '__none', 'new_value', meta.elementType, 'Value', nil, settings, true):ui()
 
                     local newkey = newCtx.children.new_key.get()
-                    local curKeyExists = newkey and (type(dict) == 'userdata' and dict:ContainsKey(newkey) or dict[newkey]) or false
+                    local curKeyExists = false
+                    if newkey then
+                        if type(dict) == 'userdata' then
+                            curKeyExists = dict:ContainsKey(newkey)
+                        else
+                            curKeyExists = dict[newkey]
+                        end
+                    end
                     if newkey and not curKeyExists and imgui.button('Add entry') then
                         local newvalue = newCtx.children.new_value.get()
                         dict[newkey] = newvalue:add_ref()
