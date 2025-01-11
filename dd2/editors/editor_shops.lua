@@ -256,14 +256,14 @@ if core.editor_enabled then
         ['app.ItemShopBuyParam'] = {
             fieldOrder = {'_ItemId', '_Stock'},
             fields = {
-                _ItemId = { uiHandler = ui.handlers.common.enum(enums.get_enum('app.ItemIDEnum')) }
+                _ItemId = { uiHandler = ui.handlers.common.enum('app.ItemIDEnum') }
             },
             toString = function (value) return 'Buy ' .. enums.get_enum('app.ItemIDEnum').get_label(value._ItemId) end
         },
         ['app.ItemShopSellParam'] = {
             fieldOrder = {'_ItemId'},
             fields = {
-                _ItemId = { uiHandler = ui.handlers.common.enum(enums.get_enum('app.ItemIDEnum')) }
+                _ItemId = { uiHandler = ui.handlers.common.enum('app.ItemIDEnum') }
             },
             toString = function (value) return 'Sell ' .. enums.get_enum('app.ItemIDEnum').get_label(value._ItemId) end
         },

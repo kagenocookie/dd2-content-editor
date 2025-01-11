@@ -103,9 +103,9 @@ end
 --- @param enum EnumSummary|string|nil
 --- @return UIHandler
 local function create_enum(enum)
-    if type(enum) == 'string' then enum = enums.get_enum(enum) end
     --- @type UIHandler
     return function (context)
+        if type(enum) == 'string' then enum = enums.get_enum(enum) end
         local changed, value
         if not enum then
             if context.data.classname and context.data.classname:find('System.') ~= 1 then

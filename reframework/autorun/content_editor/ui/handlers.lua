@@ -615,7 +615,7 @@ local field_editor_factories
 --- @type table<HandlerType, UIHandlerFactory>
 field_editor_factories = {
     [typecache.handlerTypes.enum] = function (meta, classname)
-        return common.enum(enums.get_enum(classname))
+        return common.enum(classname)
     end,
     [typecache.handlerTypes.value] = function (meta, classname, label, settings)
         local predefined = value_type_handler_defs[classname]
