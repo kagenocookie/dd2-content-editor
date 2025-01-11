@@ -556,8 +556,8 @@ local function dictionary_ui(meta, classname, label, settings)
                 end
                 if imgui.tree_node('New entry') then
                     local newCtx = ui_context.get_or_create_child(context, '__new', {}, '', nil, '')
-                    if not newCtx.object.new_key then newCtx.object.new_key = helpers.create_instance(meta.keyType) end
-                    if not newCtx.object.new_value then newCtx.object.new_value = helpers.create_instance(meta.elementType) end
+                    if newCtx.object.new_key == nil then newCtx.object.new_key = helpers.create_instance(meta.keyType) end
+                    if newCtx.object.new_value == nil then newCtx.object.new_value = helpers.create_instance(meta.elementType) end
                     create_field_editor(newCtx, '__none', 'new_key', meta.keyType, 'Key', nil, settings, true):ui()
                     create_field_editor(newCtx, '__none', 'new_value', meta.elementType, 'Value', nil, settings, true):ui()
 
