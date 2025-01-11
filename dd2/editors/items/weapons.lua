@@ -4,6 +4,7 @@ local enums = require('content_editor.enums')
 local import_handlers = require('content_editor.import_handlers')
 local definitions = require('content_editor.definitions')
 local helpers = require('content_editor.helpers')
+local generic_types = require('content_editor.generic_types')
 
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.ItemManager
 local EquipmentManager = sdk.get_managed_singleton('app.EquipmentManager') --- @type app.EquipmentManager
@@ -13,6 +14,8 @@ local OriginalWeaponIDs = weaponEnum.valueToLabel
 
 local get_item_name = sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName(System.Int32, System.Boolean)')
 local weapon_to_item_id = sdk.find_type_definition('app.ItemManager'):get_method('getItemData(app.WeaponID)')
+
+local hasRefcounterType = false
 
 --- @class WeaponEntity : DBEntity
 --- @field prefab app.RefCounter<app.PrefabController>
@@ -46,6 +49,10 @@ udb.events.on('get_existing_data', function (whitelist)
     local enumerator = EquipmentManager.WeaponCatalog:GetEnumerator()
     while enumerator:MoveNext() do
         local id = enumerator._current.key
+        if not hasRefcounterType then
+            generic_types.add('app.RefCounter`1<app.PrefabController>', enumerator._current.value:GetType())
+            hasRefcounterType = true
+        end
         if not whitelist or whitelist.weapon[id] then
             local refPfb = enumerator._current.value
             local offsetSettings = EquipmentManager.WeaponSetting:getOffsetSettings(id)
