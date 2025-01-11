@@ -20,12 +20,10 @@ local function setupTranslations()
         local data = json.load_file(fn)
 
         fn = fn:gsub('^' .. basepath, '')
-        print('Translation file: ', fn)
         local lang = fn:match('^(%w+)')
         if lang then
             if not langs[lang] then langs[lang] = true end
             fn = fn:sub(#lang + 2)
-            print('Interpreting as file', lang, fn)
             if fn == 'word_translations.json' then
                 word_translations[lang] = data
             else
