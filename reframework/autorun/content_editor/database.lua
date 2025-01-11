@@ -294,6 +294,7 @@ local function load_single_bundle(bundle, bundleImports)
         if not loader then
             print('ERROR: No known loader for entity type ' .. data.type)
             unknownEntities[#unknownEntities+1] = data
+            data._bundle = bundle.name
             return false
         end
 
@@ -1143,16 +1144,16 @@ local function finish_database_init()
         timer:print('Content editor initialized')
     else
         timer:print_total('Content editor initialized')
+    end
 
-        if #unknownEntities > 0 then
-            local missingTypes = {}
-            for _, unknown in ipairs(unknownEntities) do
-                missingTypes[unknown.type] = true
-            end
-            local types = table.concat(utils.get_sorted_table_keys(missingTypes), '\n')
-            print('Missing entity type loaders', types)
-            re.msg('Installed bundles contain unknown entity types.\nYou may have forgotten to enable an editor.\nEntity types:\n' .. types)
+    if #unknownEntities > 0 and not internal.config.data.editor.disable_unknown_entity_alerts then
+        local missingTypes = {}
+        for _, unknown in ipairs(unknownEntities) do
+            missingTypes[unknown.type] = true
         end
+        local types = table.concat(utils.get_sorted_table_keys(missingTypes), '\n')
+        print('Missing entity type loaders', types)
+        re.msg('Installed bundles contain unknown entity types.\nYou may have forgotten to enable an editor.\nThis alert can be disabled through the settings.\n\nEntity types:\n' .. types)
     end
 end
 
@@ -1262,7 +1263,13 @@ re.on_draw_ui(function ()
             if imgui.tree_node('Unknown entity types found, required loaders may be missing') then
                 imgui.pop_style_color(1)
                 for _, unknown in ipairs(unknownEntities) do
-                    imgui.text(tostring(unknown.type) .. ' ID: ' .. tostring(unknown.id))
+                    local bundlename = unknown._bundle or '<unknown>'
+                    imgui.text(tostring(unknown.type) .. ' ID: ' .. tostring(unknown.id) .. ', Bundle: ' .. bundlename)
+                end
+                local changed, disabled = imgui.checkbox('Disable startup alert', internal.config.data.editor.disable_unknown_entity_alerts)
+                if changed then
+                    internal.config.data.editor.disable_unknown_entity_alerts = disabled
+                    internal.config.save()
                 end
                 imgui.tree_pop()
             else
