@@ -372,11 +372,37 @@ local function get_wrapped_arraylike_accessor(classname, wrapper)
     return wrapped
 end
 
+--- @type function
+local _object_to_string_internal
+
+--- @param typesettings any
+--- @param meta TypeCacheData
+--- @param classname string
+--- @param note string|nil
+local function generate_tostring_method(typesettings, meta, classname, note)
+    if not typesettings then
+        typesettings = {}
+        type_settings.type_settings[classname] = typesettings
+    end
+    note = note and (' [' .. note .. ']') or ''
+    if meta.itemCount == 1 then
+        local field, class = meta.fields[1][1], meta.fields[1][2]
+        typesettings.toString = function (value, innerContext)
+            return field .. '=' .. _object_to_string_internal(value[field], class, innerContext) .. note
+        end
+        return typesettings.toString
+    end
+
+    local str = classname .. note
+    typesettings.toString = function () return str end
+    return typesettings.toString
+end
+
 --- @param item any
 --- @param classname string|nil
 --- @param context UIContainer|nil
 --- @return string
-local function _object_to_string_internal(item, classname, context)
+_object_to_string_internal = function(item, classname, context)
     if item == nil then
         return classname and ('null (' .. classname .. ')') or 'null'
     end
@@ -384,7 +410,9 @@ local function _object_to_string_internal(item, classname, context)
     if not classname then
         classname = get_type(item)
         if not classname then
-            if type(item) == 'userdata' and item.ToString then return item:ToString() end
+            if type(item) == 'userdata' and item.ToString then
+                return classname or tostring(item)
+            end
             return tostring(item)
         end
     else
@@ -425,23 +453,14 @@ local function _object_to_string_internal(item, classname, context)
         local success, str = pcall(item.call, item, 'ToString()')
         if success then
             if str == classname then
-                if not typesettings then
-                    typesettings = {}
-                    type_settings.type_settings[classname] = typesettings
-                end
-                if meta.itemCount == 1 then
-                    local field, class = meta.fields[1][1], meta.fields[1][2]
-                        typesettings.toString = function (value)
-                            return field .. '=' .. _object_to_string_internal(value[field], class, context)
-                        end
-                    return typesettings.toString(item, context)
-                else
-                    typesettings.toString = function () return classname end
-                end
+                local tostring = generate_tostring_method(typesettings, meta, classname)
+                return tostring(item, context)
             end
+
             return str
         else
-            return item:get_type_definition():get_full_name() .. ' [ToString() failed]'
+            local tostring = generate_tostring_method(typesettings, meta, classname, 'ToString() failed')
+            return tostring(item, context)
         end
     end
     if type(item) == 'table' then
