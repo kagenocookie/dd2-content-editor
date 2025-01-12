@@ -128,7 +128,7 @@ udb.register_entity_type('item_data', {
         -- end
     end,
     generate_label = function (entity)
-        return 'Item ' .. entity.id .. ' : ' .. enums.get_enum('app.ItemIDEnum').get_label(entity.id)
+        return 'Item ' .. entity.id .. ' : ' .. tostring(utils.dd2.translate_item_name(entity.id))
     end,
     delete = function (instance)
         --- @cast instance ItemDataEntity

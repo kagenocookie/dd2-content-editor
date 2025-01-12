@@ -13,7 +13,6 @@ local CharacterID = usEnums.get_enum('app.CharacterID')
 local NPCIDs = usEnums.create_subset(CharacterID, 'CharacterID_NPC', function (label) return label == 'Invalid' or label:sub(1,3) == 'ch3' and label:len() > 5 end)
 
 local ItemID = usEnums.get_enum('app.ItemIDEnum')
-ItemID.set_display_labels(utils.map(ItemID.values, function (val) return { val, ItemID.valueToLabel[val] .. ' : ' .. tostring(utils.dd2.translate_item_name(val)) } end))
 
 local TalkEventDefineID = usEnums.get_enum('app.TalkEventDefine.ID')
 local AIKeyLocation = usEnums.get_enum('app.AIKeyLocation')
