@@ -1313,6 +1313,7 @@ definitions.override('dd2', {
             'app.decision.tcondition.IsNearByWall',
             'app.decision.tcondition.IsOnBridge',
             'app.decision.tcondition.IsOpenedGm80_001',
+            'app.decision.tcondition.IsOwnSpringboardJump',
             'app.decision.tcondition.IsPLInteractGimmick',
             'app.decision.tcondition.IsPLLastClimbCharaIDBeforeLanding',
             'app.decision.tcondition.IsPartyAroundEnemyBase',
