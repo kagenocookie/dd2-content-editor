@@ -206,6 +206,38 @@ ce_find = function (text, single)
     return e
 end
 
+ce_dump = function(searchCommand, outputFile)
+    if not searchCommand then return nil end
+    local result = ce_find(searchCommand)
+    if not outputFile then
+        outputFile = searchCommand:gsub('[^a-zA-Z0-9_]', '')
+        if outputFile:len() > 100 then
+            outputFile = outputFile:sub(1, 100)
+        end
+    end
+    outputFile = 'ce_dump/' .. outputFile
+    if outputFile:sub(-5) ~= '.json' then
+        outputFile = outputFile .. '.json'
+    end
+
+    if result == nil then
+        fs.write(outputFile, 'null')
+        return '<no results>'
+    elseif type(result) == 'table' then
+        local items = utils.map(result, function (value)
+            return usercontent.import_handlers.export(value, nil, { raw = true })
+        end)
+        json.dump_file(outputFile, items)
+        return outputFile .. ' => ' .. #result .. ' items'
+    elseif type(result) == 'userdata' then
+        json.dump_file(outputFile, usercontent.import_handlers.export(result, nil, { raw = true }))
+        return outputFile .. ' => ' .. tostring(result)
+    else
+        json.dump_file(result, outputFile)
+        return outputFile .. ' => ' .. tostring(result)
+    end
+end
+
 --- @param state table
 --- @param text string
 local function add_to_exec_list(state, text)
