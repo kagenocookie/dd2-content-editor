@@ -170,7 +170,13 @@ known_importers['System.String'] = {
         --- @cast src string
         return sdk.create_managed_string(src)
     end,
-    export = function (src) return src end,
+    export = function (src)
+        if type(src) == 'string' then
+            return src
+        else
+            return src and src:ToString()
+        end
+    end,
 }
 
 ---@param wrappedHandler ValueImporter
