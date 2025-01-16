@@ -206,11 +206,16 @@ ce_find = function (text, single)
     return e
 end
 
-ce_dump = function(searchCommand, outputFile)
-    if not searchCommand then return nil end
-    local result = ce_find(searchCommand)
+ce_dump = function(command, outputFile)
+    if not command then return nil end
+    local result
+    if type(command) == 'string' then
+        result = ce_find(command)
+    else
+        result = command
+    end
     if not outputFile then
-        outputFile = searchCommand:gsub('[^a-zA-Z0-9_]', '')
+        outputFile = command:gsub('[^a-zA-Z0-9_]', '')
         if outputFile:len() > 100 then
             outputFile = outputFile:sub(1, 100)
         end
