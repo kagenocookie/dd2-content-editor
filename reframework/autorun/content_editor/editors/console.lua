@@ -215,7 +215,13 @@ ce_dump = function(command, outputFile)
         result = command
     end
     if not outputFile then
-        outputFile = command:gsub('[^a-zA-Z0-9_]', '')
+        if type(command) == 'string' then
+            outputFile = command
+        else
+            outputFile = tostring(command)
+        end
+
+        outputFile = outputFile:gsub('[^a-zA-Z0-9_]', '')
         if outputFile:len() > 100 then
             outputFile = outputFile:sub(1, 100)
         end
