@@ -222,20 +222,21 @@ local function replace_item_icon(item, tex)
             -- anyway, storing it in a gameobject works
             immediateInst = prefabs.get_shared_instance(item.icon_path)
             if not immediateInst then
-                immediateInst = sdk.find_type_definition("via.GameObject"):get_method("create(System.String)"):call(nil, '_' .. item.icon_path):add_ref()--[[@as via.GameObject]]
-                local holder = utils.add_gameobject_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
+                local holder
+                immediateInst, holder = utils.gameobject.create_with_component('_' .. item.icon_path, 'app.GUITextureHolder')
+                ---@cast holder app.GUITextureHolder
                 holder._Texture = import_handlers.import('via.render.TextureResourceHolder', item.icon_path):add_ref()
                 item._texture = holder._Texture
                 prefabs.store_shared_instance(item.icon_path, immediateInst)
             else
-                local holder = utils.get_gameobject_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
+                local holder = utils.gameobject.get_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
                 item._texture = holder._Texture
             end
             apply_icon_rect(tex, item)
         else
             immediateInst = prefabs.instantiate_shared(item.icon_path, function (gameObj)
                 if not item._texture then
-                    local texHolder = utils.get_gameobject_component(gameObj, 'app.GUITextureHolder') --[[@as app.GUITextureHolder|nil]]
+                    local texHolder = utils.gameobject.get_component(gameObj, 'app.GUITextureHolder') --[[@as app.GUITextureHolder|nil]]
                     item._texture = texHolder and (texHolder._Texture or texHolder._UVSequense)
                 end
 

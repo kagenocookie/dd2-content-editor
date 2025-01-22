@@ -14,7 +14,6 @@ local udb = require('content_editor.database')
 
 local NPCManager = sdk.get_managed_singleton('app.NPCManager')
 
-local getComponent = sdk.find_type_definition('via.GameObject'):get_method('getComponent(System.Type)')
 local getCharaName = sdk.find_type_definition("app.GUIBase"):get_method("getName(app.CharacterID)")
 
 local testConfig = config.data.devtools.quest_test or { window = true }
@@ -28,7 +27,7 @@ local devQuestId = 8000
 
 -- do we need to also handle app.ui021601 ?
 sdk.hook(sdk.find_type_definition("app.ui021301"):get_method("reqDisp(via.GameObject, System.Single, System.Guid)"), function(args)
-    local gameObj = sdk.to_managed_object(args[3])
+    local gameObj = sdk.to_managed_object(args[3])--[[@as via.GameObject]]
     local charaIdStr = gameObj:call('get_Name()') --- @type string
     if charaIdStr:sub(1, 3) == 'ch3' then
         lastNpcSpeaker = gameObj
@@ -65,7 +64,7 @@ local function npc_is_follower(charaId)
 end
 
 local function gameobj_to_chara_id(go)
-    return getComponent:call(go, sdk.typeof('app.Character')):get_CharaID()
+    return utils.gameobject.get_component(go, 'app.Character')--[[@as app.Character]]:get_CharaID()
 end
 
 

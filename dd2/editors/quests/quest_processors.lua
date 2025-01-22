@@ -67,11 +67,11 @@ local function process_quest_folder(questId, folder, state)
     local children = utils.folder_get_children(folder)
     for _, child in ipairs(children) do
         local go = child:get_GameObject()
-        local proc = utils.get_gameobject_component(go, 'app.QuestProcessor')
-            or utils.get_gameobject_component(go, 'app.QuestResourceObject')
-            or utils.get_gameobject_component(go, 'app.QuestProcessorRegister')
-            or utils.get_gameobject_component(go, 'app.QuestController')
-            or utils.get_gameobject_component(go, 'app.QuestResourceCollector')
+        local proc = utils.gameobject.get_component(go, 'app.QuestProcessor')
+            or utils.gameobject.get_component(go, 'app.QuestResourceObject')
+            or utils.gameobject.get_component(go, 'app.QuestProcessorRegister')
+            or utils.gameobject.get_component(go, 'app.QuestController')
+            or utils.gameobject.get_component(go, 'app.QuestResourceCollector')
 
         local proctype = proc and proc:get_type_definition():get_full_name()
         if not proc then
@@ -176,9 +176,9 @@ editor.define_window('quest_processors', 'Quest processors', function (state)
                 dump_output[questId] = {}
                 for _, child in ipairs(children) do
                     local go = child:get_GameObject()
-                    local comp = utils.get_gameobject_component(go, 'app.QuestProcessor')
-                        or utils.get_gameobject_component(go, 'app.QuestResourceObject')
-                        or utils.get_gameobject_component(go, 'app.QuestController')
+                    local comp = utils.gameobject.get_component(go, 'app.QuestProcessor')
+                        or utils.gameobject.get_component(go, 'app.QuestResourceObject')
+                        or utils.gameobject.get_component(go, 'app.QuestController')
                         or nil
                     -- print('Dumping object ', go:get_Name(), 'for quest id ', questId)
                     dump_output[questId][go:get_Name()] = exporter.raw_dump_object(comp)

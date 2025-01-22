@@ -624,20 +624,39 @@ local function format_timestamp(timeSeconds)
     end
 end
 
+local createGameobj = sdk.find_type_definition('via.GameObject'):get_method('create(System.String)')
+local createGameobjInFolder = sdk.find_type_definition('via.GameObject'):get_method('create(System.String, via.Folder)')
+--- @param name string
+--- @param folder via.Folder|nil
+--- @return via.GameObject
+local function create_gameobject(name, folder)
+    if folder then
+        return createGameobjInFolder:call(nil, name, folder):add_ref()
+    else
+        return createGameobj:call(nil, name):add_ref()
+    end
+end
+
 local getComponent = sdk.find_type_definition('via.GameObject'):get_method('getComponent(System.Type)')
 --- @param gameObject via.GameObject
---- @param componentType string
+--- @param componentType string|RETypeDefinition
 --- @return via.Component|nil
 local function get_gameobject_component(gameObject, componentType)
-    return getComponent:call(gameObject, sdk.typeof(componentType))
+    return getComponent:call(gameObject, type(componentType) == 'string' and sdk.typeof(componentType) or componentType--[[@as RETypeDefinition]]:get_runtime_type())
 end
 
 local createComponent = sdk.find_type_definition('via.GameObject'):get_method('createComponent(System.Type)')
 --- @param gameObject via.GameObject
---- @param componentType string
+--- @param componentType string|RETypeDefinition
 --- @return via.Component|nil
 local function add_gameobject_component(gameObject, componentType)
-    return createComponent:call(gameObject, sdk.typeof(componentType))
+    return createComponent:call(gameObject, type(componentType) == 'string' and sdk.typeof(componentType) or componentType--[[@as RETypeDefinition]]:get_runtime_type())
+end
+
+local function create_go_with_component(nameString, componentTypeString, folder)
+    local go = create_gameobject(nameString, folder)
+    local component = add_gameobject_component(go, componentTypeString)
+    return go, component
 end
 
 --- comment
@@ -807,8 +826,12 @@ usercontent.utils = {
     translate = translate_message,
     guid_try_parse = try_parse_guid,
     guid_parse = parse_guid,
-    get_gameobject_component = get_gameobject_component,
-    add_gameobject_component = add_gameobject_component,
+    gameobject = {
+        create = create_gameobject,
+        get_component = get_gameobject_component,
+        add_component = add_gameobject_component,
+        create_with_component = create_go_with_component,
+    },
     folder_get_children = folder_get_children,
 }
 

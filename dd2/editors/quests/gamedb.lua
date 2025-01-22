@@ -172,7 +172,7 @@ local function get_quest_processor(processorId, questId)
                 -- we need to fetch the processor root transform and get the children from there instead
                 -- I'm assuming the processor root is the only quest folder child that has its own children
                 local processorRoot = utils.first_where(utils.folder_get_children(procFolder), function (child) return child:get_Child() ~= nil end)
-                local procChildren = processorRoot and utils.map(utils.folder_get_children(processorRoot), function (go) return utils.get_gameobject_component(go:get_GameObject(), 'app.QuestProcessor') end)
+                local procChildren = processorRoot and utils.map(utils.folder_get_children(processorRoot), function (go) return utils.gameobject.get_component(go:get_GameObject(), 'app.QuestProcessor') end) or {}
                 procCount = #procChildren
                 procChildren[0] = procChildren[procCount]
                 procContainer = procChildren
@@ -191,7 +191,6 @@ local function get_quest_processor(processorId, questId)
     return proc
 end
 
-local type_go = sdk.find_type_definition('via.GameObject')
 local frame_funcs = {}
 re.on_application_entry('UpdateBehavior', function()
     for i, f in pairs(frame_funcs) do
@@ -214,7 +213,7 @@ local prefab_cache = {}
 local function instantiate_prefab(pfb_path, parentFolder, callback, timeLimit)
     local pfb = prefab_cache[pfb_path]
     if not pfb then
-        pfb = sdk.create_instance("via.Prefab"):add_ref()
+        pfb = sdk.create_instance("via.Prefab"):add_ref()--[[@as via.Prefab]]
         prefab_cache[pfb_path] = pfb
         pfb:set_Path(pfb_path)
         pfb:set_Standby(true)
@@ -246,12 +245,6 @@ local function instantiate_prefab(pfb_path, parentFolder, callback, timeLimit)
     return false, nil
 end
 
-local function create_go_with_component(nameString, componentTypeString, folder)
-    local go = type_go:get_method('create(System.String, via.Folder)'):call(nil, nameString, folder)
-    local component = go:call('createComponent(System.Type)', sdk.typeof(componentTypeString))
-    return go, component
-end
-
 --- @param questId integer
 --- @param processorId integer
 --- @param questSceneFolder REManagedObject|nil
@@ -270,11 +263,12 @@ local function create_processor(questId, processorId, questSceneFolder)
         -- processor can be null here if it's inactive; the ProcessorFolderController:setupProcessors() hook should handle that
         if ctrl == nil then return nil end
 
-        local go, proc = create_go_with_component("_ModProcessor_" .. processorId, 'app.QuestProcessor', questSceneFolder)
+        local go, proc = utils.gameobject.create_with_component("_ModProcessor_" .. processorId, 'app.QuestProcessor', questSceneFolder)
+        --- @cast proc app.QuestProcessor
         proc.ProcID = processorId
         proc:set_TimeDetectionKey('qu' .. questId .. "_Processor_" .. processorId)
         proc:set_RefQuestController(ctrl)
-        proc.Process = sdk.create_instance('app.QuestProcessor.ProcessEntity')
+        proc.Process = sdk.create_instance('app.QuestProcessor.ProcessEntity')--[[@as any]]
         proc.Process:set_QuestID(questId)
 
         local procfolder = get_quest_processor_folder_controller(questId)
@@ -379,8 +373,7 @@ local function upsert_quest_entity(quest)
     local entity = get_game_quest_entity(quest.id)
     if not entity then
         print('creating new quest entity', quest.id)
-        --- @type app.QuestManager.QuestEntity
-        entity = sdk.create_instance('app.QuestManager.QuestEntity', true)
+        entity = sdk.create_instance('app.QuestManager.QuestEntity', true)--[[@as app.QuestManager.QuestEntity]]
         QuestManager.EntityDict[quest.id] = entity
         -- NOTE: we can't do this dynamically at the moment, can't create a folder nor load a scene file on demand
         -- MAYBE, we could just force activate it or something here but maybe rather not
@@ -391,7 +384,7 @@ local function upsert_quest_entity(quest)
     -- sdk.create_instance('System.Collections.Generic.List<app.QuestNpcOverrideEntiry>'):add_ref()
 
     if entity.Context == nil then
-        entity.Context = sdk.create_instance('app.QuestContext', true)
+        entity.Context = sdk.create_instance('app.QuestContext', true)--[[@as any]]
     end
 
     --- sdk.get_managed_singleton('app.QuestManager').EntityDict[100008]
@@ -474,8 +467,6 @@ _quest_DB.gamedb = {
     get_quest_ai_situation_entity = get_quest_ai_situation_entity,
     get_quest_ai_situation_root = get_quest_ai_situation_root,
     upsert_quest_ai_situation_entity = upsert_quest_ai_situation_entity,
-
-    create_go_with_component = create_go_with_component,
 
     get_quest_entity = get_game_quest_entity,
 

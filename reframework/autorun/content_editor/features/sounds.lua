@@ -22,7 +22,7 @@ if t_soundcontainer then
             --- @param positionGameobject via.GameObject
             --- @param targetGameobject via.GameObject|nil
             return function (triggerId, positionGameobject, targetGameobject)
-                method:call(utils.get_gameobject_component(positionGameobject, 'soundlib.SoundContainer'), triggerId, positionGameobject, targetGameobject)
+                method:call(utils.gameobject.get_component(positionGameobject, 'soundlib.SoundContainer'), triggerId, positionGameobject, targetGameobject)
             end
         end
     )
@@ -30,7 +30,7 @@ if t_soundcontainer then
     local m_trigger_stop = t_soundcontainer:get_method('stopTriggered(System.UInt32, via.GameObject, System.UInt32)')
     if m_trigger_stop then
         function usercontent._sounds.stop_triggered(triggerId, targetGameobject)
-            local soundcontainer = utils.get_gameobject_component(targetGameobject, 'soundlib.SoundContainer')--[[@as soundlib.SoundContainer]]
+            local soundcontainer = utils.gameobject.get_component(targetGameobject, 'soundlib.SoundContainer')--[[@as soundlib.SoundContainer]]
             if soundcontainer then
                 m_trigger_stop:call(soundcontainer, triggerId, targetGameobject, 0)
             end

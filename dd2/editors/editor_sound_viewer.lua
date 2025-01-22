@@ -51,7 +51,7 @@ if core.editor_enabled then
 
     local intervals = {}
     local function test_all_sound_triggers(gameObject, startindex, endindex)
-        local soundcontainer = utils.get_gameobject_component(gameObject, 'soundlib.SoundContainer')
+        local soundcontainer = utils.gameobject.get_component(gameObject, 'soundlib.SoundContainer')
         local triggers = soundcontainer and soundcontainer:get_field('_TriggerInfoList')
         if triggers then
             local n, count = startindex or 0, endindex or triggers:get_Count()

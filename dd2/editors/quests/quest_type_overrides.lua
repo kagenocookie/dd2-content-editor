@@ -253,7 +253,7 @@ if core.editor_enabled then
                 local procList = utils.folder_get_children(procFolder)
                 for _, transform in ipairs(procList) do
                     if transform and transform:get_GameObject() then
-                        local proc = utils.get_gameobject_component(transform:get_GameObject(), 'app.QuestProcessor')
+                        local proc = utils.gameobject.get_component(transform:get_GameObject(), 'app.QuestProcessor')
                         --- @cast proc app.QuestProcessor|nil
                         if proc then
                             local depIds = get_processor_dependency_ids(proc.PrevProcCondition._ElementArray)
