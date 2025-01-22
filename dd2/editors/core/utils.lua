@@ -1,3 +1,5 @@
+local utils = require('content_editor.utils')
+
 local getCharaName = sdk.find_type_definition("app.GUIBase"):get_method("getName(app.CharacterID)")
 local function translate_character_name(characterId)
     return getCharaName:call(nil, characterId)
@@ -75,6 +77,54 @@ local function set_position(chara, pos)
     TimeSkipManager:call('requestPlayerWarp', now_hr, now_min, now_day, _pos, tr:get_Rotation(), nil, true, true)
 end
 
+local dbms = sdk.get_managed_singleton('app.ContextDBMS') ---@type app.ContextDBMS
+local offlineDb = dbms.OfflineDB
+
+local get_key_methods = {
+    ['app.UniqueID'] = 'getContextDatabaseKey(app.IContextDatabaseIndexCreator, app.UniqueID)',
+    ['app.CharacterID'] = 'getContextDatabaseKey(app.IContextDatabaseIndexCreator, app.CharacterID)',
+    ['System.Int64'] = 'getContextDatabaseKey(app.IContextDatabaseIndexCreator, System.Int64)',
+}
+--- @param id integer|app.UniqueID|app.CharacterID
+--- @param type 'app.UniqueID'|'app.CharacterID'|'System.Int64'|nil
+--- @return app.ContextDatabaseKey
+local db_get_key = function (id, type) return dbms:call(get_key_methods[type or 'app.CharacterID'], offlineDb.IndexCreator, id) end
+
+--- @param recordKey app.ContextDatabaseKey|integer|app.UniqueID|app.CharacterID
+--- @param keyType 'app.UniqueID'|'app.CharacterID'|'System.Int64'|nil
+--- @return app.ContextDatabase.RecordInfo
+local db_get = function (recordKey, keyType) return offlineDb:getRecordInfo(type(recordKey) == 'number' and db_get_key(recordKey, keyType) or recordKey--[[@as any]]) end
+
+local t_go = sdk.find_type_definition('via.GameObject')
+local t_holder = sdk.find_type_definition('app.ContextHolder')
+local t_chara = sdk.find_type_definition('app.Character')
+--- @param character app.CharacterID|app.Character|via.GameObject|app.ContextHolder
+--- @param contextType string|RETypeDefinition
+local function context_get(character, contextType)
+    local typedef = (type(contextType) == 'string' and sdk.find_type_definition(contextType) or contextType)--[[@as RETypeDefinition]]:get_runtime_type()
+    if type(character) == 'number' then
+        local info = db_get(db_get_key(character, 'app.CharacterID'))
+        local record = info and info:get_Record()
+        if record and record.ContextDict--[[@as any]]:ContainsKey(typedef) then
+            return record.ContextDict[typedef]
+        end
+        return nil
+    end
+
+    local holder
+    local t = character--[[@as REManagedObject]]:get_type_definition()
+    if t:is_a(t_holder) then
+        holder = character
+    elseif t:is_a(t_go) then
+        holder = utils.gameobject.get_component(character--[[@as via.GameObject]], t_holder)
+    elseif t:is_a(t_chara) then
+        holder = character:get_Context()
+    end
+    if not holder then return nil end
+
+    return holder.Contexts--[[@as any]]:ContainsKey(typedef) and holder.Contexts[typedef]:get_CurrentContext() or nil
+end
+
 return {
     translate_character_name = translate_character_name,
     translate_item_name = translate_item_name,
@@ -84,4 +134,13 @@ return {
     get_main_pawn = get_main_pawn,
     get_player_party = get_player_party,
     set_position = set_position,
+
+    get_context = context_get,
+
+    db = {
+        get_key = db_get_key,
+        get = db_get,
+        dbms = dbms,
+        offlineDb = offlineDb,
+    },
 }

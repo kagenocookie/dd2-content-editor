@@ -2261,13 +2261,58 @@ definitions.override('dd2', {
     }
 })
 
-if core.editor_enabled then
-    definitions.override('', {
-        ['app.TempStatusFlag`1<app.HitController.TempStatus>'] = {
-            fields = {
-                Data = { uiHandler = usercontent.ui.handlers.common.enum_flags(enums.get_enum('app.HitController.TempStatus'), 5) },
-                PrevData = { uiHandler = usercontent.ui.handlers.common.enum_flags(enums.get_enum('app.HitController.TempStatus'), 5) },
+local events = require('content_editor.events')
+events.on('setup', function ()
+    if core.editor_enabled then
+        local enums = usercontent.enums
+        local helpers = usercontent._ui_utils
+        local t_uniqueIdCtx = sdk.typeof('app.UniqueIDContext')
+
+        definitions.override('', {
+            ['app.TempStatusFlag`1<app.HitController.TempStatus>'] = {
+                fields = {
+                    Data = { uiHandler = usercontent.ui.handlers.common.enum_flags(enums.get_enum('app.HitController.TempStatus'), 5) },
+                    PrevData = { uiHandler = usercontent.ui.handlers.common.enum_flags(enums.get_enum('app.HitController.TempStatus'), 5) },
+                },
             },
-        }
-    })
-end
+            ['app.ContextDatabase.RecordInfo'] = {
+                toString = function (value)
+                    local record = value:get_Record()
+                    if not record then return 'Record: unknown' end
+                    if record.ContextDict:ContainsKey(t_uniqueIdCtx) then
+                        local idCtx = record.ContextDict[t_uniqueIdCtx]
+                        return 'Record: ' .. helpers.to_string(idCtx)
+                    end
+                    return 'Record: <no unique ID>'
+                end,
+            },
+            ['app.UniqueIDContext'] = {
+                toString = function (value)
+                    return 'UniqueID: ' .. helpers.to_string(value.UniqueID)
+                end,
+            },
+            ['app.UniqueID'] = {
+                toString = function (value)
+                    return value._Index .. ' / ' .. value._RowID:ToString()
+                end,
+            },
+            ['app.CharacterIDContext'] = {
+                toString = function (value)
+                    return 'CharacterID: ' .. enums.get_enum('app.CharacterID').get_label(value.CharacterID)
+                end,
+            },
+            ['app.DeadCharacterContext'] = {
+                toString = helpers.to_string_concat_fields('app.DeadCharacterContext', 0, nil, {'CauseOfDeath'})
+            },
+            ['app.ScaleContext'] = {
+                toString = function (value) return 'Scale: ' .. tostring(value.Scale) end,
+            },
+            ['app.CharacterPosRotContext'] = {
+                toString = helpers.to_string_concat_fields('app.CharacterPosRotContext', 0, nil, {'Position', 'AngleYDegree'})
+            },
+            ['app.GenerateInfoContext'] = {
+                toString = helpers.to_string_concat_fields('app.GenerateInfoContext', 0, nil, {'_IsGenerated', '_IsDisableGenerate'})
+            },
+        })
+    end
+end)
