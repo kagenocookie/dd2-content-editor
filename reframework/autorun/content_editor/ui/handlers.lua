@@ -575,6 +575,7 @@ local function dictionary_ui(meta, classname, label, settings)
                         dict[newkey] = newvalue:add_ref()
                         items = nil
                         changed = true
+                        ui_context.delete_child(context, '__new')
                     end
                     if imgui.is_item_hovered() then imgui.set_tooltip('If the entry already exists, it will be replaced with a new instance') end
                     imgui.tree_pop()
