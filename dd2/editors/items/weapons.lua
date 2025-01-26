@@ -9,8 +9,8 @@ local generic_types = require('content_editor.generic_types')
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') --- @type app.ItemManager
 local EquipmentManager = sdk.get_managed_singleton('app.EquipmentManager') --- @type app.EquipmentManager
 
-local weaponEnum = enums.get_enum('app.WeaponID')
-local OriginalWeaponIDs = weaponEnum.valueToLabel
+local weaponIds = enums.get_enum('app.WeaponID')
+local OriginalWeaponIDs = weaponIds.valueToLabel
 
 local get_item_name = sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName(System.Int32, System.Boolean)')
 local weapon_to_item_id = sdk.find_type_definition('app.ItemManager'):get_method('getItemData(app.WeaponID)')
@@ -68,9 +68,19 @@ udb.events.on('get_existing_data', function (whitelist)
         if id ~= 0 and (not whitelist or whitelist.weapon[id]) and not udb.get_entity('weapon', id) then
             local offsets = EquipmentManager.WeaponSetting:getOffsetSettings(id)
             if offsets and offsets.ID == id then
-                register_entity(id, nil, offsets, '[group] ' .. label)
+                local dispLabel = weaponIds.get_label(id)
+                if dispLabel == label then
+                    register_entity(id, nil, offsets, '[group] ' .. label)
+                else
+                    register_entity(id, nil, offsets, '[group] ' .. label .. ' ' .. weaponIds.get_label(id))
+                end
             elseif core.editor_enabled then
-                weaponEnum.set_display_label(id, '[group] ' .. label, false)
+                local dispLabel = weaponIds.get_label(id)
+                if dispLabel == label then
+                    weaponIds.set_display_label(id, '[group] ' .. dispLabel, false)
+                else
+                    weaponIds.set_display_label(id, '[group] ' .. label .. ' ' .. dispLabel, false)
+                end
             end
         end
     end
@@ -135,8 +145,6 @@ definitions.override('weapons', {
         import_field_whitelist = {'_Item'}
     }
 })
-
-local weaponIds = enums.get_enum('app.WeaponID')
 
 local weaponKinds = {
     sword = weaponIds.labelToValue.wp00,
@@ -203,6 +211,17 @@ if core.editor_enabled then
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
 
+    definitions.override('', {
+        ['app.WeaponSetting.OffsetSetting'] = {
+            fields = {
+                ID = { uiHandler = function (value)
+                    imgui.text('Offset for ID: ' .. value.get() .. '  | '.. helpers.to_string(value.get(), 'app.WeaponID'))
+                    return false
+                end }
+            },
+        }
+    })
+
     ui.editor.set_entity_editor('weapon', function (selectedItem, state)
         --- @cast selectedItem WeaponEntity
         local path = selectedItem.prefab and (selectedItem.prefab._Item--[[@as app.PrefabController]]):get_ResourcePath()
@@ -254,6 +273,7 @@ if core.editor_enabled then
                 changed = true
             end
             if effectiveOffsets then
+                ui.basic.tooltip('This is the evaluated offset settings for this weapon.\nIf you wish to change settings for the current weapon, use the Add offset override button.', nil, true)
                 ui.handlers.show_readonly(effectiveOffsets, nil, 'Effective offsets', 'app.WeaponSetting.OffsetSetting', state)
             else
                 imgui.text_colored('No weapon offsets available for this weapon', core.get_color('danger'))
@@ -283,8 +303,11 @@ if core.editor_enabled then
 
             imgui.spacing()
             imgui.spacing()
-            imgui.text('All offsets')
-            _, state.view_offset_id, state.view_offset_filter = ui.basic.filterable_enum_value_picker('View offsets', state.view_offset_id, enums.get_enum('app.WeaponID'), state.view_offset_filter)
+            imgui.spacing()
+            imgui.text('Browse defined offsets')
+            imgui.text_colored('These are intended as a reference to see how other / basegame weapons are configured.\nChanges done directly to these settings will not be saved.', core.get_color('disabled'))
+            _, state.view_offset_id, state.view_offset_filter = ui.basic.filterable_enum_value_picker('Existing offsets search', state.view_offset_id, enums.get_enum('app.WeaponID'), state.view_offset_filter)
+            ui.basic.tooltip('This will find which offsets are matched for the selected weapon ID / group.')
             if state.view_offset_id then
                 local off = EquipmentManager:getWeaponOffsetSetting(state.view_offset_id)
                 if off then
@@ -293,8 +316,12 @@ if core.editor_enabled then
                         selectedItem.offsets.ID = selectedItem.id
                         EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.expand_system_array(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, { selectedItem.offsets })
                     end
-                    ui.handlers.show_readonly(off, nil, 'Offsets', 'app.WeaponSetting.OffsetSetting', state)
+                    ui.handlers.show_readonly(off, nil, 'Matching offsets', 'app.WeaponSetting.OffsetSetting', state)
+                else
+                    imgui.text_colored('No offsets defined for the selected weapon ID / group', core.get_color('warning'))
                 end
+            else
+                imgui.text_colored('Choose a weapon ID / group to find offsets for', core.get_color('disabled'))
             end
         end
     end)
