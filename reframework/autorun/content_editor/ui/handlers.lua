@@ -33,6 +33,103 @@ local object_handlers = {
     ['System.String'] = common.string
 }
 
+local type_multidelegate = sdk.find_type_definition('System.MulticastDelegate')
+--- @type UIHandler
+local delegate_handler = function (context)
+    local val = context.get()
+    if val == nil then
+        imgui.text('Delegate ' .. context.label .. ': null')
+        imgui.same_line()
+        imgui.text_colored('(' .. context.data.classname .. ')', core.get_color('note'))
+        return false
+    end
+
+    if ui.treenode_suffix('Delegate ' .. context.label, context.data.classname, core.get_color('note')) then
+        context.data.isMulti = context.data.isMulti or val:get_type_definition():is_a(type_multidelegate)
+
+        if context.data.target_valid == nil then
+            local base_target = val and val.get_Target and val:get_Target()
+            if base_target then
+                context.data.target_valid = true
+                context.data.target_classname = base_target.get_type_definition and base_target:get_type_definition():get_full_name()
+            else
+                context.data.target_valid = false
+            end
+
+            context.data.target_method = val.get_Method and val:get_Method():get_Name() or '<unknown>'
+        end
+
+        imgui.text('Method: ' .. context.data.target_method)
+        if not context.data.target_valid then
+            imgui.text('Target: unknown')
+        end
+        if context.data.target_valid and ui.treenode_suffix('Target', context.data.target_classname) then
+            local child = ui_context.get_child(context, '__target')
+            if not child then
+                local target = val:get_Target()
+                context.data._has_extra_expander = true
+                child = usercontent._ui_handlers._internal.create_field_editor(
+                    context,
+                    context.data.classname,
+                    '__target',
+                    context.data.target_classname,
+                    'Target',
+                    { get = function () return target end, set = function () end },
+                    context.data.ui_settings,
+                    true
+                )
+            end
+            -- imgui.text(child.object:get_type_definition():get_full_name())
+            child:ui()
+            imgui.tree_pop()
+        end
+
+        if not context.data.invocations then
+            local invocations = val.GetInvocationList and val:GetInvocationList()
+            local invo_count = invocations and invocations:get_Length()
+
+            context.data.invocations = {}
+            context.data.invocations_count = invo_count or 0
+
+            if invocations then
+                for i = 0, context.data.invocations_count - 1 do
+                    context.data.invocations[i + 1] = invocations[i]:add_ref()
+                end
+            end
+        end
+
+        local count = context.data.invocations_count
+        if context.data.isMulti and count > 1 and ui.treenode_suffix('Invocations', '(' .. count .. ')' or nil) then
+            for i = 1, context.data.invocations_count do
+                local target = context.data.invocations[i]
+                if not target then
+                    imgui.text((i - 1) .. ': null')
+                else
+                    local child = ui_context.get_child(context, i - 1)
+                    if not child then
+                        context.data._has_extra_expander = true
+                        child = usercontent._ui_handlers._internal.create_field_editor(
+                            context,
+                            context.data.classname,
+                            (i - 1),
+                            target:get_type_definition():get_full_name(),
+                            tostring(i - 1),
+                            { get = function () return target end, set = function () end },
+                            context.data.ui_settings,
+                            nil
+                        )
+                    end
+                    child:ui()
+                end
+            end
+            imgui.tree_pop()
+        end
+
+        imgui.tree_pop()
+    end
+    return false
+end
+
 --- @type table<string, UIHandler>
 local value_type_handler_defs = {
     ["System.UInt32"] = common.int(0.1, 0, 4294967295),
@@ -714,6 +811,9 @@ field_editor_factories = {
             end
             return changed
         end
+    end,
+    [typecache.handlerTypes.delegate] = function (meta, classname, label, settings)
+        return delegate_handler
     end,
     [typecache.handlerTypes.object] = function (meta, classname, label, settings)
         -- print('generating new object UIHandler', container:get_type_definition():get_full_name(), classname)

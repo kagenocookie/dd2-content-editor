@@ -33,7 +33,7 @@ local status_colors = {
 
 --- @alias ContentFileType 'enum'|'dump'|'preset'|'bundle'
 
---- @param color_name 'default'|'disabled'|'finished'|'error'|'danger'|'warning'|'info'|'success'
+--- @param color_name 'default'|'disabled'|'finished'|'error'|'danger'|'warning'|'info'|'note'|'success'
 --- @return integer
 local function get_color(color_name)
     return status_colors[color_statuses[color_name]]

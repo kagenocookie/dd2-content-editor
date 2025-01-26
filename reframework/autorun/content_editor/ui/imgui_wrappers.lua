@@ -80,8 +80,10 @@ end
 --- @return boolean
 local function imgui_treenode_suffix(str, suffix, color)
     local show = imgui.tree_node(str)
-    imgui.same_line()
-    imgui.text_colored(suffix, color or 0xffcccccc)
+    if suffix then
+        imgui.same_line()
+        imgui.text_colored(suffix, color or 0xffcccccc)
+    end
     return show
 end
 

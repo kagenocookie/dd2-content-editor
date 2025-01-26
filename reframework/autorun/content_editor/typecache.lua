@@ -32,6 +32,7 @@ local handlerType = {
     nullableValue = 6,
     dictionary = 7,
     genericEnumerable = 8,
+    delegate = 9,
 }
 
 --- @enum FieldFlags
@@ -55,6 +56,7 @@ local type_userdata = sdk.find_type_definition('via.UserData')
 local type_resourceHolder = sdk.find_type_definition('via.ResourceHolder')
 local type_component = sdk.find_type_definition('via.Component')
 local type_playObject = sdk.find_type_definition('via.gui.PlayObject')
+local type_delegate = sdk.find_type_definition('System.Delegate')
 local currentTypecacheVersion = 1
 
 local readonly_cache_item = { type = handlerType.readonly, itemCount = 1 }
@@ -173,8 +175,8 @@ build_typecache = function (typedef, typecache)
     local fullname = typedef:get_full_name()
     if typecache[fullname] then return end
 
-    if ignored_types[fullname] then
-        typecache[fullname] = { type = handlerType.readonly, itemCount = 0 }
+    if typedef:is_a(type_delegate) then
+        typecache[fullname] = { type = handlerType.delegate, itemCount = 99 }
         return
     end
 
