@@ -344,7 +344,7 @@ local function register(register_extension)
         end
     end)
 
-    local getter_settings = {is_readonly = true, hide_nonserialized = false, is_raw_data = false}
+    local getter_settings = {is_readonly = true, hide_nonserialized = false, is_raw_data = false, allow_props = true}
     register_extension('getter_property', function (handler, data)
         local props = data.props or data.prop and {data.prop} --- @type string[]
         --- @type UIHandler
@@ -369,6 +369,45 @@ local function register(register_extension)
                 childCtx:ui()
             end
             return changed
+        end
+    end)
+
+    register_extension('props', function (handler)
+        local meta
+        --- @type UIHandler
+        return function (ctx)
+            local val = ctx.get()
+            if type(val) ~= 'userdata' then return handler(ctx) end
+            local containerType = ctx.data.classname
+
+            meta = meta or usercontent._typecache.get(containerType--[[@as string]])
+            if not meta.props or #meta.props == 0 then return handler(ctx) end
+
+            imgui.begin_rect()
+            if imgui.tree_node(ctx.label .. ' Properties') then
+                for _, propdata in ipairs(meta.props) do
+                    local prop = propdata[1]
+                    local propkey = '__prop_' .. prop
+                    local childCtx = ctx.children[propkey]
+                    if not childCtx then
+                        local propTypeName = propdata[2]
+                        local methods = propdata[3]
+                        childCtx = usercontent._ui_handlers._internal.create_field_editor(
+                            ctx,
+                            ctx.data.classname,
+                            propkey,
+                            propTypeName,
+                            usercontent._ui_handlers._internal.generate_field_label(prop, true),
+                            usercontent._ui_handlers._internal.accessors.create_prop(sdk.find_type_definition(containerType), (methods & 1) ~= 0 and ('get_' .. prop), (methods & 2) ~= 0 and ('set_' .. prop)),
+                            getter_settings)
+                    end
+                    childCtx:ui()
+                end
+                imgui.tree_pop()
+            end
+            imgui.end_rect(4)
+            imgui.spacing()
+            return handler(ctx)
         end
     end)
 

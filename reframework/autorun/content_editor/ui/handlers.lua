@@ -26,6 +26,7 @@ local defines = {
 --- @field is_raw_data boolean
 --- @field is_readonly boolean|nil
 --- @field no_nonserialized_indicator boolean|nil
+--- @field allow_props boolean|nil
 
 --- @type table<string, UIHandler>
 local object_handlers = {
@@ -262,20 +263,58 @@ local component_go_accessor = {
     set = function () print('Error: GameObject reference not editable') end
 }
 
+--- @param typedef RETypeDefinition
+--- @param getter string|nil
+--- @param setter string|nil
+local function create_prop_accessor(typedef, getter, setter)
+    local getf, setf
+    local cachedValue
+    if getter then
+        local get_method = typedef:get_method(getter)
+        -- since we don't know what kind of bullshit the getter might be doing, call the get method once and cache the value
+        -- it should get reset when the tree item is reopened since that would clear up the ui context
+        getf = get_method and function (object)
+            if not cachedValue then
+                cachedValue = get_method:call(object)
+                if type(cachedValue) == 'userdata' and cachedValue.add_ref then cachedValue = cachedValue:add_ref() end
+            end
+            return cachedValue
+        end
+        if not get_method then print('invalid getter', typedef:get_full_name(), getter) end
+    end
+    if setter then
+        local set_method = typedef:get_method(setter)
+        if getf then
+            setf = set_method and function (object, newValue) set_method:call(object, newValue) cachedValue = newValue end
+        else
+            setf = set_method and function (object, newValue) set_method:call(object, newValue) end
+        end
+    end
+
+    getf = getf or function () return 'unkown' end
+    setf = setf or function (object, value, fieldname) print('WARNING: Attempted to set read-only prop', object, value, fieldname) end
+    --- @type ObjectFieldAccessors
+    return {
+        get = getf,
+        set = setf
+    }
+end
+
 local editorConfig
 
 --- @param label string
+--- @param isProperty boolean|nil
 --- @return string
-local function generate_field_label(label)
+local function generate_field_label(label, isProperty)
     if label:sub(1,1) == '_' then label = label:sub(2) end
     if label:sub(1,1) == '<' then
-        local name = label:match('<([a-zA-Z0-9_]+)>k__BackingField')
+        local name = isProperty or label:match('<([a-zA-Z0-9_]+)>k__BackingField')
         if name then
             if not editorConfig then editorConfig = usercontent.__internal.config.data.editor end
             if editorConfig.show_prop_labels then
-                return 'Prop/' .. name
+                return 'Prop/' .. (isProperty and label or name)
             end
-            return name
+            return (isProperty and label or name)
         end
     end
     return label
@@ -687,11 +726,12 @@ field_editor_factories = {
             return object_handlers[classname]
         end
 
+        local mainHandler
         local typesettings = type_settings.type_settings[classname] or {}
         if typesettings.abstract then
             local defaultClass = typesettings.abstract_default or typesettings.abstract[1]
             --- @type UIHandler
-            return function (context)
+            mainHandler = function (context)
                 local value = context.get()
                 if value ~= context.object then
                     -- if the instance was changed externally for whatever reason, update the cached instance
@@ -713,7 +753,7 @@ field_editor_factories = {
 
                 local changed = false
                 local newType
-                changed, newType, context.data.abstract_filter = ui.combo_filterable('Classname', previousType, typesettings.abstract, context.data.abstract_filter)
+                changed, newType, context.data.abstract_filter = ui.combo_filterable(context.label .. ' Classname', previousType, typesettings.abstract, context.data.abstract_filter)
                 local concreteType = newType or defaultClass
                 if changed and newType ~= previousType then
                     ui_context.delete_children(context)
@@ -749,7 +789,7 @@ field_editor_factories = {
             local fieldsFilterable = fieldCount > 10
 
             --- @type UIHandler
-            return function (context)
+            mainHandler = function (context)
                 local value = context.get()
                 if value ~= context.object then
                     -- if the instance was changed externally for whatever reason, update the cached instance
@@ -823,7 +863,13 @@ field_editor_factories = {
                 end
                 return changed
             end
+
+            if settings.allow_props and meta.props and #meta.props > 0 then
+                mainHandler = ui_extensions['props'](mainHandler, { } --[[@as any]])
+            end
         end
+
+        return mainHandler
     end,
     [typecache.handlerTypes.array] = function (meta, classname, label, settings)
         local accessor = settings.is_raw_data and helpers.array_accessor('table') or helpers.array_accessor(classname) --[[@as ArrayLikeAccessors]]
@@ -942,7 +988,13 @@ create_field_editor = function(parentContext, containerClass, field, fieldClass,
     if not no_expander and (submeta.type == typecache.handlerTypes.object or submeta.type == typecache.handlerTypes.value) then
         local expanderOverride = fieldOverrides.force_expander
         if expanderOverride == nil then expanderOverride = type_settings.type_settings[fieldClass] and type_settings.type_settings[fieldClass].force_expander end
-        if expanderOverride == true or expanderOverride ~= false and submeta.itemCount >= defines.object_expand_minimum_fields then
+
+        local childCount = submeta.itemCount
+        if settings.allow_props and submeta.props and next(submeta.props) then
+            childCount = childCount + #submeta.props
+        end
+
+        if expanderOverride == true or expanderOverride ~= false and childCount >= defines.object_expand_minimum_fields then
             doExpander = true
         end
     end
@@ -1221,6 +1273,7 @@ usercontent._ui_handlers = {
             boxed_enum_accessor = boxed_enum_accessor,
             boxed_value_accessor = boxed_value_accessor,
             getter = getter_prop_accessor,
+            create_prop = create_prop_accessor,
         },
     },
 }

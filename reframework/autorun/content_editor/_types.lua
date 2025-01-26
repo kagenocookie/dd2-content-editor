@@ -15,6 +15,7 @@
 --- @class UserdataEditorSettings
 --- @field fields nil|table<string, ObjectFieldDefinition>
 --- @field fieldOrder nil|string[]
+--- @field propOrder nil|string[]
 --- @field toString nil|fun(value: any, context: UIContainer|nil): string
 --- @field abstract nil|string[]
 --- @field abstract_default nil|string

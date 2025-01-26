@@ -4,6 +4,7 @@ if usercontent._typecache then return usercontent._typecache end
 --- @class TypeCacheData
 --- @field type HandlerType
 --- @field fields [string, string, FieldFlags][]|nil [fieldName, fieldClass, flags]
+--- @field props [string, string, 1|2|3][]|nil [fieldName, fieldClass, get=1|set=2|both=3]
 --- @field subtypes string[]|nil
 --- @field elementType string|nil
 --- @field keyType string|nil For dictionary key types, null otherwise
@@ -17,6 +18,7 @@ local specialType = {
     userdata = 1,
     resource = 2,
     component = 3,
+    gui = 4,
 }
 
 --- @enum HandlerType
@@ -52,6 +54,7 @@ local type_enum = sdk.find_type_definition('System.Enum')
 local type_userdata = sdk.find_type_definition('via.UserData')
 local type_resourceHolder = sdk.find_type_definition('via.ResourceHolder')
 local type_component = sdk.find_type_definition('via.Component')
+local type_playObject = sdk.find_type_definition('via.gui.PlayObject')
 local currentTypecacheVersion = 1
 
 local readonly_cache_item = { type = handlerType.readonly, itemCount = 1 }
@@ -97,7 +100,76 @@ end
 
 --- @param typedef RETypeDefinition
 --- @param typecache table<string, TypeCacheData>
-local function build_typecache(typedef, typecache)
+local build_typecache = function (typedef, typecache) end
+
+--- @param fullname string
+--- @param typedef RETypeDefinition
+--- @param typecache table<string, TypeCacheData>
+local function generate_props(fullname, typedef, typecache)
+    local objectCacheEntry = typecache[fullname]
+    local props = {} --- @type [string, string, 1|2|3][]
+    local propsDict = {} --- @type table<string, {index: number, get: REMethodDefinition|nil, set: REMethodDefinition|nil}>
+    local curtype = typedef
+    local propOrder
+    repeat
+        local full = curtype:get_full_name()
+        if ignored_parents[full] then break end
+
+        local ts = typeSettings[full]
+        propOrder = propOrder or (ts and ts.propOrder and #ts.propOrder > 0 and ts.propOrder or nil)
+
+        for _, method in ipairs(curtype:get_methods()) do
+            local methname = method:get_name()
+            local propname = methname:len() >= 5 and methname:sub(5) or nil
+            if propname and methname:sub(1, 4) == 'get_' and not curtype:get_field('<' .. propname .. '>k__BackingField') then
+                if not propsDict[propname] then
+                    propsDict[propname] = { index = #props+1 }
+                    local mt = method:get_return_type()
+                    props[#props+1] = { propname, mt:get_full_name(), 1 }
+                    build_typecache(mt, typecache)
+                end
+                if not propsDict[propname].get then
+                    propsDict[propname].get = method
+                    if propsDict[propname].set then props[propsDict[propname].index][3] = 3 end
+                end
+            end
+            if propname and methname:sub(1, 4) == 'set_' and not curtype:get_field('<' .. propname .. '>k__BackingField') then
+                if not propsDict[propname] then
+                    propsDict[propname] = { index = #props+1 }
+                    local mt = method:get_param_types()[1]
+                    props[#props+1] = { propname, mt:get_full_name(), 2 }
+                    build_typecache(mt, typecache)
+                end
+                if not propsDict[propname].set then
+                    propsDict[propname].set = method
+                    if propsDict[propname].get then props[propsDict[propname].index][3] = 3 end
+                end
+            end
+        end
+        curtype = curtype:get_parent_type()
+    until not curtype
+
+    if propOrder then
+        local propBackup = utils.clone_table(props)
+        table.sort(props, function (a, b)
+            local i1 = utils.table_index_of(propOrder, a[1])
+            local i2 = utils.table_index_of(propOrder, b[1])
+            if i1 == 0 and i2 == 0 then
+                return utils.table_index_of(propBackup, a) > utils.table_index_of(propBackup, b)
+            elseif i1 == 0 or i2 == 0 then
+                return i1 > i2
+            else
+                return i1 < i2
+            end
+        end)
+    end
+
+    objectCacheEntry.props = props
+end
+
+--- @param typedef RETypeDefinition
+--- @param typecache table<string, TypeCacheData>
+build_typecache = function (typedef, typecache)
     local fullname = typedef:get_full_name()
     if typecache[fullname] then return end
 
@@ -409,12 +481,16 @@ local function build_typecache(typedef, typecache)
         objectCacheEntry.itemCount = objectCacheEntry.itemCount + largest_abstract_field_count
     end
 
+    generate_props(fullname, typedef, typecache)
+
     if typedef:is_a(type_userdata) then
         objectCacheEntry.specialType = specialType.userdata
     elseif typedef:is_a(type_resourceHolder) then
         objectCacheEntry.specialType = specialType.resource
     elseif typedef:is_a(type_component) then
         objectCacheEntry.specialType = specialType.component
+    elseif typedef:is_a(type_playObject) then
+        objectCacheEntry.specialType = specialType.gui
     end
 end
 

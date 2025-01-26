@@ -1,6 +1,7 @@
 if type(usercontent) == 'nil' then usercontent = {} end
 if usercontent.definitions then return usercontent.definitions end
 
+local core = require('content_editor.core')
 local common = require('content_editor.ui.common')
 
 --- @type table<string, UserdataEditorSettings>
@@ -10,26 +11,51 @@ local type_settings = {
     ['via.GameObjectRef'] = {
         uiHandler = common.readonly_label(),
     },
-    ['via.GameObject'] = {
-        force_expander = true,
+    ['via.gui.PlayObject'] = {
+        propOrder = {'Visible', 'Name', 'Parent', 'Child', 'Next', 'Component', 'GameObject'},
+        abstract = {
+            'via.gui.BlurFilter',
+            'via.gui.Capture',
+            'via.gui.Circle',
+            'via.gui.Control',
+            'via.gui.DebugRect',
+            'via.gui.DebugText',
+            'via.gui.Effect',
+            'via.gui.Effect2D',
+            'via.gui.Effect2DTexture',
+            'via.gui.EventTrigger',
+            'via.gui.FluentScrollBar',
+            'via.gui.FluentScrollGrid',
+            'via.gui.FluentScrollList',
+            'via.gui.FreePolygon',
+            'via.gui.HitArea',
+            'via.gui.ImageFilter',
+            'via.gui.ItemsControlLink',
+            'via.gui.Line',
+            'via.gui.Material',
+            'via.gui.MaterialText',
+            'via.gui.Mesh',
+            'via.gui.NumberSelection',
+            'via.gui.OverlayUITexture',
+            'via.gui.Panel',
+            'via.gui.ParamSetter',
+            'via.gui.Rect',
+            'via.gui.Scale9Grid',
+            'via.gui.Scale9GridV2',
+            'via.gui.ScrollBar',
+            'via.gui.ScrollGrid',
+            'via.gui.ScrollList',
+            'via.gui.SelectItem',
+            'via.gui.SimpleList',
+            'via.gui.SpriteSet',
+            'via.gui.Svg',
+            'via.gui.Text',
+            'via.gui.Texture',
+            'via.gui.TextureSet',
+            'via.gui.View',
+            'via.gui.Window',
+        },
     },
-    ['via.UserData'] = {
-        toString = function (value, context)
-            return (context and context.data.classname or value:get_type_definition():get_full_name()) .. ': ' .. (value.get_Path and value:get_Path() or tostring(value))
-        end
-    },
-    ['via.Quaternion'] = {
-        force_expander = false,
-    },
-    ['via.Float4'] = {
-        force_expander = false,
-    },
-    ['via.vec4'] = {
-        force_expander = false,
-    },
-    ['via.Size'] = {
-        uiHandler = common.vec_n({'w', 'h'}, imgui.drag_float2, function() return Vector2f.new(0, 0) end),
-    }
 }
 
 local function merge_table(target, src)
@@ -122,6 +148,38 @@ local rszPath = 'usercontent/rsz/' .. reframework.get_game_name() .. '.json'
 local rszTypes = json.load_file(rszPath)
 if rszTypes then
     add_type_overrides('', rszTypes)
+end
+
+if core.editor_enabled then
+    add_type_overrides('', {
+        ['via.GameObject'] = {
+            force_expander = true,
+        },
+        ['via.UserData'] = {
+            toString = function (value, context)
+                return (context and context.data.classname or value:get_type_definition():get_full_name()) .. ': ' .. (value.get_Path and value:get_Path() or tostring(value))
+            end
+        },
+        ['via.Quaternion'] = {
+            force_expander = false,
+        },
+        ['via.Float4'] = {
+            force_expander = false,
+        },
+        ['via.vec4'] = {
+            force_expander = false,
+        },
+        ['via.Size'] = {
+            uiHandler = common.vec_n({'w', 'h'}, imgui.drag_float2, function() return Vector2f.new(0, 0) end),
+        },
+    })
+    add_type_overrides_abstract('via.gui.PlayObject', function (settings, classname)
+        if not settings.toString then
+            settings.toString = function (value, context)
+                return value:get_Name() .. '     | ' .. classname
+            end
+        end
+    end)
 end
 
 usercontent.definitions = {

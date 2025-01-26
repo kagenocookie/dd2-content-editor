@@ -1,6 +1,9 @@
 if type(usercontent) == 'nil' then usercontent = {} end
 if usercontent.core then return usercontent.core end
 
+require('content_editor.events')
+local utils = require('content_editor.utils')
+
 local color_statuses = {
     default = 0,
     disabled = 1,
@@ -89,6 +92,83 @@ local function get_files(type, forceRescan)
     return globCache[folder_name] or {}
 end
 
+--- @class UserdataConfig
+--- @field bundle_order string[]
+--- @field bundle_settings table<string, UserdataConfig.BundleSettings>
+--- @field editor _UserdataConfig.EditorSettings
+
+--- @class _UserdataConfig.EditorSettings
+--- @field enabled boolean
+--- @field show_window boolean
+--- @field selected_editor_tab_index number
+--- @field author_name string
+--- @field devmode boolean|nil
+--- @field disable_unknown_entity_alerts boolean|nil
+--- @field show_prop_labels boolean|nil
+--- @field author_description string|nil
+--- @field active_bundle string|nil
+--- @field next_editor_id integer
+--- @field tabs table<string, EditorState>
+--- @field windows EditorState[]
+--- @field language string
+--- @field storage nil|table<string, any>
+
+--- @alias EditorState _EditorStateDefaults|table
+
+--- @class _EditorStateDefaults
+--- @field id integer
+--- @field name string
+--- @field title string
+
+--- @class UserdataConfig.BundleSettings
+--- @field disabled boolean
+
+--- @type UserdataConfig
+local config = {
+    editor = {
+        enabled = false,
+        show_window = false,
+        selected_editor_tab_index = 1,
+        author_name = 'Unknown user',
+        active_bundle = nil,
+        tabs = {},
+        windows = {},
+        storage = {},
+        next_editor_id = 1,
+        show_prop_labels = false,
+        language = 'en',
+    },
+    bundle_order = {},
+    bundle_settings = {},
+}
+
+local function load_config()
+    local f = json.load_file(get_path('editor_settings.json'))
+    if f then
+        if f.bundle_settings then
+            for name, settings in pairs(f.bundle_settings) do
+                local existing = config.bundle_settings[name]
+                if not existing then
+                    config.bundle_settings[name] = settings
+                else
+                    utils.merge_into_table(settings, existing)
+                end
+            end
+        end
+
+        if f.bundle_order then config.bundle_order = f.bundle_order end
+        utils.table_assign(config.editor, f.editor or {})
+
+        usercontent.__internal.emit('_loadConfig', config)
+    end
+end
+
+local function save_config()
+    json.dump_file(get_path('editor_settings.json'), config)
+end
+
+load_config()
+
 local version = {0, 0, 0}
 
 local isDebug = nil
@@ -102,7 +182,6 @@ local function log_debug(...)
     end
     if not isDebug then return end
     print('[DEBUG] Content editor:', ...)
-    -- local args = {...}
     log.info('[DEBUG] Content editor: ' .. table.concat({...}, '\t'))
 end
 
@@ -125,9 +204,20 @@ usercontent.core = {
     --- Get a list of files within a content editor folder
     get_files = get_files,
     --- Whether the content editor part of the mod is enabled and loaded
-    editor_enabled = false,
+    editor_enabled = config.editor.enabled,
     --- Log a message to both console and log file if content editor debug mode is enabled
     log_debug = log_debug,
+}
+
+usercontent.__internal.config = {
+    data = config,
+    save = save_config,
+    load = load_config,
+    _get_next_editor_id = function ()
+        local id = config.editor.next_editor_id
+        config.editor.next_editor_id = id + 1
+        return id
+    end
 }
 
 require('content_editor.utils')
