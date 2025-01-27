@@ -400,6 +400,27 @@ local function register(register_extension)
                             usercontent._ui_handlers._internal.generate_field_label(prop, true),
                             usercontent._ui_handlers._internal.accessors.create_prop(sdk.find_type_definition(containerType), (methods & 1) ~= 0 and ('get_' .. prop), (methods & 2) ~= 0 and ('set_' .. prop)),
                             getter_settings)
+
+                        local org_ui = childCtx.ui
+                        ---@cast org_ui -nil
+                        childCtx.ui = function (context)
+                            if context.data._propError then
+                                imgui.text(context.label .. ': ')
+                                imgui.same_line()
+                                imgui.text_colored(context.data._propError, core.get_color('error'))
+                                return false
+                            end
+
+                            local propval = context.get()
+                            if propval == usercontent.ui.handlers._internal.prop_invalid_error_value_constant then
+                                context.data._propError = propval.message
+                                imgui.text(context.label .. ': ')
+                                imgui.same_line()
+                                imgui.text_colored(context.data._propError, core.get_color('error'))
+                                return false
+                            end
+                            return org_ui(context)
+                        end
                     end
                     childCtx:ui()
                 end

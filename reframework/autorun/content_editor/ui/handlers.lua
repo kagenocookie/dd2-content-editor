@@ -360,20 +360,34 @@ local component_go_accessor = {
     set = function () print('Error: GameObject reference not editable') end
 }
 
+local prop_invalid_error_value_constant = { message = '' }
+
 --- @param typedef RETypeDefinition
 --- @param getter string|nil
 --- @param setter string|nil
 local function create_prop_accessor(typedef, getter, setter)
     local getf, setf
-    local cachedValue
+    local cachedValue, didfail
     if getter then
         local get_method = typedef:get_method(getter)
         -- since we don't know what kind of bullshit the getter might be doing, call the get method once and cache the value
         -- it should get reset when the tree item is reopened since that would clear up the ui context
         getf = get_method and function (object)
-            if not cachedValue then
-                cachedValue = get_method:call(object)
-                if type(cachedValue) == 'userdata' and cachedValue.add_ref then cachedValue = cachedValue:add_ref() end
+            if cachedValue == nil then
+                local success, cv = pcall(get_method.call, get_method, object)
+                if not success then
+                    print(getter .. ' property getter error: ' .. tostring(cv))
+                    cachedValue = 'ERROR: ' .. tostring(cv)
+                    prop_invalid_error_value_constant.message = cachedValue
+                    didfail = true
+                    return prop_invalid_error_value_constant
+                else
+                    cachedValue = cv
+                    if type(cachedValue) == 'userdata' and cachedValue.add_ref then cachedValue = cachedValue:add_ref() end
+                end
+            elseif didfail then
+                prop_invalid_error_value_constant.message = cachedValue
+                return prop_invalid_error_value_constant
             end
             return cachedValue
         end
@@ -1372,6 +1386,7 @@ usercontent._ui_handlers = {
         apply_overrides = apply_ui_handler_overrides,
         create_field_editor = create_field_editor,
         generate_field_label = generate_field_label,
+        prop_invalid_error_value_constant = prop_invalid_error_value_constant,
         accessors = {
             default = default_accessor,
             boxed_enum_accessor = boxed_enum_accessor,
