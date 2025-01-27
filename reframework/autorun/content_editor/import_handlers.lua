@@ -218,6 +218,9 @@ importer_factories = {
     [typecache.handlerTypes.readonly] = function ()
         return import_export_ignore
     end,
+    [typecache.handlerTypes.delegate] = function ()
+        return import_export_ignore
+    end,
 
     [typecache.handlerTypes.value] = function (meta, fullname)
         local typedef = sdk.find_type_definition(fullname)
@@ -417,7 +420,7 @@ importer_factories = {
     end,
 
     [typecache.handlerTypes.object] = function (meta, fullname)
-        if meta.specialType == 2 then
+        if meta.specialType == typecache.specialType.resource then
             local resourceClass = fullname:gsub('Holder$', '')
             known_importers[fullname] = resource(resourceClass)
             return known_importers[fullname]
@@ -521,7 +524,7 @@ importer_factories = {
             return target
         end
 
-        if meta.specialType == 1 then
+        if meta.specialType == typecache.specialType.userdata then
             local fullImport, fullExport = resultHandler.import, resultHandler.export
             resultHandler.import = function (src, target)
                 if type(src) == 'string' then

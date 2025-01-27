@@ -411,6 +411,45 @@ local function register(register_extension)
         end
     end)
 
+    local t_transformObj = sdk.find_type_definition('via.gui.TransformObject')
+    register_extension('gui_tree', function (handler)
+        --- @type UIHandler
+        return function (ctx)
+            local gui = ctx.get() ---@type REManagedObject|nil
+            if ctx.data.is_transform == nil and gui then
+                ctx.data.is_transform = gui:get_type_definition():is_a(t_transformObj)
+            end
+            if ctx.data.is_transform and gui then
+                imgui.begin_rect()
+                imgui.push_id(gui:get_address())
+                if imgui.tree_node('GUI Children') then
+                    local gui_child_ctx = usercontent.ui.context.get_child(ctx, 'gui_children')
+                    if not gui_child_ctx then
+                        gui_child_ctx = usercontent.ui.context.get_or_create_child(ctx, 'gui_children', {}, '', nil, '')
+                        local create_field_editor = usercontent.ui.handlers._internal.create_field_editor
+                        local child = gui:get_Child()
+                        while child do
+                            local index = #gui_child_ctx.object + 1
+                            gui_child_ctx.object[index] = child:add_ref()
+                            create_field_editor(gui_child_ctx, '__none', index, child:get_type_definition():get_full_name(), child:get_Name(), nil, ctx.data.ui_settings, false)
+                            child = child:get_Next()
+                        end
+                    end
+
+                    for _, guiChild in ipairs(gui_child_ctx.children) do
+                        guiChild:ui()
+                    end
+                    imgui.tree_pop()
+                end
+                imgui.pop_id()
+                imgui.end_rect(4)
+                imgui.spacing()
+            end
+            local changed = handler(ctx)
+            return changed
+        end
+    end)
+
     local MessageManager = sdk.get_managed_singleton('app.MessageManager')
     register_extension('translate_guid', function (handler, data)
         local prefix = data.data or ''

@@ -464,7 +464,7 @@ _object_to_string_internal = function(item, classname, context)
         end
     end
     if type(item) == 'table' then
-        if meta.specialType == 1 and item and item['$uri'] then
+        if meta.specialType == typecache.specialType.userdata and item and item['$uri'] then
             return classname .. ' (raw data) - ' .. tostring(item['$uri'])
         else
             return classname .. ' (raw data)'

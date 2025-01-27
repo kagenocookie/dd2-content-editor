@@ -820,7 +820,7 @@ field_editor_factories = {
         if object_handlers[classname] then
             return object_handlers[classname]
         end
-        if meta.specialType == 2 then
+        if meta.specialType == typecache.specialType.resource then
             local resourceClass = classname:gsub('Holder$', '')
             object_handlers[classname] = common.resource_holder(resourceClass)
             return object_handlers[classname]
@@ -909,7 +909,7 @@ field_editor_factories = {
                     end
                 end
 
-                if meta.specialType == 3 then
+                if meta.specialType == typecache.specialType.component then
                     create_field_editor(context, classname, '__go', 'via.GameObject', 'GameObject', component_go_accessor, settings):ui()
                     imgui.spacing()
                 end
@@ -966,6 +966,10 @@ field_editor_factories = {
 
             if settings.allow_props and meta.props and #meta.props > 0 then
                 mainHandler = ui_extensions['props'](mainHandler, { } --[[@as any]])
+            end
+
+            if meta.specialType == typecache.specialType.gui then
+                mainHandler = ui_extensions['gui_tree'](mainHandler, { } --[[@as any]])
             end
         end
 

@@ -650,6 +650,7 @@ usercontent._typecache = {
     process_rsz_data = process_rsz,
 
     handlerTypes = handlerType,
+    specialType = specialType,
     fieldFlags = fieldFlags,
 }
 return usercontent._typecache
