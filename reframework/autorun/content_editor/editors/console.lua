@@ -198,7 +198,7 @@ local function prepare_exec_func(text)
     end
 end
 
-ce_find = function (text, single)
+function ce_find(text, single)
     local s, e = pcall(find_game_object, text)
     if single == true and type(e) == 'table' then
         return select(2, next(e))
@@ -206,7 +206,7 @@ ce_find = function (text, single)
     return e
 end
 
-ce_dump = function(command, outputFile)
+function ce_dump(command, outputFile)
     if not command then return nil end
     local result
     if type(command) == 'string' then

@@ -385,6 +385,13 @@ local function register(register_extension)
 
             imgui.begin_rect()
             if imgui.tree_node(ctx.label .. ' Properties') then
+                imgui.same_line()
+                if imgui.button('Refresh values') or ctx.data.props_autorefresh then
+                    usercontent.ui.context.delete_children(ctx)
+                end
+                imgui.same_line()
+                _, ctx.data.props_autorefresh = imgui.checkbox('Keep refreshing', ctx.data.props_autorefresh or false)
+
                 for _, propdata in ipairs(meta.props) do
                     local prop = propdata[1]
                     local propkey = '__prop_' .. prop
@@ -436,17 +443,23 @@ local function register(register_extension)
     register_extension('gui_tree', function (handler)
         --- @type UIHandler
         return function (ctx)
-            local gui = ctx.get() ---@type REManagedObject|nil
-            if ctx.data.is_transform == nil and gui then
+            local gui = ctx.get() ---@type via.gui.PlayObject|nil
+            if not gui then return handler(ctx) end
+
+            ctx.data.gui_path = ctx.data.gui_path or utils.gui.get_path(gui)
+            if ctx.data.gui_path ~= ctx.label then
+                imgui.input_text('Full GUI path', ctx.data.gui_path)
+            end
+
+            if ctx.data.is_transform == nil then
                 ctx.data.is_transform = gui:get_type_definition():is_a(t_transformObj)
             end
-            if ctx.data.is_transform and gui then
+            if ctx.data.is_transform then
                 imgui.begin_rect()
                 imgui.push_id(gui:get_address())
                 if imgui.tree_node('GUI Children') then
-                    local gui_child_ctx = usercontent.ui.context.get_child(ctx, 'gui_children')
-                    if not gui_child_ctx then
-                        gui_child_ctx = usercontent.ui.context.get_or_create_child(ctx, 'gui_children', {}, '', nil, '')
+                    local gui_child_ctx, isnew = usercontent.ui.context.get_or_create_child(ctx, 'gui_children', {}, '', nil, '')
+                    if isnew then
                         local create_field_editor = usercontent.ui.handlers._internal.create_field_editor
                         local child = gui:get_Child()
                         while child do

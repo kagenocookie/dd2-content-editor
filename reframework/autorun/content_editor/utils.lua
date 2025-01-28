@@ -659,7 +659,26 @@ local function create_go_with_component(nameString, componentTypeString, folder)
     return go, component
 end
 
---- comment
+local m_gui_get_object = sdk.find_type_definition("via.gui.Control"):get_method("getObject(System.String)")
+--- @param gui via.gui.Control
+--- @param path string
+--- @return via.gui.PlayObject|nil
+local function get_gui_by_path(gui, path)
+    return m_gui_get_object:call(gui, path)
+end
+
+--- @param gui via.gui.PlayObject
+--- @return string
+local function get_gui_absolute_path(gui)
+    local path = gui:get_Name()--[[@as string]]
+    local parent = gui:get_Parent()
+    while parent do
+        path = parent:get_Name() .. '/' .. path
+        parent = parent:get_Parent()
+    end
+    return path
+end
+
 --- @param array SystemArray
 --- @param itemType RETypeDefinition|string
 --- @return REManagedObject[]
@@ -832,7 +851,12 @@ usercontent.utils = {
         add_component = add_gameobject_component,
         create_with_component = create_go_with_component,
     },
+    gui = {
+        find = get_gui_by_path,
+        get_path = get_gui_absolute_path,
+    },
     folder_get_children = folder_get_children,
 }
 
+_G.ce_utils = usercontent.utils
 return usercontent.utils

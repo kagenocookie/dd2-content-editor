@@ -12,7 +12,7 @@ local type_settings = {
         uiHandler = common.readonly_label(),
     },
     ['via.gui.PlayObject'] = {
-        propOrder = {'Visible', 'Name', 'Parent', 'Child', 'Next', 'Component', 'GameObject'},
+        propOrder = {'Visible', 'Name', 'Parent', 'Child', 'Component', 'GameObject'},
         abstract = {
             'via.gui.BlurFilter',
             'via.gui.Capture',
@@ -169,14 +169,23 @@ if core.editor_enabled then
         ['via.vec4'] = {
             force_expander = false,
         },
+        ['System.Guid'] = {
+            force_expander = false,
+        },
+        ['System.String'] = {
+            force_expander = false,
+        },
         ['via.Size'] = {
             uiHandler = common.vec_n({'w', 'h'}, imgui.drag_float2, function() return Vector2f.new(0, 0) end),
+        },
+        ['via.gui.Text'] = {
+            propOrder = {'Visible', 'Name', 'Parent', 'Child', 'Message', 'MessageId'},
         },
     })
     add_type_overrides_abstract('via.gui.PlayObject', function (settings, classname)
         if not settings.toString then
-            settings.toString = function (value, context)
-                return value:get_Name() .. '     | ' .. classname
+            settings.toString = function (value)
+                return value:get_Name() .. '     |     ' .. classname
             end
         end
     end)
