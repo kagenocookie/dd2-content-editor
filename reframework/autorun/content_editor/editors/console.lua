@@ -14,7 +14,7 @@ local max_history = 50
 
 local console_ctx = ui.context.create_root({}, nil, 'console', '__console')
 
-local console_ui_settings = { no_nonserialized_indicator = true, allow_props = true }
+local console_ui_settings = { no_nonserialized_indicator = true, allow_props = true, allow_methods = true }
 
 ---@param obj REManagedObject|ValueType
 local function display_managed(obj, state)
@@ -57,20 +57,6 @@ udb.events.on('ready', function ()
         end
     end
 end)
-
----@param text string
-local function linecount(text)
-    local m = text:gmatch('\n')
-    local count = 1
-    while m() do
-        count = count + 1
-    end
-    return count
-end
-
-local function lineHeight(lines)
-    return 6 + lines * (imgui.get_default_font_size() + 2)
-end
 
 ---@param text string
 local function isMultiline(text)
@@ -271,9 +257,7 @@ editor.define_window('data_viewer', 'Console', function (state)
     if imgui.button('?') then state.toggleInfo = not state.toggleInfo end
     imgui.same_line()
     if state.multiline then
-        local w = imgui.calc_item_width()
-        local h = state.input and lineHeight(math.min(maxlines, linecount(state.input))) or 1
-        state.input = select(2, imgui.input_text_multiline('##data_viewer', state.input or '', Vector2f.new(w, h)))
+        state.input = select(2, ui.basic.expanding_multiline_input('##data_viewer', state.input or ''))
     else
         state.input = select(2, imgui.input_text('##data_viewer', state.input or ''))
     end

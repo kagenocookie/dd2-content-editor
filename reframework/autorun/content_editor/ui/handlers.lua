@@ -27,6 +27,7 @@ local defines = {
 --- @field is_readonly boolean|nil
 --- @field no_nonserialized_indicator boolean|nil
 --- @field allow_props boolean|nil
+--- @field allow_methods boolean|nil
 
 --- @type table<string, UIHandler>
 local object_handlers = {
@@ -980,6 +981,10 @@ field_editor_factories = {
 
             if settings.allow_props and meta.props and #meta.props > 0 then
                 mainHandler = ui_extensions['props'](mainHandler, { } --[[@as any]])
+            end
+
+            if settings.allow_methods then
+                mainHandler = ui_extensions['methods'](mainHandler, { } --[[@as any]])
             end
 
             if meta.specialType == typecache.specialType.gui then

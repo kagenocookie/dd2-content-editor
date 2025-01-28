@@ -514,7 +514,7 @@ end
 
 local function save_type_cache()
     cache.__VERSION = currentTypecacheVersion
-    json.dump_file(typecache_path, cache)
+    json.dump_file(typecache_path, cache, 1)
 end
 
 local function save_if_invalid()
@@ -637,12 +637,55 @@ local function process_rsz()
     fs.write(outfn, outjson)
 end
 
+local class_method_info_cache = {}
+--- @param classname string
+local function get_class_method_summary(classname)
+    local cached = class_method_info_cache[classname]
+    if cached then return cached end
+
+    cached = {} ---@type { name: string, signature: string, method: REMethodDefinition, returntype: string, params: { name: string, type: string, is_simple_value: boolean }[] }[]
+    local typedef = sdk.find_type_definition(classname)
+    for _, method in ipairs(typedef:get_methods()) do
+        --- @cast method REMethodDefinition
+        local name = method:get_name()
+        if name:sub(1, 4) == 'get_' or name:sub(1, 4) == 'set_' or name:sub(1, 4) == 'add_' or name:sub(1, 7) == 'remove_' then
+            -- ignore property / event methods here
+        else
+            local names = method:get_param_names()
+            local types = method:get_param_types()
+            local params = {}
+            local signature = name .. '('
+            for paramId, paramType in ipairs(types) do
+                local paramName = names[paramId]
+                local paramFullname = paramType:get_full_name()
+                if paramId == 1 then
+                    signature = signature .. paramFullname
+                else
+                    signature = signature .. ', ' .. paramFullname
+                end
+                local p_meta = get_typecache_entry(paramFullname)
+                local isSimple = p_meta.type == handlerType.enum or usercontent._ui_utils.is_basic_type(paramFullname) or p_meta.type == handlerType.value and p_meta.itemCount <= 4
+                params[#params+1] = { name = paramName, type = paramFullname, is_simple_value = isSimple }
+            end
+
+            signature = signature .. ')'
+
+            cached[#cached+1] = { name = name, signature = signature, params = params, method = method, returntype = method:get_return_type():get_full_name(), count = #params }
+        end
+    end
+    class_method_info_cache[classname] = cached
+
+    return cached
+end
+
 usercontent._typecache = {
     get = get_typecache_entry,
     load = load_type_cache,
     clear = clear_type_cache,
     save = save_type_cache,
     save_if_invalid = save_if_invalid,
+
+    get_method_summary = get_class_method_summary,
 
     boxed_value_field = get_boxed_value_field,
     boxed_enum_field = get_boxed_enum_field,

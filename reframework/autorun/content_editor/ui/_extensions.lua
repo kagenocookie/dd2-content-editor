@@ -344,7 +344,7 @@ local function register(register_extension)
         end
     end)
 
-    local getter_settings = {is_readonly = true, hide_nonserialized = false, is_raw_data = false, allow_props = true}
+    local getter_settings = {is_readonly = true, hide_nonserialized = false, is_raw_data = false, allow_props = true, allow_methods = true}
     register_extension('getter_property', function (handler, data)
         local props = data.props or data.prop and {data.prop} --- @type string[]
         --- @type UIHandler
@@ -372,6 +372,148 @@ local function register(register_extension)
         end
     end)
 
+    local function cmd_try_load_and_execute(cmd, chunkname)
+        local realcmd = cmd
+        if not realcmd:find('return') then realcmd = 'return ' .. realcmd end
+
+        local fn, err = load(realcmd, chunkname)
+        if err or not fn then return false, (err or 'Failed to compile function') end
+
+        local succ, result = pcall(fn)
+        if not succ then return false, tostring(result) end
+        return true, result
+    end
+
+    register_extension('methods', function (handler)
+        local methodCount
+        --- @type UIHandler
+        return function (ctx)
+            local target = ctx.get()
+            if type(target) ~= 'userdata' or methodCount == 0 then return handler(ctx) end
+            ---@cast target REManagedObject
+
+            local minfo = usercontent._typecache.get_method_summary(ctx.data.classname)
+            methodCount = #minfo
+            if methodCount > 0 then imgui.begin_rect() end
+            if methodCount > 0 and imgui.tree_node(ctx.label .. ' Methods') then
+                local root_ctx = usercontent.ui.context.get_child(ctx, 'methods') or usercontent.ui.context.get_or_create_child(ctx, 'methods', {}, '', nil, '')
+                root_ctx.data.filter = select(2, imgui.input_text('Filter', root_ctx.data.filter or ''))
+                for i, methodinfo in ipairs(minfo) do
+                    local ignore = false
+                    if root_ctx.data.filter and root_ctx.data.filter ~= '' then
+                        if not methodinfo.name:lower():find(root_ctx.data.filter:lower()) then
+                            ignore = true
+                        end
+                    end
+                    if not ignore and ui.treenode_suffix(methodinfo.name .. (methodinfo.method:is_static() and ' [static]' or '') .. '##' .. methodinfo.signature, methodinfo.signature:sub(#methodinfo.name + 1)) then
+                        imgui.input_text('Signature', methodinfo.signature)
+                        local paramcount = #methodinfo.params
+                        local canExecute = true
+                        local method_ctx = usercontent.ui.context.get_or_create_child(root_ctx, methodinfo.signature, {}, '', nil, '')
+
+                        -- param inputs
+                        if paramcount > 0 then
+                            for p, param in ipairs(methodinfo.params) do
+                                if param.is_simple_value then
+                                    if method_ctx.object[p] == nil then
+                                        method_ctx.object[p] = usercontent._ui_utils.create_instance(param.type)
+                                    end
+                                    usercontent._ui_handlers._internal.create_field_editor(method_ctx, '', p, param.type, p .. ': ' .. param.name, nil, ctx.data.ui_settings, true):ui()
+                                else
+                                    local inline_obj_key = p..'_obj'
+                                    -- local meta = usercontent._typecache.get(param.type)
+                                    if method_ctx.object[inline_obj_key] then
+                                        usercontent._ui_handlers._internal.create_field_editor(method_ctx, '', p, param.type, p .. ': ' .. param.name .. ' (Temp object)', nil, ctx.data.ui_settings, false):ui()
+                                        imgui.same_line()
+                                        if imgui.button('Use script') then
+                                            method_ctx.object[p] = ''
+                                            method_ctx.object[inline_obj_key] = nil
+                                        end
+                                    else
+                                        local changed, newvalue = ui.expanding_multiline_input(p .. ': ' .. param.name .. ' (Lua)', method_ctx.object[p] or '')
+                                        if changed then method_ctx.object[p] = newvalue end
+                                        if not method_ctx.object[p] then canExecute = false end
+
+                                        imgui.same_line()
+                                        if imgui.button('Create temp object') then
+                                            -- method_ctx.object[inline_obj_key] = helpers.create_instance(param.type)
+                                            -- method_ctx.object[p] = 'return sdk.to_managed_object(' .. method_ctx.object[inline_obj_key]:get_address() .. ')'
+                                            method_ctx.object[inline_obj_key] = true
+                                            method_ctx.object[p] = helpers.create_instance(param.type)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        imgui.text('Return type: ' .. methodinfo.method:get_return_type():get_full_name())
+
+                        if canExecute and imgui.button('Execute') then
+                            method_ctx.object.last_error = nil
+                            method_ctx.object.last_result = nil
+
+                            -- collect call params
+                            local args = {}
+                            for p, param in ipairs(methodinfo.params) do
+                                if param.is_simple_value or method_ctx.object[p .. '_obj'] or param.type == 'System.String' then
+                                    args[#args+1] = method_ctx.object[p]
+                                else
+                                    local cmd = method_ctx.object[p]
+                                    local succ, result = cmd_try_load_and_execute(cmd, '_method_exec_' .. methodinfo.signature)
+                                    if succ then
+                                        args[#args+1] = result
+                                    else
+                                        method_ctx.object.last_error = 'Arg ' .. i .. ': ' .. tostring(result)
+                                        canExecute = false
+                                        break
+                                    end
+                                end
+                            end
+
+                            -- if collected params were OK, execute now
+                            if canExecute then
+                                local success, execResult
+                                print('Calling method', methodinfo.signature, table.unpack(args))
+                                if methodinfo.method:is_static() then
+                                    success, execResult = pcall(methodinfo.method.call, methodinfo.method, nil, table.unpack(args))
+                                else
+                                    success, execResult = pcall(methodinfo.method.call, methodinfo.method, target, table.unpack(args))
+                                end
+                                if not success then
+                                    method_ctx.object.last_error = 'Execute error: ' .. tostring(execResult)
+                                else
+                                    if methodinfo.returntype == 'System.Void' then
+                                        method_ctx.object.last_result = 'OK'
+                                    else
+                                        if type(execResult) == 'userdata' and execResult.add_ref then
+                                            execResult = execResult:add_ref()
+                                        elseif execResult == nil then
+                                            execResult = 'null'
+                                        end
+                                        method_ctx.object.last_result = execResult
+                                    end
+                                end
+                            end
+                        end
+
+                        if method_ctx.object.last_error ~= nil then
+                            imgui.text_colored(method_ctx.object.last_error, core.get_color('error'))
+                        elseif method_ctx.object.last_result ~= nil then
+                            if type(method_ctx.object.last_result) == 'userdata' and method_ctx.object.last_result.get_type_definition then
+                                usercontent._ui_handlers._internal.create_field_editor(method_ctx, '', 'last_result', method_ctx.object.last_result:get_type_definition():get_full_name(), 'Result', nil, ctx.data.ui_settings, true):ui()
+                            else
+                                imgui.text('Result: ' .. helpers.to_string(method_ctx.object.last_result, methodinfo.returntype))
+                            end
+                        end
+                        imgui.tree_pop()
+                    end
+                end
+                imgui.tree_pop()
+            end
+            if methodCount > 0 then imgui.end_rect(4) imgui.spacing() end
+            return handler(ctx)
+        end
+    end)
     register_extension('props', function (handler)
         local meta
         --- @type UIHandler

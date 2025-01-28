@@ -273,7 +273,6 @@ importer_factories = {
             end,
             import = function (src, target)
                 if target == nil then
-                    print('WARNING: original nullable value was nil, this will likely not work...', fullname)
                     target = ValueType.new(typedef)
                 end
                 if src == 'null' or src == nil then

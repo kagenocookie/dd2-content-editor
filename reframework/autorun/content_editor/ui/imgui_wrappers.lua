@@ -275,6 +275,31 @@ local function imgui_tabs(tabs, selectedTabIndex)
     return changed, selectedTabIndex
 end
 
+---@param text string
+local function linecount(text)
+    local m = text:gmatch('\n')
+    local count = 1
+    while m() do
+        count = count + 1
+    end
+    return count
+end
+
+local function lineHeight(lines)
+    return 6 + lines * (imgui.get_default_font_size() + 2)
+end
+
+--- @param label string
+--- @param value string
+--- @param maxlines integer|nil
+local function expanding_multiline_input(label, value, maxlines)
+    maxlines = maxlines or 10
+    local w = imgui.calc_item_width()
+    local h = value and lineHeight(math.min(maxlines, linecount(value))) or 1
+    local changed, newvalue = imgui.input_text_multiline(label, value or '', Vector2f.new(w, h))
+    return changed, newvalue
+end
+
 usercontent._ui_wrappers = {
     DEFAULT_WIDTH = DEFAULT_WIDTH,
 
@@ -289,6 +314,7 @@ usercontent._ui_wrappers = {
     enum_value_picker = imgui_enum_value_picker,
     filterable_enum_picker = imgui_filterable_enum_picker,
     filterable_enum_value_picker = imgui_filterable_enum_value_picker,
+    expanding_multiline_input = expanding_multiline_input,
 
     tabs = imgui_tabs,
 

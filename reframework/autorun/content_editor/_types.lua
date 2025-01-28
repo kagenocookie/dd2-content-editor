@@ -54,10 +54,6 @@
 --- @field add nil|fun(arr: ArrayLikeObject, object: any, arrayClassname: string): ArrayLikeObject Returns the new (or same) array-like object instance
 --- @field create nil|fun(classname: string): ArrayLikeObject Returns a new array-like object instance of the correct type
 
---- @class UISettings
---- @field tooltip string|nil
---- @field show_nested boolean|nil
-
 --- @class ValueImporter
 --- @field import fun(src: any, currentValue: nil|(REManagedObject|any)): any
 --- @field export fun(src: any, target: table|nil, options: ExportOptions|nil): any

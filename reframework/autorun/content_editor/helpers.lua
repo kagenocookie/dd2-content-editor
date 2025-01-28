@@ -235,7 +235,7 @@ create_new_instance = function(classname, luaValue)
         return sdk.create_instance(classname):add_ref()
     end
     if meta.type == typecache.handlerTypes.nullableValue then
-        return sdk.create_instance(classname):add_ref()
+        return ValueType.new(sdk.find_type_definition(classname))
     end
 end
 
@@ -675,6 +675,7 @@ usercontent._ui_utils = {
     create_generic_instance = create_generic,
     create_generic_list = create_generic_list,
 
+    is_basic_type = function (classname) return classname == 'System.Boolean' or integer_types[classname] or float_types[classname] end,
     is_integer_type = function (classname) return integer_types[classname] end,
     is_float_type = function (classname) return float_types[classname] end,
 
