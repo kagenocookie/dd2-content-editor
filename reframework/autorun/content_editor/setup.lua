@@ -29,15 +29,34 @@ ctrl.on_game_unload = ctrl.on_game_unload or nil
 ctrl.is_ingame_unpaused = ctrl.is_ingame_unpaused or function() return true end
 
 if ctrl.version == nil then
-    local t_ver = sdk.find_type_definition('via.version')
-    if t_ver and t_ver:get_method('getMainRevisionString') then
-        ctrl.version = t_ver:get_method('getMainRevisionString'):call(nil)
-    else
-        local t_sys = sdk.find_type_definition('via.SystemService')
-        local s_sys = sdk.get_native_singleton('via.SystemService')
-        if t_sys and s_sys then
-            local hasAppVer, ver = pcall(sdk.call_native_func, s_sys, t_sys, 'get_ApplicationVersion')
-            if hasAppVer then ctrl.version = tostring(ver) end
+    local t_sys = sdk.find_type_definition('via.SystemService')
+    local s_sys = sdk.get_native_singleton('via.SystemService')
+    if t_sys and s_sys then
+        -- example: Product:3.0.1.0,File:3.0.1.0
+        local hasAppVer, ver = pcall(sdk.call_native_func, s_sys, t_sys, 'get_ApplicationVersion')
+        if hasAppVer then
+            local versions = {}
+            local versionNums = {}
+            for part in tostring(ver):gmatch('[%w%d:.]+') do
+                local sep = part:find(':')
+                local subver
+                if sep then
+                    subver = part:sub(sep + 1)
+                    versions[part:sub(1, sep - 1)] = subver
+                else
+                    subver = part
+                    versions[#versions + 1] = part
+                end
+                local isnew = true
+                for _, vn in ipairs(versionNums) do
+                    if vn == subver then isnew = false break end
+                end
+                if isnew then
+                    versionNums[#versionNums + 1] = subver
+                end
+            end
+            print('Detected game version', json.dump_string(versions))
+            ctrl.version = table.concat(versionNums, '/')
         end
     end
 
