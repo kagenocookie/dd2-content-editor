@@ -1,21 +1,20 @@
 local utils = require('content_editor.utils')
 
+local CharacterManager = sdk.get_managed_singleton('app.CharacterManager') ---@type app.CharacterManager
+local PawnManager = sdk.get_managed_singleton('app.PawnManager') ---@type app.PawnManager
+local TimeSkipManager = sdk.get_managed_singleton("app.TimeSkipManager") ---@type app.TimeSkipManager
+local TimeManager = sdk.get_managed_singleton("app.TimeManager") ---@type app.TimeManager
+
 local getCharaName = sdk.find_type_definition("app.GUIBase"):get_method("getName(app.CharacterID)")
 local function translate_character_name(characterId)
     return getCharaName:call(nil, characterId)
 end
 
-local CharacterManager = sdk.get_managed_singleton('app.CharacterManager') ---@type app.CharacterManager
-local PawnManager = sdk.get_managed_singleton('app.PawnManager') ---@type app.PawnManager
-local ItemManager = sdk.get_managed_singleton('app.ItemManager') ---@type app.ItemManager
-local getItemData = sdk.find_type_definition('app.ItemManager'):get_method('getItemData(System.Int32)')
+local getItemName = sdk.find_type_definition("app.GUIBase"):get_method("getItemName(System.Int32)")
 local function translate_item_name(itemId)
-    local id = getItemData:call(ItemManager, itemId)
-    return id and id:call('get_Name')
+    return getItemName:call(nil, itemId)
 end
 
-local TimeSkipManager = sdk.get_managed_singleton("app.TimeSkipManager") ---@type app.TimeSkipManager
-local TimeManager = sdk.get_managed_singleton("app.TimeManager") ---@type app.TimeManager
 local field_time_getTimeData = sdk.find_type_definition('app.TimeManager'):get_field('_TimeData')
 local method_timeData_day = sdk.find_type_definition('app.TimeManager.TimeData'):get_method('get_InGameDay')
 local method_timeData_seconds = sdk.find_type_definition('app.TimeManager.TimeData'):get_method('get_InGameElapsedDaySeconds')
