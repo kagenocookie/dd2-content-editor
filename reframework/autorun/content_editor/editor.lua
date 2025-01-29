@@ -248,6 +248,8 @@ add_editor_tab('load_order')
 add_editor_tab('user')
 add_editor_tab('bundles')
 
+local bundle_filter = ''
+
 local function draw_editor()
     if internal.need_restart_for_clean_data then
         imgui.text_colored('Some changes may need a full game restart to apply.', core.get_color('danger'))
@@ -290,7 +292,7 @@ local function draw_editor()
     local w = imgui.calc_item_width()
     imgui.set_next_item_width(w / 2)
     local newbundle
-    changed, newbundle = imgui_wrappers.enum_picker('Active bundle', config.data.editor.active_bundle, udb.bundles_enum)
+    changed, newbundle, bundle_filter = imgui_wrappers.filterable_enum_picker('Active bundle', config.data.editor.active_bundle, udb.bundles_enum, bundle_filter)
     if changed then
         if newbundle == '' or newbundle == udb.bundles_enum.valueToLabel[0] then newbundle = nil end
         config.data.editor.active_bundle = newbundle
