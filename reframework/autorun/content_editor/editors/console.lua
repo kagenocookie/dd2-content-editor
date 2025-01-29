@@ -235,6 +235,14 @@ function ce_dump(command, outputFile)
     end
 end
 
+function ce_create(classname, data)
+    if type(data) == 'string' then
+        return usercontent.import_handlers.import(classname, json.load_string(data) or data)
+    else
+        return usercontent.import_handlers.import(classname, data or {})
+    end
+end
+
 --- @param state table
 --- @param text string
 local function add_to_exec_list(state, text)
