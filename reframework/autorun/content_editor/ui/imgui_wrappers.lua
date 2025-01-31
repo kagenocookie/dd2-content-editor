@@ -320,6 +320,8 @@ usercontent._ui_wrappers = {
 
     setting_checkbox = setting_checkbox,
     setting_text = setting_text,
+
+    _filter_entries = filter_entries,
 }
 
 return usercontent._ui_wrappers

@@ -167,8 +167,24 @@ local function entity_picker(type, state, storage_key, label, filter)
         end
 
         changed, newVal, stateFilters[storage_key] = ui.combo_filterable(label or 'Data entity', current_selected_id, options, stateFilters[storage_key] or '', values)
+        imgui.same_line()
+        if imgui.button('^') then newVal = values[utils.table_index_of(values, newVal) - 1] changed = true end
+        imgui.same_line()
+        if imgui.button('v') then newVal = values[utils.table_index_of(values, newVal) + 1] changed = true end
     else
         changed, newVal, stateFilters[storage_key] = ui.filterable_enum_value_picker(label or 'Data entity', current_selected_id, enum, stateFilters[storage_key] or '')
+        imgui.same_line()
+        if imgui.button('^') then
+            local tbl = select(2, ui._filter_entries(stateFilters[storage_key], enum.displayLabels or enum.labels, enum.values))
+            newVal = tbl[utils.table_index_of(tbl, newVal) - 1]
+            changed = true
+        end
+        imgui.same_line()
+        if imgui.button('v') then
+            local tbl = select(2, ui._filter_entries(stateFilters[storage_key], enum.displayLabels or enum.labels, enum.values))
+            newVal = tbl[utils.table_index_of(tbl, newVal) + 1]
+            changed = true
+        end
     end
     local activeChanged, newActive = imgui.checkbox('Only from active bundle', activeEntityOnly)
     if activeChanged then
