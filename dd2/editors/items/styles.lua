@@ -271,12 +271,12 @@ for _, name in ipairs(recordTypes) do
                 entity.variants[variantKey] = variant
                 variant[record.styleField] = data.id
                 if variant then
-                    CharacterEditManager[record.styleDb][tonumber(variantKey)][data.id] = variant
+                    CharacterEditManager[record.styleDb][tonumber(variantKey)][data.styleHash] = variant
                     hasVisor = hasVisor
                         or variant._VisorControl and variant._VisorControl ~= 0
                         or variant._SubVisorControl and variant._SubVisorControl ~= 0
                 else
-                    CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(data.id)
+                    CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(data.styleHash)
                 end
             end
             if name == 'HelmStyle' then
@@ -372,7 +372,7 @@ for _, name in ipairs(recordTypes) do
         end,
         delete = function (entity)
             --- @cast entity StyleEntity
-            if not udb.is_custom_entity_id(entity.type, entity.id) then return 'forget' end
+            if not udb.is_custom_entity_id(entity.type, entity.id) then return 'not_deletable' end
 
             if entity.furmasks then
                 for k, v in pairs(entity.furmasks) do
@@ -385,7 +385,7 @@ for _, name in ipairs(recordTypes) do
             end
 
             for variantKey, _ in pairs(entity.variants or {}) do
-                CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(entity.id)
+                CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(entity.styleHash)
             end
 
             return 'ok'
