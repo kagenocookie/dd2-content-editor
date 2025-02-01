@@ -94,12 +94,14 @@ local editor_defs = {
 
             if #config.data.editor.windows > 0 and imgui.tree_node('Open editor windows') then
                 for i, wnd in ipairs(config.data.editor.windows) do
-                    if imgui.button('X') then
+                    if imgui.button('X##' .. wnd.id) then
                         table.remove(config.data.editor.windows, i)
                         config.save()
                     end
                     imgui.same_line()
                     local rename = imgui.button('Rename##'..wnd.id)
+                    imgui.same_line()
+                    local toTop = imgui.button('To top##'..wnd.id)
                     imgui.same_line()
                     imgui.text('#' .. wnd.id .. ': ' .. wnd.title .. ' (' .. wnd.name .. ')')
                     if rename or wnd.id == edited_window_id then
@@ -118,6 +120,11 @@ local editor_defs = {
                                 edited_window_id = nil
                             end
                         end
+                    end
+                    if toTop then
+                        config.data.editor.windows[#config.data.editor.windows+1] = wnd
+                        wnd.id = internal.config._get_next_editor_id()
+                        table.remove(config.data.editor.windows, i)
                     end
                 end
                 imgui.tree_pop()
