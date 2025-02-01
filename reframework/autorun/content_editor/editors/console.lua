@@ -344,7 +344,7 @@ editor.define_window('data_viewer', 'Console', function (state)
             imgui.text(idx .. '. ' .. firstLine(historyEntry))
 
             if use then
-                state.open_entries[#state.open_entries+1] = {text = historyEntry, id = math.random(1, 99999999)}
+                table.insert(state.open_entries, 1, {text = historyEntry, id = math.random(1, 99999999)})
             end
             if removeHistory then
                 table.remove(state.history, idx)
