@@ -244,6 +244,22 @@ define_window('save_button', 'Save button', function ()
     end
 end)
 
+define_window('message', 'Text', function (state)
+    if state.text then
+        imgui.text(state.text)
+        imgui.text('                                                                                                              ')
+    else
+        imgui.text('This window is intended for displaying detached text from lua scripts.')
+        imgui.text('Nothing to show here, feel free to close this window.')
+    end
+    imgui.spacing()
+    imgui.spacing()
+    imgui.spacing()
+    imgui.spacing()
+    imgui.spacing()
+    imgui.spacing()
+end)
+
 add_editor_tab('load_order')
 add_editor_tab('user')
 add_editor_tab('bundles')

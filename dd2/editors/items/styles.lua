@@ -444,6 +444,21 @@ if core.editor_enabled then
         local recordData = recordClasses[state.style_type]
         imgui.text('Style ID: ' .. selectedItem.id)
         imgui.text('Style hash: ' .. tostring(selectedItem.styleHash))
+
+        if imgui.button('Find NPC usages') then
+            local matchText = ''
+            for pair in utils.enumerate(CharacterEditManager._CostumeDB) do
+                local id = pair.key
+                for cosdata in utils.enumerate(pair.value) do
+                    if cosdata.value[recordData.styleField] == selectedItem.styleHash then
+                        matchText = matchText .. helpers.to_string(id, 'app.CharacterID') .. ' Costume ' .. cosdata.key .. '\n'
+                    end
+                end
+            end
+            if matchText == '' then matchText = 'No matches' end
+            editor.open_editor_window('message', { title = 'NPC usages for style ' .. selectedItem.id, text = matchText })
+        end
+
         local variantIds = utils.get_sorted_table_keys(selectedItem.variants)
         local variantIdLabels = utils.map(variantIds, function (value) return variantLabels[value] or value end)
         state.variant_id = select(2, imgui.combo('Variant', state.variant_id, variantIdLabels))
