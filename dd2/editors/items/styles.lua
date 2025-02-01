@@ -463,6 +463,14 @@ if core.editor_enabled then
         local variantIdLabels = utils.map(variantIds, function (value) return variantLabels[value] or value end)
         state.variant_id = select(2, imgui.combo('Variant', state.variant_id, variantIdLabels))
         local furmaskChanged, meshesChanged, stylesChanged = false, false, false
+        if #variantIds ~= 2 and imgui.button('Clone for other gender') then
+            local curId = variantIds[1]
+            local otherId = curId == genders.Female_str and genders.Male_str or genders.Female_str
+            selectedItem.variants[otherId] = helpers.clone(selectedItem.variants[curId])
+            selectedItem.variants[otherId]._Gender = tonumber(otherId)
+            udb.mark_entity_dirty(selectedItem)
+            CharacterEditManager[recordData.styleDb][tonumber(otherId)][selectedItem.styleHash] = selectedItem.variants[otherId]
+        end
         if state.variant_id and variantIds[state.variant_id] then
             local variantKey = variantIds[state.variant_id]
             imgui.spacing()
@@ -515,7 +523,7 @@ if core.editor_enabled then
                 state.autorefresh = select(2, imgui.checkbox('Auto-refresh styles and furmasks', state.autorefresh == nil and true or state.autorefresh))
                 if imgui.is_item_hovered() then imgui.set_tooltip('Will force any style or furmask changes to apply to the player and pawns in realtime\nMesh changes are a bit slow, use the button or re-equip items for those') end
             end
-            stylesChanged = ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem)
+            stylesChanged = ui.handlers.show_editable(selectedItem.variants, variantKey, selectedItem) or stylesChanged
 
             if state.autorefresh then
                 local refreshPart = furmaskChanged and 1 or stylesChanged and 2 or meshesChanged and 3 or nil
