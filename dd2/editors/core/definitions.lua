@@ -2151,6 +2151,36 @@ definitions.override('dd2', {
             'app.ThinkTableModule',
         },
     },
+    ['app.PostEffectControllerRoot'] = {
+        abstract = {
+            'app.BleedingController',
+            'app.ColorCorrectController',
+            'app.ColorCorrectVFXController',
+            'app.CustomFilterController',
+            'app.DepthOfFieldController',
+            'app.ExperimentalRayTraceController',
+            'app.FakeLensflareController',
+            'app.FilmGrainController',
+            'app.FogController',
+            'app.GeometryAOControlController',
+            'app.GodRayController',
+            'app.HazeFilterController',
+            'app.ImagePlaneController',
+            'app.LensDistortionController',
+            'app.MotionBlurController',
+            'app.PolynomialLensController',
+            'app.RadialBlurController',
+            'app.RenderOutputController',
+            'app.SSAOControlController',
+            'app.SSRControlController',
+            'app.ShadowQualityControlController',
+            'app.SoftBloomController',
+            'app.SweetLightController',
+            'app.ToneMappingController',
+            'app.VolumetricFogControlController',
+            'app.WaveOpticalLensFlareController'
+        }
+    },
     ['app.QuestUniqueParamData.Data'] = {
         fields = { _IDValue = { import_ignore = true } }
     },
