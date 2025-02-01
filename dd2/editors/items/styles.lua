@@ -353,11 +353,13 @@ for _, name in ipairs(recordTypes) do
 
             local itemId = record.slot and styleItemLookups[record.slot] and styleItemLookups[record.slot][entity.id]
             if itemId then
-                local data = ItemManager:getItemData(itemId)
-                if data  then
-                    styleName = styleName .. ' ' .. tostring(data:get_Name())
-                else
-                    log.info('Failed to get item data ' .. itemId)
+                local itemname = utils.dd2.translate_item_name(itemId)
+                if itemname == 'Invalid' then
+                    local itemdata = udb.get_entity('item_data', itemId)--[[@as ItemDataEntity|nil]]
+                    itemname = itemdata and itemdata.name
+                end
+                if itemname and itemname ~= 'Invalid' then
+                    styleName = styleName .. ' ' .. itemname
                 end
             end
 
@@ -563,21 +565,33 @@ if core.editor_enabled then
                 end
             end
 
-            if recordData and recordData.slot and imgui.button('Find currently equipped item') then
-                local playerId = enums.get_enum('app.CharacterID').labelToValue.ch000000_00
-                local equipData = ItemManager:getEquipData(playerId):get(recordData.slot)
-                local styleNo = equipData and equipData._ItemData and equipData._ItemData--[[@as app.ItemCommonParam|app.ItemArmorParam]]._StyleNo
-                if styleNo then
-                    local styleEntity = udb.get_entity(entity_type, styleNo)
-                    if styleEntity then
-                        ui.editor.set_selected_entity_picker_entity(state, entity_type, styleEntity)
+            if recordData and recordData.slot then
+                if imgui.button('Find currently equipped item') then
+                    local playerId = enums.get_enum('app.CharacterID').labelToValue.ch000000_00
+                    local equipData = ItemManager:getEquipData(playerId):get(recordData.slot)
+                    local styleNo = equipData and equipData._ItemData and equipData._ItemData--[[@as app.ItemCommonParam|app.ItemArmorParam]]._StyleNo
+                    if styleNo then
+                        local styleEntity = udb.get_entity(entity_type, styleNo)
+                        if styleEntity then
+                            ui.editor.set_selected_entity_picker_entity(state, entity_type, styleEntity)
+                        else
+                            equipped_style_result = styleNo
+                        end
                     else
-                        equipped_style_result = styleNo
+                        equipped_style_result = nil
                     end
-                else
-                    equipped_style_result = nil
                 end
+                imgui.same_line()
+                if imgui.button('Reset labels') then
+                    for _, e in ipairs(usercontent.database.get_all_entities(state.style_type)) do
+                        e.label = usercontent.database.generate_entity_label(e)
+                        usercontent.database.get_entity_enum(state.style_type).set_display_label(e.id, e.label, false)
+                    end
+                    usercontent.database.get_entity_enum(state.style_type).resort()
+                end
+                if imgui.is_item_hovered() then imgui.set_tooltip('Regenerate all labels to match the items they are linked to') end
             end
+
             if equipped_style_result then
                 imgui.text('Could not find a style for style number: ' .. equipped_style_result)
                 imgui.text('Try and find it manually somehow please')

@@ -52,6 +52,8 @@ local get_item_desc = sdk.find_type_definition('app.GUIBase'):get_method('getElf
 local customWeaponIds = {}
 local customShieldIds = {}
 
+local equip_cat_to_style = { [2] = 'HelmStyle', [3] = 'TopsStyle', [4] = 'PantsStyle', [5] = 'MantleStyle', [7] = 'FacewearStyle' }
+
 udb.events.on('get_existing_data', function (whitelist)
     if whitelist and not whitelist.item_data then return end
     for item in utils.enumerate(ItemManager._ItemDataDict) do
@@ -118,6 +120,15 @@ udb.register_entity_type('item_data', {
                 else
                     customShieldIds[weaponId] = true
                 end
+            end
+        end
+
+        if dataType == 3 and core.editor_enabled and udb.is_custom_entity_id('item_data', instance.id) then
+            local styleType = equip_cat_to_style[instance.runtime_instance._EquipCategory]
+            local style = udb.get_entity(styleType, instance.runtime_instance._StyleNo)
+            if style and udb.get_entity_bundle(style) == nil then
+                style.label = udb.generate_entity_label(style)
+                usercontent.database.get_entity_enum(styleType).set_display_label(style.id, style.label)
             end
         end
 
@@ -359,7 +370,6 @@ local function hook_pre_getItemName(args)
     if udb.is_custom_entity_id('item_data', itemId) then
         local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
         if item and item.name then
-            -- TODO cache the managed string pointer somewhere instead of making new ones each time?
             thread.get_hook_storage().name = sdk.to_ptr(sdk.create_managed_string(item.name))
         end
     end
@@ -371,7 +381,7 @@ sdk.hook(
 )
 
 sdk.hook(
-    sdk.find_type_definition('app.GUIBase'):get_method('getItemName'),
+    sdk.find_type_definition('app.GUIBase'):get_method('getItemName(System.Int32)'),
     hook_pre_getItemName,
     function (ret) return thread.get_hook_storage().name or ret end
 )
@@ -504,7 +514,7 @@ if core.editor_enabled then
                         end
                     end),
                     extensions = { { type = 'button', label = 'Open in new window', action = function(ctx)
-                        local entityType = ({ [2] = 'HelmStyle', [3] = 'TopsStyle', [4] = 'PantsStyle', [5] = 'MantleStyle', [7] = 'FacewearStyle' })[ctx.parent.get()._EquipCategory]
+                        local entityType = equip_cat_to_style[ctx.parent.get()._EquipCategory]
                         editor.open_editor_window('styles', { style_type = entityType }, entityType, ctx.get())
                     end } }
                 },
