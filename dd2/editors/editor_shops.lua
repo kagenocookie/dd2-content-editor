@@ -15,6 +15,7 @@ local udb = require('content_editor.database')
 local import_handlers = require('content_editor.import_handlers')
 local helpers = require('content_editor.helpers')
 local utils = require('content_editor.utils')
+local enums = require('content_editor.enums')
 
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') ---@type app.ItemManager
 
@@ -66,9 +67,13 @@ udb.register_entity_type('shop', {
     end,
     generate_label = function (entity)
         --- @cast entity ItemShopData
+        local displ = enums.get_enum('ShopNameOverrides').get_label(entity.id)
+        if displ ~= tostring(entity.id) then
+            return displ
+        end
         return 'Shop ' .. entity.id .. ': ' .. entity.runtime_instance:get_ShopName()
     end,
-    insert_id_range = {1000, 999000, 1},
+    insert_id_range = {1000, 65000, 1},
     root_types = {'app.ItemShopParam'},
 })
 
@@ -160,8 +165,6 @@ register_partial_entity_array('shop', 'shop_sell', 'app.ItemShopSellParam',
 )
 
 if core.editor_enabled then
-    local enums = require('content_editor.enums')
-
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
 

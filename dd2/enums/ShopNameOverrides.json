@@ -1,0 +1,39 @@
+{
+	"orderByValue": true,
+    "values": {
+        "Shop011": 11,
+        "Shop041": 41,
+        "Shop042": 42,
+        "Shop043": 43,
+        "Shop044": 44,
+        "Shop045": 45,
+        "Shop057": 57,
+        "Shop067": 67,
+        "Shop068": 68,
+        "Shop069": 69,
+        "Shop070": 70,
+        "Shop071": 71,
+        "Shop072": 72,
+        "Shop073": 73,
+        "Shop074": 74
+	},
+	"displayLabels": {
+		"Shop011": "Shop 11: Montgomery's shop",
+        "Shop041": "Shop 41: Dudley's Assortments",
+        "Shop042": "Shop 42: Georg's Adventure Tools",
+        "Shop043": "Shop 43: Zachary's Wears",
+        "Shop044": "Shop 44: Ines' Cloaks",
+        "Shop045": "Shop 45: Mia's Produce",
+        "Shop057": "Shop 57: Zonna's Armors",
+        "Shop067": "Shop 67: Angus' Adventuring Gear",
+        "Shop068": "Shop 68: Marcello's Beast Parts",
+        "Shop069": "Shop 69: Celica's Herbs",
+        "Shop070": "Shop 70: Domingo's Tomes",
+        "Shop071": "Shop 71: Mubarak's Rocks",
+        "Shop072": "Shop 72: Evo's Potions",
+        "Shop073": "Shop 73: Mariette's Ores",
+        "Shop074": "Shop 74: Elsa's Spellbooks"
+	},
+	"enumName": "ShopNameOverrides",
+	"isVirtual": true
+}
