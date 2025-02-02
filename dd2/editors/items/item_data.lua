@@ -606,7 +606,7 @@ if core.editor_enabled then
         if not item.icon_rect then
             local enable_rect = imgui.checkbox('Use custom icon UV rect', false)
             if enable_rect then
-                item.icon_rect = { x = 0, y = 0, w = 160, h = 156 }
+                item.icon_rect = { x = 0, y = 0, w = 156, h = 156 }
                 fieldsChanged = true
             end
         else
