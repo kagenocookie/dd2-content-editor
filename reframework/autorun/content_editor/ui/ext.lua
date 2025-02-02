@@ -81,6 +81,17 @@ local function show_save_settings(obj)
             end
         end
     end
+
+    if curBundle and curBundle ~= '' and curBundle == editor.active_bundle then
+        imgui.same_line()
+        if imgui.tree_node('Delete') then
+            imgui.same_line()
+            if imgui.button('Confirm delete') then
+                udb.delete_entity(obj, curBundle)
+            end
+            imgui.tree_pop()
+        end
+    end
     imgui.spacing()
 end
 
