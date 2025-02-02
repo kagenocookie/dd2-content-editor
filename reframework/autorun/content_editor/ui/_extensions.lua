@@ -451,6 +451,7 @@ local function register(register_extension)
                         if canExecute and imgui.button('Execute') then
                             method_ctx.object.last_error = nil
                             method_ctx.object.last_result = nil
+                            usercontent.ui.context.delete_child(method_ctx, 'last_result')
 
                             -- collect call params
                             local args = {}
@@ -485,7 +486,7 @@ local function register(register_extension)
                                     if methodinfo.returntype == 'System.Void' then
                                         method_ctx.object.last_result = 'OK'
                                     else
-                                        if type(execResult) == 'userdata' and execResult.add_ref then
+                                        if sdk.is_managed_object(execResult) then
                                             execResult = execResult:add_ref()
                                         elseif execResult == nil then
                                             execResult = 'null'
