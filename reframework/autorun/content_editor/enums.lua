@@ -320,7 +320,11 @@ local function refresh_modded_enums()
             local enumName = enumPath:sub(pathlen, -6)
             local enum
             if enumData.isVirtual then
-                enum = enumsContainer[enumName] or create_enum_summary_from_table(enumData.values or {}, enumName, enumData.orderByValue)
+                enum = enumsContainer[enumName]
+                if not enum then
+                    enum = create_enum_summary_from_table(enumData.values or {}, enumName, enumData.orderByValue)
+                    enumsContainer[enumName] = enum
+                end
                 enum.is_virtual = true
             else
                 enum = get_or_generate_enum(enumName)
