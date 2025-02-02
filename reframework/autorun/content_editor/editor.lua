@@ -136,8 +136,8 @@ local editor_defs = {
         draw = require('content_editor._load_order_handler')(udb)
     },
 }
-local editor_ids = {''}
-local editor_labels = {'<open new window>'}
+local editor_ids = {}
+local editor_labels = {}
 
 --- @class _ActiveEditorTab
 --- @field state EditorState
@@ -272,6 +272,7 @@ add_editor_tab('user')
 add_editor_tab('bundles')
 
 local bundle_filter = ''
+local window_filter = ''
 
 local function draw_editor()
     if internal.need_restart_for_clean_data then
@@ -281,18 +282,14 @@ local function draw_editor()
     end
 
     local changed
-    local idx
-    imgui.set_next_item_width(200)
-    changed, idx = imgui.combo('##Open new window', 1, editor_labels)
-    if changed and idx > 1 then
-        open_editor_window(editor_ids[idx])
-    end
 
-    imgui.same_line()
     if imgui.button('Refresh database') then
         udb.reload_all_bundles()
     end
     imgui_wrappers.tooltip('This will reload all data bundles from disk and re-import them into the game. \nAny unsaved changes will be lost. In case of issues, reset scripts can be more reliable.')
+
+    imgui.same_line()
+    local showNewWindow = imgui.tree_node('Open new window...')
 
     if config.data.editor.devmode then
         imgui.same_line()
@@ -310,6 +307,22 @@ local function draw_editor()
             typecache.process_rsz_data()
         end
         if imgui.is_item_hovered() then imgui.set_tooltip('Preprocess the rsz' .. reframework.get_game_name() .. '.json file for optimized type lookups.\nOnly needed when the rsz data changes and a new version is not included with the mod yet.\nThe original rsz file should be placed in reframework/data/rsz/rsz{gamename}.json.\nCan take a bit to execute.') end
+    end
+
+    if showNewWindow then
+        window_filter = select(2, imgui.input_text('Filter', window_filter))
+
+        local w = imgui.calc_item_width()
+        imgui.begin_list_box('Windows', Vector2f.new(w, math.min(300, 4 + #editor_labels * (imgui.get_default_font_size() + 6))))
+        for i, label in ipairs(editor_labels) do
+            if (window_filter == '' or label:lower():find(window_filter:lower())) and imgui.menu_item(label, '', false, true) then
+                open_editor_window(editor_ids[i])
+            end
+        end
+        imgui.end_list_box()
+        imgui.tree_pop()
+    else
+        window_filter = ''
     end
 
     local w = imgui.calc_item_width()
