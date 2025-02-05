@@ -626,6 +626,9 @@ if core.editor_enabled then
                 end
             end
         end
+        if imgui.button('Give one to arisen') then
+            usercontent._devtools.give_item(item.id, 1)
+        end
 
         imgui.spacing()
 
