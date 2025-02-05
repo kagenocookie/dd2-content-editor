@@ -237,10 +237,12 @@ end
 --- @param tabs string[]
 --- @param selectedTabIndex integer 1-based tab index
 --- @return boolean changed, integer newSelectedIndex
-local function imgui_tabs(tabs, selectedTabIndex)
+local function imgui_tabs(tabs, selectedTabIndex, inline)
     local changed = false
-    imgui.spacing()
-    imgui.indent(16)
+    if not inline then
+        imgui.spacing()
+        imgui.indent(16)
+    end
     imgui.begin_rect()
     local w_total = imgui.calc_item_width() - 32
     local w = 0
@@ -268,9 +270,10 @@ local function imgui_tabs(tabs, selectedTabIndex)
         end
     end
     imgui.end_rect(4)
-    imgui.unindent(16)
-
-    imgui.spacing()
+    if not inline then
+        imgui.unindent(16)
+        imgui.spacing()
+    end
 
     return changed, selectedTabIndex
 end
