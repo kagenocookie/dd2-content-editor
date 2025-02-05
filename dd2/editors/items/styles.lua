@@ -21,12 +21,10 @@ local function get_ex_furmask_dict_type()
 
     local rootType = CharacterEditManager._FurMaskMapExCatalog:GetType() ---@type System.Type
     local exFurmaskType = rootType:GetGenericArguments()[1]:GetGenericArguments()[1]:GetGenericArguments()[1]
-    exFurmaskDictType = generic_types.get_clean_generic_classname(exFurmaskType:get_FullName()--[[@as string]])
-    generic_types.add(exFurmaskDictType, exFurmaskType)
+    exFurmaskDictType = generic_types.add(exFurmaskType)
 
     exFurmaskType = exFurmaskType:GetGenericArguments()[1]
-    local subtype = generic_types.get_clean_generic_classname(exFurmaskType:get_FullName()--[[@as string]])
-    generic_types.add(subtype, exFurmaskType)
+    generic_types.add(exFurmaskType)
 
     return exFurmaskDictType
 end

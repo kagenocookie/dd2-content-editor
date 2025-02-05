@@ -127,10 +127,15 @@ local function get_generic_typedef(classname)
 end
 
 --- Manually define a classname mapping into a runtime type, in case the automatic magic doesn't resolve a type properly
---- @param classname string
 --- @param runtimeType System.Type
-local function add_generic_typedef(classname, runtimeType)
+--- @param classname string|nil
+--- @return string classname
+local function add_generic_typedef(runtimeType, classname)
+    if classname == nil then
+        classname = clean_generic_type_name(runtimeType:get_FullName()--[[@as string]])
+    end
     generic_runtime_types[classname] = runtimeType
+    return classname
 end
 
 usercontent.generics = {
