@@ -517,8 +517,10 @@ importer_factories = {
                 local field = fieldData[1]
                 local acc = fieldData[3]
                 local fieldCur = acc.get(target, field)
-                local fieldNewval = fieldData[2].import(src[field], fieldCur)
-                acc.set(target, fieldNewval, field)
+                if src[field] ~= nil then
+                    local fieldNewval = fieldData[2].import(src[field], fieldCur)
+                    acc.set(target, fieldNewval, field)
+                end
             end
             return target
         end
