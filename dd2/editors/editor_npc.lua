@@ -167,9 +167,23 @@ if core.editor_enabled then
         end
     end)
 
+    local function warpButton(npcId)
+        if imgui.button('Warp to') then
+            local NPCManager = sdk.get_managed_singleton('app.NPCManager') ---@type app.NPCManager
+            local holder = NPCManager:getNPCHolder(npcId)
+            if holder then
+                usercontent._devtools.warp_player(holder:get_UniversalPosition())
+            else
+                editor.open_editor_window('message', { title = 'NPC warp', message = 'NPC ' .. npcId .. ' was not found' })
+            end
+        end
+        if imgui.is_item_hovered() then imgui.set_tooltip("Will warp the arisen to the NPC.\nSome NPCs are not actually able to spawn depending on quest state, in which case you won't find them") end
+    end
+
     editor.define_window('npc_character_data', 'NPC Character data', function (state)
         local selected = ui.editor.entity_picker('npc_data', state, nil, 'NPC')
         if selected then
+            warpButton(selected.id)
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()
@@ -182,6 +196,7 @@ if core.editor_enabled then
     editor.define_window('npc_appearance', 'NPC Appearance', function (state)
         local selected = ui.editor.entity_picker('npc_appearance', state, nil, 'NPC')
         if selected then
+            warpButton(selected.id)
             imgui.spacing()
             imgui.indent(8)
             imgui.begin_rect()

@@ -89,6 +89,9 @@ local function show_save_settings(obj)
             if imgui.button('Confirm delete') then
                 udb.delete_entity(obj, curBundle)
             end
+            if imgui.is_item_hovered() then
+                imgui.set_tooltip("Entity will be deleted from its current bundle.\nThe exact outcome depends on the entity type and whether it's a custom item or not.\nCustom items generally get removed, and basegame items will stay active.\nIf the entity is also in another bundle, it will still remain active either way.")
+            end
             imgui.tree_pop()
         end
     end

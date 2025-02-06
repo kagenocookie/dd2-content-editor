@@ -9,7 +9,7 @@ local core = require('content_editor.core')
 
 --- @class PartialArrayEntity : DBEntity
 --- @field parent_id integer
---- @field items SystemArray
+--- @field items app.ItemShopBuyParam[]|app.ItemShopSellParam[]
 
 local udb = require('content_editor.database')
 local import_handlers = require('content_editor.import_handlers')
@@ -87,7 +87,7 @@ local function register_partial_entity_array(parent_entity, partial_type_name, e
     udb.register_entity_type(partial_type_name, {
         export = function (instance)
             --- @cast instance PartialArrayEntity
-            --- @type PartialEntityData
+            -- - @type PartialEntityData
             return {
                 _is_partial = true,
                 parent_type = parent_entity,
@@ -191,8 +191,8 @@ if core.editor_enabled then
             elseif state.subtype == 1 then
                 local subtype = ui.editor.entity_picker('shop_buy', state, nil, 'Buy list', function (e) return e.parent_id == selectedShop.id end) --[[@as PartialArrayEntity|nil]]
                 if editor.active_bundle and imgui.button('New buy list') then
-                    local newEntity = udb.insert_new_entity('shop_buy', editor.active_bundle, { parent_id = selectedShop.id, parent_type = 'shop', data = {} })
-                    ui.editor.set_selected_entity_picker_entity(state, 'shop_buy', newEntity)
+                    subtype = udb.insert_new_entity('shop_buy', editor.active_bundle, { parent_id = selectedShop.id, parent_type = 'shop', data = {} }) --[[@as PartialArrayEntity|nil]]
+                    ui.editor.set_selected_entity_picker_entity(state, 'shop_buy', subtype)
                 end
                 if subtype and subtype.parent_id == selectedShop.id then
                     ui.editor.show_entity_metadata(subtype)
@@ -212,7 +212,7 @@ if core.editor_enabled then
                         ui.handlers.show(item, subtype, tostring(idx), nil)
                     end
                     if imgui.button('Add') then
-                        subtype.items[#subtype.items+1] = sdk.create_instance('app.ItemShopBuyParam')
+                        subtype.items[#subtype.items+1] = sdk.create_instance('app.ItemShopBuyParam'):add_ref()--[[@as app.ItemShopBuyParam]]
                         udb.reimport_entity(subtype)
                         udb.mark_entity_dirty(subtype)
                     end
@@ -220,7 +220,7 @@ if core.editor_enabled then
             elseif state.subtype == 2 then
                 local subtype = ui.editor.entity_picker('shop_sell', state, nil, 'Sell list', function (e) return e.parent_id == selectedShop.id end) --[[@as PartialArrayEntity|nil]]
                 if editor.active_bundle and imgui.button('New sell list') then
-                    subtype = udb.insert_new_entity('shop_sell', editor.active_bundle, { parent_id = selectedShop.id, parent_type = 'shop', data = {} })
+                    subtype = udb.insert_new_entity('shop_sell', editor.active_bundle, { parent_id = selectedShop.id, parent_type = 'shop', data = {} }) --[[@as PartialArrayEntity|nil]]
                     ui.editor.set_selected_entity_picker_entity(state, 'shop_sell', subtype)
                 end
                 if subtype and subtype.parent_id == selectedShop.id then
@@ -241,7 +241,7 @@ if core.editor_enabled then
                         ui.handlers.show(item, subtype, tostring(idx), nil)
                     end
                     if imgui.button('Add') then
-                        subtype.items[#subtype.items+1] = sdk.create_instance('app.ItemShopSellParam')
+                        subtype.items[#subtype.items+1] = sdk.create_instance('app.ItemShopSellParam'):add_ref()--[[@as app.ItemShopSellParam]]
                         udb.reimport_entity(subtype)
                         udb.mark_entity_dirty(subtype)
                     end
