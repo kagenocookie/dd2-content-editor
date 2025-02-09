@@ -183,6 +183,7 @@ definitions.override('items', {
                 extensions = { { type = 'item_data_type_enum' } }
             },
             _Category = { ui_ignore = true },
+            _Series = { extensions = { { type = 'tooltip', text = 'The sum of _Series of equipped items must be >= 50 to be allowed to enter the masquerade' } } }
         },
         extensions = { { type = 'item_instance_type_fixer' } },
     },
@@ -196,6 +197,7 @@ definitions.override('items', {
                 extensions = { { type = 'item_data_type_enum' } }
             },
             _Category = { ui_ignore = true },
+            _Series = { extensions = { { type = 'tooltip', text = 'The sum of _Series of equipped items must be >= 50 to be allowed to enter the masquerade' } } }
         },
         extensions = { { type = 'item_instance_type_fixer' } },
     },
