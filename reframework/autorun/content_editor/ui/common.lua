@@ -166,7 +166,7 @@ local function create_flags_enum(enum, items_per_row_count)
         imgui.spacing()
         imgui.indent(4)
         if isMultiline then
-            imgui.text(context.label)
+            imgui.text(context.label .. ' ('..tostring(value)..')')
         end
         for i, flagValue in ipairs(enum.values) do
             local checked = (flagValue & value) ~= 0
@@ -191,7 +191,7 @@ local function create_flags_enum(enum, items_per_row_count)
             imgui.spacing()
         else
             imgui.same_line()
-            imgui.text('  |  ' .. context.label)
+            imgui.text('  |  ' .. context.label .. ' ('..tostring(value)..')')
         end
         imgui.unindent(4)
         imgui.end_rect(1)
