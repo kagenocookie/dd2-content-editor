@@ -174,7 +174,7 @@ if core.editor_enabled then
             if holder then
                 usercontent._devtools.warp_player(holder:get_UniversalPosition())
             else
-                editor.open_editor_window('message', { title = 'NPC warp', message = 'NPC ' .. npcId .. ' was not found' })
+                editor.show_message_window('NPC ' .. npcId .. ' was not found', 'NPC warp')
             end
         end
         if imgui.is_item_hovered() then imgui.set_tooltip("Will warp the arisen to the NPC.\nSome NPCs are not actually able to spawn depending on quest state, in which case you won't find them") end

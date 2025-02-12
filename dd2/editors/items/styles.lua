@@ -456,7 +456,7 @@ if core.editor_enabled then
                 end
             end
             if matchText == '' then matchText = 'No matches' end
-            editor.open_editor_window('message', { title = 'NPC usages for style ' .. selectedItem.id, text = matchText })
+            editor.show_message_window(matchText, 'NPC usages for style ' .. selectedItem.id)
         end
 
         local variantIds = utils.get_sorted_table_keys(selectedItem.variants)

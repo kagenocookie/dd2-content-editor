@@ -212,6 +212,13 @@ local function open_editor_window(window_type_id, initial_state, preselectEntity
     return state.id
 end
 
+--- Open a read-only text message window
+--- @param text string
+--- @param title string|nil
+local function show_message_window(text, title)
+    open_editor_window('message', { title = title, text = text })
+end
+
 --- @param window_type_id string
 --- @param imgui_id integer|string
 --- @param state table
@@ -406,6 +413,7 @@ usercontent.editor = {
     define_window = define_window,
     add_editor_tab = add_editor_tab,
     open_editor_window = open_editor_window,
+    show_message_window = show_message_window,
 
     embed_window = embed_window,
 

@@ -70,7 +70,7 @@ sdk.hook(
     WeatherManager:get_type_definition():get_method('changeWeatherBackWorld'),
     nil,
     function (ret)
-        print('changeWeatherBackWorld')
+        -- print('changeWeatherBackWorld')
         handleWeatherChanged(weather_utils.currentWeather())
         return ret
     end
