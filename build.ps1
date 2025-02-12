@@ -89,7 +89,7 @@ PrepareFiles -Folder "content_editor/reframework/data/usercontent" -FileList (
 )
 
 
-MakeModinfo "quest_editor" "Quest editor" "v0.1.0" "(WIP) DD2 Content editor quests addon"
+MakeModinfo "quest_editor" "Quest editor" "v0.1.0" "(WIP) DD2 Content editor quests addon. EXPECT ISSUES!"
 PrepareFiles -Folder "quest_editor/reframework/autorun" -FileList (
     "dd2/editors/|editor_quest.lua",
     "dd2/|editors/quests"
