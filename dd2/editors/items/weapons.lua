@@ -315,6 +315,7 @@ if core.editor_enabled then
                         selectedItem.offsets = helpers.clone(off, 'app.WeaponSetting.OffsetSetting')
                         selectedItem.offsets.ID = selectedItem.id
                         EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings = helpers.expand_system_array(EquipmentManager.WeaponSetting.DefaultSetting.OffsetSettings, { selectedItem.offsets })
+                        udb.mark_entity_dirty(selectedItem)
                     end
                     ui.handlers.show_readonly(off, nil, 'Matching offsets', 'app.WeaponSetting.OffsetSetting', state)
                 else
