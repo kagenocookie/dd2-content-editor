@@ -236,8 +236,9 @@ end
 
 --- @param tabs string[]
 --- @param selectedTabIndex integer 1-based tab index
+--- @param header string|nil
 --- @return boolean changed, integer newSelectedIndex
-local function imgui_tabs(tabs, selectedTabIndex, inline)
+local function imgui_tabs(tabs, selectedTabIndex, inline, header)
     local changed = false
     if not inline then
         imgui.spacing()
@@ -246,6 +247,7 @@ local function imgui_tabs(tabs, selectedTabIndex, inline)
     imgui.begin_rect()
     local w_total = imgui.calc_item_width() - 32
     local w = 0
+    if header then imgui.text(header) if inline then imgui.same_line() end end
     local tab_margin = 8
     local char_w = 6
     for i = 1, #tabs do

@@ -2343,6 +2343,9 @@ events.on('setup', function ()
             ['app.GenerateInfoContext'] = {
                 toString = helpers.to_string_concat_fields('app.GenerateInfoContext', 0, nil, {'_IsGenerated', '_IsDisableGenerate'})
             },
+            ['app.CharacterEditDefine.MetaData.MetaFlags'] = {
+                uiHandler = usercontent.ui.handlers.common.enum_flags(nil, 6)
+            },
         })
     end
 end)
