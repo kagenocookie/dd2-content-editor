@@ -373,6 +373,16 @@ build_typecache = function (typedef, typecache)
     local next_field_i = #order + 1
     local addedFields = {}
     local import_whitelist = typeOverrides.import_field_whitelist
+    local extra_item_count = 0
+    if not typeOverrides or not typeOverrides.abstract then
+        local rt = typedef:get_runtime_type()
+        if rt and rt:get_IsAbstract() then
+            typeOverrides.abstract = {}
+            typeSettings[fullname] = typeOverrides
+            force_max_item_count = true
+            extra_item_count = 99
+        end
+    end
 
     for _, field in ipairs(fields) do
         if not field:is_static() then
@@ -457,7 +467,7 @@ build_typecache = function (typedef, typecache)
         ::continue::
     end
 
-    objectCacheEntry.itemCount = next_field_i - 1
+    objectCacheEntry.itemCount = next_field_i - 1 + extra_item_count
 
     for iii, field in ipairs(objectCacheEntry.fields) do
         local fieldTypename = field[2]
