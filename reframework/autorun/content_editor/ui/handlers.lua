@@ -290,6 +290,35 @@ object_handlers['via.Transform'] = function (context)
         imgui.tree_pop()
     end
 
+    if not context.children.LocalPosition then
+        local child = ui_context.create_child(context, 'UniversalPosition', transform, 'Universal Position', {
+            get = function (object) return object:get_UniversalPosition() end,
+            set = function (object, val) object:set_UniversalPosition(val) end,
+        }, 'via.Position')
+        child.ui = common.vec3
+
+        local child = ui_context.create_child(context, 'LocalPosition', transform, 'Local Position', {
+            get = function (object) return object:get_LocalPosition() end,
+            set = function (object, val) object:set_LocalPosition(val) end,
+        }, 'via.vec3')
+        child.ui = common.vec3
+
+        child = ui_context.create_child(context, 'LocalEulerAngle', transform, 'Local Euler Angle', {
+            get = function (object) return object:get_LocalEulerAngle() end,
+            set = function (object, val) object:set_LocalEulerAngle(val) end,
+        }, 'via.vec3')
+        child.ui = common.vec3
+
+        child = ui_context.create_child(context, 'LocalScale', transform, 'Local Scale', {
+            get = function (object) return object:get_LocalScale() end,
+            set = function (object, val) object:set_LocalScale(val) end,
+        }, 'via.vec3')
+        child.ui = common.vec3
+    end
+    context.children.UniversalPosition:ui()
+    context.children.LocalPosition:ui()
+    context.children.LocalEulerAngle:ui()
+    context.children.LocalScale:ui()
     return false
 end
 
