@@ -62,9 +62,12 @@ local function define_script_hook(classname, method, script_id_fetcher)
                         print('ERROR in custom script ' .. script.label, result)
                         thread.get_hook_storage().result = false
                     end
+                else
+                    thread.get_hook_storage().result = nil
                 end
                 return sdk.PreHookResult.SKIP_ORIGINAL
             end
+            thread.get_hook_storage().result = nil
         end,
         function (ret)
             local overrideResult = thread.get_hook_storage().result

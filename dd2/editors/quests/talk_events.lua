@@ -167,6 +167,7 @@ sdk.hook(
             thread.get_hook_storage().result = true
             return sdk.PreHookResult.SKIP_ORIGINAL
         end
+        thread.get_hook_storage().result = nil
     end,
     function (ret)
         local result = thread.get_hook_storage().result
@@ -220,6 +221,7 @@ sdk.hook(
             thread.get_hook_storage().qid = talkEvt.questId
             return sdk.PreHookResult.SKIP_ORIGINAL
         end
+        thread.get_hook_storage().qid = nil
     end,
     function (ret)
         local override = thread.get_hook_storage().qid

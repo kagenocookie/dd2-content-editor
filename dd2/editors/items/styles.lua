@@ -109,6 +109,7 @@ sdk.hook(
             thread.get_hook_storage().rv = ptr_true
             return sdk.PreHookResult.SKIP_ORIGINAL
         end
+        thread.get_hook_storage().rv = nil
     end,
     function (ret) return thread.get_hook_storage().rv or ret end
 )

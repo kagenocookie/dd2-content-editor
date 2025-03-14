@@ -203,6 +203,7 @@ sdk.hook(
                 return sdk.PreHookResult.SKIP_ORIGINAL
             end
         end
+        thread.get_hook_storage().ret = nil
     end,
     function (r) return thread.get_hook_storage().ret or r end
 )

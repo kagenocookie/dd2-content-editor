@@ -233,6 +233,7 @@ sdk.hook(
             thread.get_hook_storage().text = sdk.to_ptr(override)
             return sdk.PreHookResult.SKIP_ORIGINAL
         end
+        thread.get_hook_storage().text = nil
     end,
     function (ret)
         return thread.get_hook_storage().text or ret

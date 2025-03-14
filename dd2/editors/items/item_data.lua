@@ -283,12 +283,16 @@ sdk.hook(
     sdk.find_type_definition('app.PlayerAttackDefenceStatus'):get_method('setWeaponEquipParam'),
     function (args)
         local weaponId = sdk.to_int64(args[4]) & 0xffffffff--[[@as app.WeaponID]]
+        local storage = thread.get_hook_storage()
         if customWeaponIds[weaponId] then
-            thread.get_hook_storage().equip = sdk.to_managed_object(args[3])
-            thread.get_hook_storage().param = sdk.to_managed_object(args[5])
+            storage.equip = sdk.to_managed_object(args[3])
+            storage.param = sdk.to_managed_object(args[5])
         elseif customShieldIds[weaponId] then
-            thread.get_hook_storage().equip = sdk.to_managed_object(args[3])
-            thread.get_hook_storage().param = sdk.to_managed_object(args[6])
+            storage.equip = sdk.to_managed_object(args[3])
+            storage.param = sdk.to_managed_object(args[6])
+        else
+            storage.equip = nil
+            storage.param = nil
         end
     end,
     function (ret)
@@ -372,8 +376,10 @@ local function hook_pre_getItemName(args)
         local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
         if item and item.name then
             thread.get_hook_storage().name = sdk.to_ptr(sdk.create_managed_string(item.name))
+            return
         end
     end
+    thread.get_hook_storage().name = nil
 end
 sdk.hook(
     sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName'),
@@ -392,14 +398,17 @@ sdk.hook(
     function (args)
         local data = sdk.to_managed_object(args[3]) --[[@as app.ItemCommonParam]]
         local id = data and data._Id
+        local s = thread.get_hook_storage()
         if id and udb.is_custom_entity_id('item_data', id) then
             local item = udb.get_entity('item_data', id) --[[@as ItemDataEntity]]
             if item and item.name then
-                local s = thread.get_hook_storage()
                 s.this = sdk.to_managed_object(args[2])
                 s.description = item.description
+                return
             end
         end
+        s.this = nil
+        s.description = nil
     end,
     function (ret)
         local s = thread.get_hook_storage()
@@ -422,6 +431,7 @@ sdk.hook(
             thread.get_hook_storage().result = ptr_true
             return sdk.PreHookResult.SKIP_ORIGINAL
         end
+        thread.get_hook_storage().result = nil
     end,
     function(ret) return thread.get_hook_storage().result or ret end
 )
