@@ -79,6 +79,7 @@ local maxlines = 12
 local function remap_gameobj(item) return item and item.get_GameObject and item:get_GameObject():add_ref()--[[@as any]] or item end
 
 local sceneFindComponents = sdk.find_type_definition('via.Scene'):get_method('findComponents(System.Type)')
+local sceneFindFolder = sdk.find_type_definition('via.Scene'):get_method('findFolder(System.String)')
 local compGetGO = sdk.find_type_definition('via.Component'):get_method('get_GameObject')
 local goGetName = sdk.find_type_definition('via.GameObject'):get_method('get_Name')
 --- @param typedef System.Type
@@ -120,6 +121,15 @@ local function find_gameobjects(typedef, name_prefix, remap)
 
     if count == 1 then return list[1] end
     return list
+end
+
+--- @param name string
+--- @return via.Folder|nil
+local function find_folder(name)
+    local scene = core.game.get_root_scene()
+    if not scene then return nil end
+
+    return sceneFindFolder:call(scene, name)
 end
 
 --- @param query string syntax: {gameobject_name?}:{classname?}:{mapper_function?}
@@ -170,6 +180,10 @@ local function prepare_exec_func(text)
     end
 
     if text:sub(1, 1) == '/' then
+        if text:sub(1, 2) == '//' then
+            local folderName = text:sub(3)
+            return true, uncached and (function () return find_folder(folderName) end) or find_folder(folderName)
+        end
         text = text:sub(2)
         if uncached then
             return true, function () return find_game_object(text) end
@@ -310,6 +324,7 @@ editor.define_window('data_viewer', 'Console', function (state)
         imgui.text('/:app.Character will find every currently active app.Character component irrelevant of name')
         imgui.text('All the content editor API is available under the `usercontent` variable')
         imgui.text('Entering a ! prefix makes the result evaluate every frame instead of showing a cached result')
+        imgui.text('The // prefix searches for a folder, e.g. //MainContents')
         imgui.end_rect(2)
     end
 

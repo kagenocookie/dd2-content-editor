@@ -250,7 +250,7 @@ if core.editor_enabled then
             local procFolder = gamedb.get_quest_scene_folder(processor:get_QuestID())
             procFolder = procFolder and procFolder:find('Resident')
             if procFolder then
-                local procList = utils.folder_get_children(procFolder)
+                local procList = utils.folder.get_children(procFolder)
                 for _, transform in ipairs(procList) do
                     if transform and transform:get_GameObject() then
                         local proc = utils.gameobject.get_component(transform:get_GameObject(), 'app.QuestProcessor')

@@ -171,8 +171,8 @@ local function get_quest_processor(processorId, questId)
             if procFolder then
                 -- we need to fetch the processor root transform and get the children from there instead
                 -- I'm assuming the processor root is the only quest folder child that has its own children
-                local processorRoot = utils.first_where(utils.folder_get_children(procFolder), function (child) return child:get_Child() ~= nil end)
-                local procChildren = processorRoot and utils.map(utils.folder_get_children(processorRoot), function (go) return utils.gameobject.get_component(go:get_GameObject(), 'app.QuestProcessor') end) or {}
+                local processorRoot = utils.first_where(utils.folder.get_children(procFolder), function (child) return child:get_Child() ~= nil end)
+                local procChildren = processorRoot and utils.map(utils.folder.get_children(processorRoot), function (go) return utils.gameobject.get_component(go:get_GameObject(), 'app.QuestProcessor') end) or {}
                 procCount = #procChildren
                 procChildren[0] = procChildren[procCount]
                 procContainer = procChildren

@@ -64,7 +64,7 @@ end
 --- @param folder via.Folder|via.Transform
 --- @param state table
 local function process_quest_folder(questId, folder, state)
-    local children = utils.folder_get_children(folder)
+    local children = utils.folder.get_children(folder)
     for _, child in ipairs(children) do
         local go = child:get_GameObject()
         local proc = utils.gameobject.get_component(go, 'app.QuestProcessor')
@@ -171,7 +171,7 @@ editor.define_window('quest_processors', 'Quest processors', function (state)
                 if not folder:get_Active() then
                     folder:call('activate(System.Boolean)', true)
                 end
-                local children = utils.folder_get_children(folder)
+                local children = utils.folder.get_children(folder)
 
                 dump_output[questId] = {}
                 for _, child in ipairs(children) do

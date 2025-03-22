@@ -601,6 +601,36 @@ local function folder_get_children(folder)
     return list
 end
 
+--- @param folder via.Folder|via.Transform
+--- @return via.Transform[] children
+local function folder_get_immediate_children(folder)
+    local it = folder:call('get_Children') -- returns a: via.Folder.<get_Children>d__2
+    local enumerator = it:call('System.Collections.IEnumerable.GetEnumerator')
+    local getCurrent = enumerator:get_type_definition():get_method('System.Collections.Generic.IEnumerator<via.Transform>.get_Current')
+    local list = {}
+    while enumerator:MoveNext() do
+        local child = getCurrent:call(enumerator)---@type via.Transform
+        local childFolder = child:get_GameObject():get_Folder() or child:get_GameObject():get_FolderSelf()
+        if childFolder and childFolder:get_address() == folder:get_address() then
+            list[#list+1] = child
+        end
+    end
+    it:call('System.IDisposable.Dispose')
+    return list
+end
+
+--- @param folder via.Folder
+--- @return via.Folder[]
+local function folder_get_subfolders(folder)
+    local subfolders = {}
+    local child = folder:get_Child()
+    while child do
+        subfolders[#subfolders+1] = child
+        child = child:get_Next()
+    end
+    return subfolders
+end
+
 local function split_timestamp_components(time)
     local time_int = math.floor(time)
     local days = math.floor(time_int / 86400)
@@ -851,11 +881,15 @@ usercontent.utils = {
         add_component = add_gameobject_component,
         create_with_component = create_go_with_component,
     },
+    folder = {
+        get_subfolders = folder_get_subfolders,
+        get_children = folder_get_children,
+        immediate_children = folder_get_immediate_children,
+    },
     gui = {
         find = get_gui_by_path,
         get_path = get_gui_absolute_path,
     },
-    folder_get_children = folder_get_children,
 }
 
 _G.ce_utils = usercontent.utils

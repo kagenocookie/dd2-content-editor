@@ -220,7 +220,22 @@ object_handlers['via.GameObject'] = function (context)
         return false
     end
 
-    imgui.text(context.label .. ': GameObject ' .. go:get_Name())
+    local labelAppend = go:get_Name()
+    local tag = go:get_Tag()
+    if tag and tag ~= '' then labelAppend = labelAppend .. ' #' .. tag end
+    imgui.text(context.label .. ': GameObject ' .. labelAppend)
+
+    changed, val = imgui.checkbox('UpdateSelf', go:get_UpdateSelf())
+    if changed then go:set_UpdateSelf(val) end
+
+    changed2, val = imgui.checkbox('DrawSelf', go:get_DrawSelf())
+    if changed2 then go:set_DrawSelf(val) end
+
+    local folder = go:get_FolderSelf() or go:get_Folder()
+    if folder and imgui.tree_node('Folder') then
+        usercontent._ui_handlers.show_nested(folder, context, 'Folder', 'via.Folder', false)
+        imgui.tree_pop()
+    end
 
     local comps = context.data.components
     if ui.treenode_suffix('Components', comps and '(' .. tostring(#comps) .. ')' or '') then
@@ -242,7 +257,79 @@ object_handlers['via.GameObject'] = function (context)
         end
         imgui.tree_pop()
     end
-    return false
+
+    return changed or changed2
+end
+
+object_handlers['via.Folder'] = function (context)
+    local folder = context.get() ---@type via.Folder
+    if not folder then return false end
+    imgui.text(folder:get_Name()--[[@as string]])
+    local changed, changed2, val
+    changed, val = imgui.checkbox('UpdateSelf', folder:get_UpdateSelf())
+    if changed then folder:set_UpdateSelf(val) end
+
+    changed2, val = imgui.checkbox('DrawSelf', folder:get_DrawSelf())
+    if changed2 then folder:set_DrawSelf(val) end
+
+    local parent = folder:get_Parent()
+    if parent and imgui.tree_node('Parent: ' .. parent:get_Name()) then
+        usercontent._ui_handlers.show_nested(parent, context, 'Parent', 'via.Folder', false)
+        imgui.tree_pop()
+    end
+
+    local subfolders = context.data.subfolders
+    if ui.treenode_suffix('Subfolders', subfolders and '(' .. tostring(#subfolders) .. ')' or '') then
+        imgui.same_line()
+        if imgui.button('Refresh components') then context.data.subfolders = nil end
+        if not context.data.subfolders then
+            context.data.subfolders = utils.folder.get_subfolders(folder)
+            subfolders = context.data.subfolders
+        end
+        for i, comp in ipairs(subfolders) do
+            local name = comp:get_Name()
+            usercontent._ui_handlers.show_nested(comp, context, 'folder__' .. name, 'via.Folder', name)
+        end
+        imgui.tree_pop()
+    end
+
+    local children = context.data.children
+    if ui.treenode_suffix('GameObjects', children and '(' .. tostring(#children) .. ')' or '') then
+        imgui.same_line()
+        if imgui.button('Refresh list') then context.data.children = nil end
+        if not context.data.children then
+            context.data.children = utils.folder.immediate_children(folder)
+            children = context.data.children
+        end
+        for i, comp in ipairs(children) do
+            local name = comp:get_GameObject():get_Name()
+            local addr = comp:get_address()
+            imgui.push_id(addr)
+            usercontent._ui_handlers.show_nested(comp, context, tostring(addr), 'via.Transform', name)
+            imgui.pop_id()
+        end
+        imgui.tree_pop()
+    end
+
+    local all_children = context.data.all_children
+    if ui.treenode_suffix('All Children', all_children and '(' .. tostring(#all_children) .. ')' or '') then
+        imgui.same_line()
+        if imgui.button('Refresh list') then context.data.all_children = nil end
+        if not context.data.all_children then
+            context.data.all_children = utils.folder.get_children(folder)
+            all_children = context.data.all_children
+        end
+        for i, comp in ipairs(all_children) do
+            local name = comp:get_GameObject():get_Name()
+            local addr = comp:get_address()
+            imgui.push_id(addr)
+            usercontent._ui_handlers.show_nested(comp, context, tostring(addr), 'via.Transform', name)
+            imgui.pop_id()
+        end
+        imgui.tree_pop()
+    end
+
+    return changed or changed2
 end
 
 object_handlers['via.Transform'] = function (context)
