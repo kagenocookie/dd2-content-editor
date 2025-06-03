@@ -25,6 +25,8 @@
 --- @field import_field_whitelist string[]|nil
 --- @field extensions FieldExtension[]|nil
 --- @field uiHandler UIHandler|nil
+--- @field uiHandlerDeferred nil|fun(): UIHandler for cases where the ui handler can't be instantiated until the typecache is already finished up
+--- @field elementType string|nil
 
 --- @class ObjectFieldDefinition
 --- @field label string|nil

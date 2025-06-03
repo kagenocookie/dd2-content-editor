@@ -82,6 +82,12 @@ events.on('setup', function ()
 end)
 
 usercontent.utils.dd2 = require('editors.core.utils')
+usercontent.utils.get_player = function ()
+    local player = usercontent.utils.dd2.get_player()
+    local go = player and player:get_Valid() and player:get_GameObject()
+    return go and go:get_Valid() and go or nil
+end
+
 require('editors.core.definitions')
 
 --- @type ContentEditorGameController|table

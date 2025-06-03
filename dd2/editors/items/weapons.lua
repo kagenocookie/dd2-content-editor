@@ -232,6 +232,7 @@ if core.editor_enabled then
         local changed, newpath = imgui.input_text('Prefab', path or '')
         if changed then
             if newpath and newpath ~= '' then
+                local pfbCtrl = EquipmentManager.WeaponCatalog[selectedItem.id]
                 if not pfbCtrl then
                     pfbCtrl = import_handlers.import('app.RefCounter`1<app.PrefabController>', { _Item = newpath })
                     if pfbCtrl and pfbCtrl:get_RefCount() < 1 then pfbCtrl:addRef() end

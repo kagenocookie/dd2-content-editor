@@ -328,8 +328,8 @@ if core.editor_enabled then
     })
 
     local intOperatorTostrings = {
-        [enums.LogicalOperatorInt.Lessthan] = '<=',
-        [enums.LogicalOperatorInt.Less] = '<',
+        [enums.LogicalOperatorInt.Lessthan] = '<',
+        [enums.LogicalOperatorInt.Less] = '<=',
         [enums.LogicalOperatorInt.Equal] = '==',
         [enums.LogicalOperatorInt.NotEqual] = '!=',
         [enums.LogicalOperatorInt.More] = '>=',
@@ -518,7 +518,11 @@ if core.editor_enabled then
             fieldOrder = {'_Money'},
         },
         ['app.quest.condition.NpcOverrideCondition.CheckTimeOfDay'] = {
-            toString = function (item) return 'CheckTimeOfDay: ' .. enums.TimeZoneType.valueToLabel[item._TimeZone] .. ', ' .. string.format('%02d:%02d', item._StartPointHour, item._StartPointMinute) .. ' - ' .. string.format('%02d:%02d', item._EndPointHour, item._EndPointMinute) end,
+            toString = function (item)
+                return 'CheckTimeOfDay: ' .. enums.utils.get_enum('app.quest.condition.NpcOverrideCondition.CheckTimeOfDay.TimeZoneType').valueToLabel[item._TimeZone]
+                .. ', ' .. string.format('%02d:%02d', item._StartPointHour, item._StartPointMinute)
+                .. ' - ' .. string.format('%02d:%02d', item._EndPointHour, item._EndPointMinute)
+            end,
             fields = {
                 _StartPointHour = { label = 'Start hour', uiHandler = ui.handlers.common.preset.hour_slider },
                 _StartPointMinute = { label = 'Start minute', uiHandler = ui.handlers.common.preset.minute_slider },

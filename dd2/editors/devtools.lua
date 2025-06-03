@@ -143,6 +143,11 @@ end
 local bookmarkName = ''
 editor.define_window('dev_tools', 'Dev tools', function (state)
     local changed
+    local player = usercontent.utils.get_player()
+    if player and player:get_Valid() then
+        local pos = player:get_Transform():get_UniversalPosition()
+        imgui.text('Player position: (' .. pos.x .. ', ' .. pos.y .. ', ' .. pos.z .. ')')
+    end
     changed, state.pos_picker, state.pos_filter = ui.basic.filterable_enum_value_picker("Location", state.pos_picker, AIKeyLocation, state.pos_filter)
     if imgui.button('Teleport to AIKeyLocation') and state.pos_picker then
         warp_player(get_AIKeyLocation_uni_position(tonumber(state.pos_picker)))

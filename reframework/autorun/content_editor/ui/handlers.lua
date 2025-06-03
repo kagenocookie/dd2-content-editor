@@ -147,6 +147,7 @@ local value_type_handler_defs = {
     ['via.vec2'] = common.vec2,
     ['via.vec3'] = common.vec3,
     ['via.vec4'] = common.vec4,
+    ['via.mat4'] = common.mat4,
     ['via.Int2'] = common.vec2_int,
     ['via.Uint3'] = common.vec3_int,
     ['via.Float2'] = common.vec2,
@@ -614,6 +615,8 @@ local function apply_ui_handler_overrides(handler, containerClassOrSettings, fie
         handler = fieldOverrides.uiHandler
     elseif fieldTypeOverrides and fieldTypeOverrides.uiHandler then
         handler = fieldTypeOverrides.uiHandler
+    elseif fieldTypeOverrides and fieldTypeOverrides.uiHandlerDeferred then
+        handler = fieldTypeOverrides.uiHandlerDeferred()
     end
     --- @cast handler -nil
 
@@ -647,12 +650,12 @@ local function create_arraylike_ui(meta, classname, label, array_access, setting
     -- print('generating new array UIHandler', classname)
     local typesettings = type_settings.type_settings[classname]
     local expand_per_element = typesettings and typesettings.force_expander
+    if not meta.elementType then error('INVALID ARRAY: ' .. classname) return function () end end
     if expand_per_element == nil then
         local elementMeta = typecache.get(meta.elementType)
         expand_per_element = elementMeta.type ~= typecache.handlerTypes.enum and elementMeta.itemCount >= defines.array_expand_minimum_fields
     end
     local skip_root_tree_node = typesettings and typesettings.array_expander_disable or false
-    if not meta.elementType then error('INVALID ARRAY: ' .. classname) return function () end end
     local elementAccessor = default_accessor
     if not settings.is_raw_data then
         if meta.type == typecache.handlerTypes.array then
@@ -1508,6 +1511,7 @@ usercontent._ui_handlers = {
         create_field_editor = create_field_editor,
         generate_field_label = generate_field_label,
         prop_invalid_error_value_constant = prop_invalid_error_value_constant,
+        arraylike = create_arraylike_ui,
         accessors = {
             default = default_accessor,
             boxed_enum_accessor = boxed_enum_accessor,

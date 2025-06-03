@@ -112,7 +112,7 @@ local function flip_table_keys_values(table)
     return l
 end
 
---- Find the index of a table element, or 0 if not found
+--- Reverse a table into a new table
 --- @generic T
 --- @param table T[]
 --- @return T[]
@@ -327,6 +327,26 @@ local function enumerate(list, enumerator_method)
     return function ()
         if it:MoveNext() then
             return it._current
+        else
+            pcall(it.call, it, 'Dispose')
+            return (nil)--[[@type any]]
+        end
+    end
+end
+
+--- Enumerates through any REManagedObject that has a GetEnumerator() method, includes 0-based indexes
+--- @param list REManagedObject System.Collections.Generic.List<{typename}>
+--- @param enumerator_method string|nil Defaults to `GetEnumerator()`
+--- @param currentField string|nil Field on the iterator that gives us the current value. Defaults to `_current`
+--- @return fun(): item: REManagedObject|'null', index: integer
+local function enumerate_indexed(list, enumerator_method, currentField)
+    local it = list:call(enumerator_method or 'GetEnumerator()')
+    currentField = currentField or '_current'
+    local index = -1
+    return function ()
+        index = index + 1
+        if it:MoveNext() then
+            return it[currentField] or 'null', index
         else
             pcall(it.call, it, 'Dispose')
             return (nil)--[[@type any]]
@@ -810,6 +830,10 @@ local create_performance_timer = function ()
     }
 end
 
+--- @return via.GameObject|nil
+local function get_player_null()
+end
+
 usercontent.utils = {
     log = log_all,
     get_irl_timestamp = get_irl_timestamp,
@@ -828,6 +852,7 @@ usercontent.utils = {
 
     list_iterator = list_iterator,
     enumerate = enumerate,
+    enumerate_indexed = enumerate_indexed,
     generic_list_to_itable = generic_list_to_itable,
     generic_list_to_managed_array = generic_list_to_managed_array,
     get_sorted_table_keys = get_sorted_table_keys,
@@ -875,6 +900,7 @@ usercontent.utils = {
     translate = translate_message,
     guid_try_parse = try_parse_guid,
     guid_parse = parse_guid,
+    get_player = get_player_null,
     gameobject = {
         create = create_gameobject,
         get_component = get_gameobject_component,

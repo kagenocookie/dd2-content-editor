@@ -368,6 +368,9 @@ build_typecache = function (typedef, typecache)
     end
 
     local typeOverrides = typeSettings[fullname] or {}
+    if typeOverrides.elementType then
+        objectCacheEntry.elementType = typeOverrides.elementType
+    end
 
     local order = typeOverrides.fieldOrder or typeOverrides.import_field_whitelist or {}
     local next_field_i = #order + 1

@@ -364,6 +364,27 @@ local function create_vec_n(fields, imgui_callback, imgui_value_creator)
     end
 end
 
+--- @type UIHandler
+local function handle_mat4(ctx)
+    local mat = ctx.get()
+    local v0 = mat[0]
+    local v1 = mat[1]
+    local v2 = mat[2]
+    local v3 = mat[3]
+    local changed, finalchanged
+    changed, v0 = imgui.drag_float4(ctx.label .. '[0]', v0, 0.1)
+    if changed then mat[0] = v0 finalchanged = true end
+    changed, v1 = imgui.drag_float4(ctx.label .. '[1]', v1, 0.1)
+    if changed then mat[1] = v1 finalchanged = true end
+    changed, v2 = imgui.drag_float4(ctx.label .. '[2]', v2, 0.1)
+    if changed then mat[2] = v2 finalchanged = true end
+    changed, v3 = imgui.drag_float4(ctx.label .. '[3]', v3, 0.1)
+    if changed then mat[3] = v3 finalchanged = true end
+
+    if finalchanged then ctx.set(mat) end
+    return finalchanged
+end
+
 local float_vec2 = create_vec_n({'x', 'y'}, imgui.drag_float2, function() return Vector2f.new(0, 0) end)
 local float_vec3 = create_vec_n({'x', 'y', 'z'}, imgui.drag_float3, function() return Vector3f.new(0, 0, 0) end)
 local float_vec4 = create_vec_n({'x', 'y', 'z', 'w'}, imgui.drag_float4, function() return Vector4f.new(0, 0, 0, 0) end)
@@ -454,6 +475,7 @@ usercontent._common_handlers = {
     vec2 = float_vec2,
     vec3 = float_vec3,
     vec4 = float_vec4,
+    mat4 = handle_mat4,
     vec2_int = int_vec2,
     vec3_int = int_vec3,
     vec_n = create_vec_n,
