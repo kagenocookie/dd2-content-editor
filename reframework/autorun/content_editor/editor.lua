@@ -18,7 +18,7 @@ local tabs = {}
 --- @field title string
 --- @field draw WindowCallback
 
---- @alias WindowCallback fun(state: EditorState|table)
+--- @alias WindowCallback fun(state: EditorState|table, transientState: table)
 
 --- Define and retrieve a persistent storage table that is not linked to a specific editor window
 --- @generic T : table
@@ -219,17 +219,28 @@ local function show_message_window(text, title)
     open_editor_window('message', { title = title, text = text })
 end
 
+local transientStates = {}
+
 --- @param window_type_id string
 --- @param imgui_id integer|string
 --- @param state table
-local function embed_window(window_type_id, imgui_id, state)
+--- @param transientState table|nil
+local function embed_window(window_type_id, imgui_id, state, transientState)
     local handler = editor_defs[window_type_id]
     if handler then
         imgui.push_id('window_' .. imgui_id)
+        if not transientState then
+            local transientKey = '___transient' .. tostring(imgui_id)
+            if not state[transientKey] then
+                local transient = {}
+                state[transientKey] = function () return transient end
+            end
+            transientState = state[transientKey]()
+        end
         if config.data.editor.devmode then
-            handler.draw(state)
+            handler.draw(state, transientState)
         else
-            local success, error = pcall(handler.draw, state)
+            local success, error = pcall(handler.draw, state, transientState)
             if not success then
                 print('ERROR: content editor window ' .. (state.name or window_type_id) .. '#' .. imgui_id .. ' caused error:\n' .. tostring(error))
             end
@@ -397,7 +408,8 @@ re.on_frame(function ()
                         config.save()
                         i = i - 1
                     else
-                        embed_window(windowState.name, windowState.id, windowState)
+                        if not transientStates[i] then transientStates[i] = {} end
+                        embed_window(windowState.name, windowState.id, windowState, transientStates[i])
                         imgui.end_window()
                     end
                 end
