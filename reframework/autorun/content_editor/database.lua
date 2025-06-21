@@ -7,12 +7,13 @@ local internal = require('content_editor._internal')
 local events = require('content_editor.events')
 local typecache = require('content_editor.typecache')
 local enums = require('content_editor.enums')
+local injection = require('content_editor.injection_cache')
 
 ---@type table<DBEntity, EntityData>
 local entity_tracker = {}
 
 --- @class EntityTypeConfig
---- @field import fun(import_data: EntityImportData|table, entity: DBEntity|table) Method that imports this type of entity into the game.
+--- @field import fun(import_data: EntityImportData|table, entity: DBEntity|table, importToGame: boolean) Method that imports this type of entity into the game.
 --- @field export fun(entity: DBEntity|table): EntityImportData Export the data into a serializable object; The core fields can be omitted (id, label, type) as they will be automatically added before saving.
 --- @field delete nil|fun(entity: DBEntity|table): status: nil|'ok'|'error'|'not_deletable'|'forget' Delete / disable the entity from the game's data; forget: entity may not be fully deleted or reverted to default state, we can remove the entity record for it but will show a prompt to restart the game
 --- @field generate_label nil|fun(entity: DBEntity|table): string
@@ -105,7 +106,7 @@ local function create_entity(entity, bundleName, _skipResortEnum)
         else
             print('Entity already tracked ', entity.type, entity.id)
         end
-        entity_enums[entity.type].set_display_label(entity.id, entity.label)
+        entity_enums[entity.type].set_display_label(entity.id, entity.label, not _skipResortEnum)
 
         return trackedEntity.entity
     end
@@ -256,12 +257,16 @@ end
 --- @param entity_cfg EntityTypeConfig
 --- @param data EntityImportData
 --- @param instance DBEntity|nil
-local function import_entity(entity_cfg, data, instance)
+--- @param isOutdated boolean
+local function import_entity(entity_cfg, data, instance, isOutdated)
     instance = instance or {}
     instance.id = data.id
     instance.type = data.type
     instance.label = data.label or instance.label
-    entity_cfg.import(data, instance)
+    entity_cfg.import(data, instance, isOutdated)
+    if isOutdated then
+        injection.update_cache(instance.type, instance.id, 1)
+    end
     return instance
 end
 
@@ -289,6 +294,9 @@ end
 local function load_single_bundle(bundle, bundleImports)
     local bundleEntities = {}
     core.log_debug('Loading bundle', bundle.name)
+    if not bundle.updated_at_time then
+        bundle.updated_at_time = utils.iso_dateformat_to_unix_utc(bundle.updated_at)
+    end
     for _, data in ipairs(bundle.data or {}) do
         local loader = entity_types[data.type]
         if not loader then
@@ -296,14 +304,16 @@ local function load_single_bundle(bundle, bundleImports)
             unknownEntities[#unknownEntities+1] = data
             data._bundle = bundle.name
         else
+            local isOutdated = injection.is_entity_outdated(data.type, data.id, bundle.updated_at_time)
             local previousInstance = entities_by_id[data.type][data.id]
-            local newEntity = import_entity(loader, data, previousInstance)
+            local newEntity = import_entity(loader, data, previousInstance, isOutdated)
             newEntity = create_entity(newEntity, bundle.name, true)
             entity_tracker[newEntity].dirty = false
 
             local eventSet = newEntity ~= previousInstance and bundleImports.created or bundleImports.updated
-            eventSet[data.type] = eventSet[data.type] or {}
-            eventSet[data.type][#eventSet[data.type]+1] = newEntity
+            local evsData = eventSet[data.type]
+            if not evsData then evsData = {} eventSet[data.type] = evsData end
+            evsData[#evsData+1] = newEntity
 
             bundleEntities[#bundleEntities+1] = newEntity
         end
@@ -317,6 +327,7 @@ local function load_single_bundle(bundle, bundleImports)
             description = bundle.description,
             created_at = bundle.created_at,
             updated_at = bundle.updated_at,
+            updated_at_time = bundle.updated_at_time,
         },
         dirty = false,
         modifications = {},
@@ -498,7 +509,7 @@ local function load_entity(entityData, bundleName)
     end
     local importer = entity_types[entityData.type]
     if bundle and importer then
-        local newEntity = create_entity(import_entity(importer, entityData), bundleName)
+        local newEntity = create_entity(import_entity(importer, entityData, nil, true), bundleName)
         events.emit('entities_created', { [entityData.type] = {newEntity} })
         entity_enums[entityData.type].resort()
         return newEntity
@@ -514,11 +525,12 @@ end
 local function save_bundle(bundleName)
     local bundle = get_active_bundle_by_name(bundleName)
     if not bundle then
-        print("Can't save unknow bundle " .. bundleName)
+        print("Can't save unknown bundle " .. bundleName)
         return
     end
 
     bundle.info.updated_at = utils.get_irl_timestamp(true)
+    bundle.info.updated_at_time = os.time()
 
     --- @type DataBundle
     local outBundle = {
@@ -529,6 +541,7 @@ local function save_bundle(bundleName)
         data = {},
         created_at = bundle.info.created_at,
         updated_at = bundle.info.updated_at,
+        updated_at_time = bundle.info.updated_at_time,
         initial_insert_ids = bundle.initial_insert_ids,
         game_version = core.game.version,
     }
@@ -577,6 +590,7 @@ local function create_bundle(name)
             is_revertable = false,
             created_at = utils.get_irl_timestamp(true),
             updated_at = utils.get_irl_timestamp(true),
+            updated_at_time = os.time(),
         },
         dirty = false,
         entities = {},
@@ -589,6 +603,7 @@ local function create_bundle(name)
         author = bundle.info.author,
         created_at = bundle.info.created_at,
         updated_at = bundle.info.updated_at,
+        updated_at_time = bundle.info.updated_at_time,
         name = name,
         initial_insert_ids = bundle.initial_insert_ids,
         data = {},
@@ -865,7 +880,7 @@ local function reload_entity(type, id)
     end
 
     local loader = entity_types[type]
-    local newEntity = import_entity(loader, storedEntity, entity)
+    local newEntity = import_entity(loader, storedEntity, entity, true)
     newEntity = create_entity(newEntity, bundle.info.name, true)
     if newEntity ~= entity then
         print('WARNING received new entity instance on reloading entity... This might not be good?', type, id)
@@ -1079,7 +1094,8 @@ end
 local function reimport_entity(entity)
     local tt = entity_types[entity.type]
     if tt then
-        tt.import(tt.export(entity), entity)
+        tt.import(tt.export(entity), entity, true)
+        injection.update_cache(entity.type, entity.id, 1)
         events.emit('entities_updated', {[entity.type] = { entity }})
         return true
     end
@@ -1104,6 +1120,7 @@ local function finish_database_init()
     log.info('Initializing content editor type info...')
     events.emit('setup')
     timer:add('setup')
+
     print('Initializing content editor type info...')
     typecache.load()
     for _, et in pairs(entity_types) do
@@ -1111,8 +1128,8 @@ local function finish_database_init()
             typecache.get(t)
         end
     end
-
     timer:add('typecache')
+
     print('Starting content import for pre-existing game data...')
 
     if core.editor_enabled then
@@ -1125,8 +1142,8 @@ local function finish_database_init()
     end
     events.emit('get_existing_data', whitelistedLoadEntities)
     core.log_debug('Fetched all existing data')
-
     timer:add('existing data')
+
     print('All content entity types ready, starting load...')
     timer:add('enum refresh')
 
@@ -1256,6 +1273,12 @@ re.on_draw_ui(function ()
                 internal.config.data.editor.show_window = not internal.config.data.editor.show_window
                 internal.config.save()
             end
+        end
+        if imgui.tree_node('Settings') then
+            local changed
+            changed, internal.config.data.disable_injection_cache = imgui.checkbox('Disable injection cache', internal.config.data.disable_injection_cache)
+            if changed then internal.config.save() end
+            imgui.tree_pop()
         end
         if #unknownEntities > 0 then
             imgui.push_style_color(0, core.get_color('danger'))

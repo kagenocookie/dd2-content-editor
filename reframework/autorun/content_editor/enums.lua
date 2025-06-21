@@ -145,9 +145,8 @@ local function create_enum_summary_from_table(labelToValue, enumName, orderByVal
                 result.displayLabels[idx] = displayLabel
             end
         end
-        if shouldResort == nil or shouldResort == true then
-            result.resort()
-        end
+        if shouldResort == nil then shouldResort = usercontent.database.is_ready() end
+        if shouldResort then result.resort() end
     end
     return result
 end

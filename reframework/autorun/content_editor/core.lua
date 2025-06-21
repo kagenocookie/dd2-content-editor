@@ -96,6 +96,7 @@ end
 --- @field bundle_order string[]
 --- @field bundle_settings table<string, UserdataConfig.BundleSettings>
 --- @field editor _UserdataConfig.EditorSettings
+--- @field disable_injection_cache boolean|nil
 
 --- @class _UserdataConfig.EditorSettings
 --- @field enabled boolean
@@ -140,6 +141,7 @@ local config = {
     },
     bundle_order = {},
     bundle_settings = {},
+    disable_injection_cache = false,
 }
 
 local function load_config()
@@ -157,6 +159,7 @@ local function load_config()
         end
 
         if f.bundle_order then config.bundle_order = f.bundle_order end
+        if f.disable_injection_cache ~= nil then config.disable_injection_cache = f.disable_injection_cache end
         utils.table_assign(config.editor, f.editor or {})
 
         usercontent.__internal.emit('_loadConfig', config)
@@ -184,6 +187,12 @@ local function log_debug(...)
     print('[DEBUG] Content editor:', ...)
     log.info('[DEBUG] Content editor: ' .. table.concat({...}, '\t'))
 end
+
+--- @type ContentInjectorAPI
+_G.content_injector = content_injector or {
+    add_enum_entry = function () end, -- fallback implementations so we gracefully fail if it's not installed
+    add_enum_entries = function () end,
+}
 
 --- @class ContentEditorCore
 usercontent.core = {

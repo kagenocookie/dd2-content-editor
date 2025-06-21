@@ -88,7 +88,7 @@ udb.events.on('entities_created', function (data)
 end)
 
 udb.register_entity_type('event_context', {
-    import = function (data, entity)
+    import = function (data, entity, shouldImport)
         --- @cast data Import.EventContext
         --- @cast entity EventContext
         if entity.rootContext == nil then
@@ -96,7 +96,9 @@ udb.register_entity_type('event_context', {
             entity.rootContext._SerialNum = data.id
         end
 
-        entity.context = import_handlers.import('app.SuddenQuestContextData.ContextData', data.data, entity.rootContext._Data)
+        if shouldImport or not entity.context then
+            entity.context = import_handlers.import('app.SuddenQuestContextData.ContextData', data.data, entity.rootContext._Data)
+        end
         entity.rootContext._Data = entity.context
     end,
     export = function (data)

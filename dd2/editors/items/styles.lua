@@ -259,29 +259,36 @@ for _, name in ipairs(recordTypes) do
                 exFurmasks = exFurmasks and import_handlers.export_table(exFurmasks, get_ex_furmask_dict_type()) or nil,
             }
         end,
-        import = function (data, entity)
+        import = function (data, entity, shouldImport)
             --- @cast entity StyleEntity
             --- @cast data StyleData
             entity.variants = entity.variants or {}
             entity.styleHash = data.styleHash or data.id
             local hasVisor = false
-            for variantKey, variantImport in pairs(data.data) do
-                local variant = import_handlers.import(class, variantImport, entity.variants[variantKey])
-                entity.variants[variantKey] = variant
-                variant[record.styleField] = data.id
+            if shouldImport then
+                for variantKey, variantImport in pairs(data.data) do
+                    local variant = import_handlers.import(class, variantImport, entity.variants[variantKey])
+                    entity.variants[variantKey] = variant
+                    variant[record.styleField] = data.id
+                    if variant then
+                        CharacterEditManager[record.styleDb][tonumber(variantKey)][data.styleHash] = variant
+                    else
+                        CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(data.styleHash)
+                    end
+                end
+            end
+            for variantKey in pairs(data.data) do
+                local variant = entity.variants[variantKey]
                 if variant then
-                    CharacterEditManager[record.styleDb][tonumber(variantKey)][data.styleHash] = variant
                     hasVisor = hasVisor
                         or variant._VisorControl and variant._VisorControl ~= 0
                         or variant._SubVisorControl and variant._SubVisorControl ~= 0
-                else
-                    CharacterEditManager[record.styleDb][tonumber(variantKey)]:Remove(data.styleHash)
                 end
             end
             if name == 'HelmStyle' then
                 visorIds[data.id] = hasVisor or nil
             end
-            if data.furmasks then
+            if shouldImport and data.furmasks then
                 entity.furmasks = entity.furmasks or {}
                 for k, v in pairs(data.furmasks) do
                     local importedFurmask = import_handlers.import('app.PrefabController', v, entity.furmasks[k])
@@ -307,7 +314,7 @@ for _, name in ipairs(recordTypes) do
                 end
             end
 
-            if record.styleDict then
+            if shouldImport and record.styleDict then
                 ItemManager[record.styleDict][data.id] = entity.styleHash
             end
 

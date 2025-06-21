@@ -34,7 +34,7 @@ local timeSkipManager = sdk.get_managed_singleton("app.TimeSkipManager")
 local CharacterManager = sdk.get_managed_singleton('app.CharacterManager')
 
 local MathEx = sdk.find_type_definition('via.MathEx')
-local distSqVec3 = MathEx:get_method('distanceSq(via.vec3, via.vec3)')
+local distSqVec3 = MathEx and MathEx:get_method('distanceSq(via.vec3, via.vec3)') or function (a, b) return (b.x - a.x)^2 + (b.y - a.y)^2 +(b.z - a.z)^2 end
 
 local t_position = sdk.find_type_definition('via.Position')
 

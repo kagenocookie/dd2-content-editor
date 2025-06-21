@@ -232,7 +232,7 @@ object_handlers['via.GameObject'] = function (context)
     changed2, val = imgui.checkbox('DrawSelf', go:get_DrawSelf())
     if changed2 then go:set_DrawSelf(val) end
 
-    local folder = go:get_FolderSelf() or go:get_Folder()
+    local folder = go.get_FolderSelf and go:get_FolderSelf() or go.get_Folder and go:get_Folder()
     if folder and imgui.tree_node('Folder') then
         usercontent._ui_handlers.show_nested(folder, context, 'Folder', 'via.Folder', false)
         imgui.tree_pop()

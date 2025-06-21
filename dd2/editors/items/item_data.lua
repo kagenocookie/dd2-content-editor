@@ -12,6 +12,7 @@ local helpers = require('content_editor.helpers')
 local scripts = require('content_editor.editors.custom_scripts')
 local utils = require('content_editor.utils')
 local prefabs = require('content_editor.prefabs')
+local item_tools = require('editors.items.item_tools')
 
 --- @class ItemDataEntity : DBEntity
 --- @field runtime_instance app.ItemDataParam|app.ItemArmorParam|app.ItemWeaponParam
@@ -59,7 +60,7 @@ udb.events.on('get_existing_data', function (whitelist)
     for item in utils.enumerate(ItemManager._ItemDataDict) do
         local id = item.value._Id
         if not whitelist or whitelist.item_data[id] then
-            local itemType = (item.value--[[@as app.ItemCommonParam]]):get_DataType()
+            local itemType = item.value['<DataType>k__BackingField']
             local enhance
             if itemType == 2 then
                 enhance = ItemManager._WeaponEnhanceDict:ContainsKey(id) and ItemManager._WeaponEnhanceDict[id] or nil
@@ -83,12 +84,14 @@ udb.register_entity_type('item_data', {
             enhance = instance.enhance and import_handlers.export(instance.enhance) or nil,
         }
     end,
-    import = function (data, instance)
+    import = function (data, instance, importToGame)
         --- @cast instance ItemDataEntity
         if data.data and data.data._IconNo == 0 then
             data.data._IconNo = data.id
         end
-        instance.runtime_instance = import_handlers.import('app.ItemCommonParam', data.data, instance.runtime_instance)
+        if importToGame or not instance.runtime_instance then
+            instance.runtime_instance = import_handlers.import('app.ItemCommonParam', data.data, instance.runtime_instance)
+        end
         instance.name = data.name or instance.name
         instance.description = data.description or instance.description
         instance.icon_path = data.icon_path
@@ -101,7 +104,7 @@ udb.register_entity_type('item_data', {
             ItemManager._ItemDataDict[data.id] = instance.runtime_instance
         end
         local dataType = instance.runtime_instance:get_DataType()
-        if data.enhance then
+        if importToGame and data.enhance then
             if dataType == 2 then
                 instance.enhance = import_handlers.import('app.WeaponEnhanceParam[]', data.enhance, instance.enhance)
                 if instance.enhance then ItemManager._WeaponEnhanceDict[data.id] = instance.enhance end
@@ -124,11 +127,10 @@ udb.register_entity_type('item_data', {
         end
 
         if dataType == 3 and core.editor_enabled and udb.is_custom_entity_id('item_data', instance.id) then
-            local styleType = equip_cat_to_style[instance.runtime_instance._EquipCategory]
-            local style = udb.get_entity(styleType, instance.runtime_instance._StyleNo)
+            local style = item_tools.find_item_style_entity(instance)
             if style and udb.get_entity_bundle(style) == nil then
                 style.label = udb.generate_entity_label(style)
-                usercontent.database.get_entity_enum(styleType).set_display_label(style.id, style.label)
+                usercontent.database.get_entity_enum(style.type).set_display_label(style.id, style.label)
             end
         end
 
@@ -605,6 +607,14 @@ if core.editor_enabled then
 
     ui.editor.set_entity_editor('item_data', function (item, state)
         --- @cast item ItemDataEntity
+
+        imgui.indent(4)
+        local toolAction = select(2, ui.basic.tabs({'Give to arisen'}, 0, true, 'Tools'))
+        imgui.unindent(4)
+        if toolAction == 1 then
+            usercontent._devtools.give_item(item.id, 1)
+        end
+
         if not item.name then item.name = get_item_name:call(nil, item.id, false) end
         if not item.description then item.description = get_item_desc:call(nil, item.id, false) end
 
@@ -636,9 +646,6 @@ if core.editor_enabled then
                     fieldsChanged = true
                 end
             end
-        end
-        if imgui.button('Give one to arisen') then
-            usercontent._devtools.give_item(item.id, 1)
         end
 
         imgui.spacing()

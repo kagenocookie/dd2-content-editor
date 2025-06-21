@@ -206,6 +206,14 @@ function ce_find(text, single)
     return e
 end
 
+function ce_find_folder(text, single)
+    local s, e = pcall(find_folder, text)
+    if single == true and type(e) == 'table' then
+        return select(2, next(e))
+    end
+    return e
+end
+
 function ce_dump(command, outputFile)
     if not command then return nil end
     local result

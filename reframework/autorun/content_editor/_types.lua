@@ -77,6 +77,7 @@
 --- @field description string
 --- @field created_at string
 --- @field updated_at string
+--- @field updated_at_time integer|nil
 
 --- @class BundleRuntimeData
 --- @field info BundleInfo
@@ -93,6 +94,7 @@
 --- @field description string|nil
 --- @field created_at string
 --- @field updated_at string
+--- @field updated_at_time integer
 --- @field game_version string
 --- @field data EntityImportData[]
 --- @field initial_insert_ids table<string, integer>
@@ -107,3 +109,7 @@
 --- @field type string Object's entity type
 --- @field label string Display label
 --- @field data table
+
+--- @class ContentInjectorAPI
+--- @field add_enum_entries fun(type: RETypeDefinition|string, entries: table): nil
+--- @field add_enum_entry fun(type: RETypeDefinition|string, label: string, value: integer): nil

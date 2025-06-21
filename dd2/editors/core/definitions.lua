@@ -2346,6 +2346,9 @@ events.on('setup', function ()
             ['app.CharacterEditDefine.MetaData.MetaFlags'] = {
                 uiHandler = usercontent.ui.handlers.common.enum_flags(nil, 6)
             },
+            ['app.AttackUserData.CharaFlag'] = {
+                uiHandler = usercontent.ui.handlers.common.enum_flags()
+            },
         })
     end
 end)

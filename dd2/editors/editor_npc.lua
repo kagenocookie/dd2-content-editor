@@ -94,8 +94,10 @@ udb.register_entity_type('npc_data', {
     export = function (entity)
         return { data = import_handlers.export(entity.runtime_instance, 'app.CharacterData') }
     end,
-    import = function (data, entity)
-        entity.runtime_instance = import_handlers.import('app.CharacterData', data.data, entity.runtime_instance)
+    import = function (data, entity, shouldImport)
+        if shouldImport then
+            entity.runtime_instance = import_handlers.import('app.CharacterData', data.data, entity.runtime_instance)
+        end
     end,
     root_types = {'app.CharacterData'},
     generate_label = function (entity)
@@ -114,9 +116,11 @@ udb.register_entity_type('npc_appearance', {
     export = function (entity)
         return { appearances = import_handlers.export(entity.appearances), costumes = import_handlers.export(entity.costumes) }
     end,
-    import = function (data, entity)
-        entity.appearances = import_handlers.import('System.Collections.Generic.Dictionary`2<System.Byte,app.charaedit.ch000.AppearanceData>', data.appearances, entity.appearances)
-        entity.costumes = import_handlers.import('System.Collections.Generic.Dictionary`2<System.Byte,app.charaedit.ch000.CostumeData>', data.costumes, entity.costumes)
+    import = function (data, entity, shouldImport)
+        if shouldImport then
+            entity.appearances = import_handlers.import('System.Collections.Generic.Dictionary`2<System.Byte,app.charaedit.ch000.AppearanceData>', data.appearances, entity.appearances)
+            entity.costumes = import_handlers.import('System.Collections.Generic.Dictionary`2<System.Byte,app.charaedit.ch000.CostumeData>', data.costumes, entity.costumes)
+        end
     end,
     root_types = {'app.charaedit.ch000.AppearanceData', 'app.charaedit.ch000.CostumeData'},
     generate_label = function (entity)

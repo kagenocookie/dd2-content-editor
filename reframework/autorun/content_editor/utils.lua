@@ -602,9 +602,28 @@ end
 --- @param withTimezone boolean|nil
 --- @return string
 local function get_irl_timestamp(withTimezone)
-    local timenow = os.date(withTimezone and '!%Y-%m-%d %H:%M:%S UTC' or '!%Y-%m-%d %H-%M-%S')
+    local timenow = os.date(withTimezone and '!%Y-%m-%d %H:%M:%S UTC' or '!%Y-%m-%d %H:%M:%S')
     --- @cast timenow string
     return timenow
+end
+
+local utc_offset
+--- @param formatted string
+--- @return integer
+local function iso_dateformat_to_unix_utc(formatted)
+    -- string example: 2025-01-18 06:40:43
+    if utc_offset == nil then
+        local y, m, d, h, i, s = get_irl_timestamp():match('^(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d+)')
+        utc_offset = os.time({ year = y, month = m, day = d, hour = h, min = i, sec = s }) - os.time()
+    end
+    local y, m, d, h, i, s = formatted:match('^(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d+)')
+    return os.time({ year = y, month = m, day = d, hour = h, min = i, sec = s }) - utc_offset
+end
+
+local _start_time
+local function get_game_start_time()
+    if _start_time == nil then _start_time = os.time() - os.clock() end
+    return _start_time
 end
 
 --- @param folder via.Folder|via.Transform
@@ -837,6 +856,8 @@ end
 usercontent.utils = {
     log = log_all,
     get_irl_timestamp = get_irl_timestamp,
+    iso_dateformat_to_unix_utc = iso_dateformat_to_unix_utc,
+    get_game_start_time = get_game_start_time,
 
     float_round = float_round,
     chance = chance,
