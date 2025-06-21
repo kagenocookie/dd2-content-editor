@@ -52,6 +52,7 @@ end
 
 --- @return ValueImporter
 local function resource(resourceClassname)
+    local holderClassname = resourceClassname .. 'Holder'
     --- @type ValueImporter
     return {
         export = function (src)
@@ -66,11 +67,8 @@ local function resource(resourceClassname)
             local newres = sdk.create_resource(resourceClassname, src)
             if not newres then return nil end
 
-            newres = newres:add_ref()
-            target = sdk.create_instance(resourceClassname .. 'Holder', true):add_ref()
-            target:call('.ctor()')
-            target:write_qword(0x10, newres:get_address())
-            return target
+            local holder = newres:create_holder(holderClassname):add_ref()
+            return holder
         end,
     }
 end
