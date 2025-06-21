@@ -47,33 +47,44 @@ end
 
 --- Queue a prefab load
 --- @param path string
---- @param onload nil|fun(pfb: via.Prefab)
---- @return via.Prefab pfb The prefab that may or may not be ready to instantiate yet
-local function load_prefab(path, onload)
+--- @return PrefabCacheData
+local function create_prefab_container(path)
     local data = prefabContainer[path]
     if not data then
         local pfb = sdk.create_instance('via.Prefab'):add_ref() --[[@as via.Prefab]]
         pfb:set_Path(path)
-        if onload then
-            data = { pfb = pfb, loadCallbacks = { onload } }
-        else
-            data = { pfb = pfb, loadCallbacks = {} }
-        end
+        data = { pfb = pfb, loadCallbacks = {} }
         prefabContainer[path] = data
-        waitingPrefabs[path] = true
-        return pfb
     end
 
+    return data
+end
+
+--- Prepare a via.Prefab instance but don't load it immediately
+--- @param path string
+--- @return via.Prefab pfb The prefab that may or may not be ready to instantiate yet
+local function create_prefab(path)
+    return create_prefab_container(path).pfb
+end
+
+--- Queue a prefab load
+--- @param path string
+--- @param onload nil|fun(pfb: via.Prefab)
+--- @return via.Prefab pfb, boolean isReady The prefab that may or may not be ready to instantiate yet
+local function load_prefab(path, onload)
+    local data = create_prefab_container(path)
+    local isReady = data.pfb:get_Ready()
+
     if onload then
-        if data.pfb:get_Ready() then
+        if isReady then
             onload(data.pfb)
         else
-            print('Adding to callback for prefab', path)
+            print('Adding onload callback for prefab', path)
             data.loadCallbacks[#data.loadCallbacks + 1] = onload
             waitingPrefabs[path] = true
         end
     end
-    return data.pfb
+    return data.pfb, isReady
 end
 
 --- Instantiate a new instance from a prefab and execute the callback function. If the prefab is not loaded it, it will be queued and executed when it finishes.
@@ -149,6 +160,7 @@ end
 
 usercontent.prefabs = {
     load = load_prefab,
+    create = create_prefab,
     get_loaded = get_loaded_prefab,
     instantiate = prefab_instantiate,
     instantiate_shared = prefab_instantiate_shared,
