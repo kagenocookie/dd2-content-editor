@@ -92,6 +92,7 @@ editor.define_window('quests', 'Quests', function (state)
                 object_explorer:handle_address(catalog)
                 if imgui.tree_node('Data explorer') then
                     ui.handlers.show(catalog)
+                    imgui.tree_pop()
                 end
                 imgui.tree_pop()
             end
