@@ -76,6 +76,13 @@ definitions.override('dd2', {
         },
     },
 
+    ['via.navigation.MapHandleBase'] = {
+        abstract = {
+            'via.navigation.MapHandle',
+            'via.navigation.SectionManagerHandle',
+        }
+    },
+
     ['app.QuestAfterStoryData.ConditionBase'] = {
         abstract = {
             'app.QuestAfterStoryData.CheckVariable',
@@ -2179,6 +2186,68 @@ definitions.override('dd2', {
             'app.ToneMappingController',
             'app.VolumetricFogControlController',
             'app.WaveOpticalLensFlareController'
+        }
+    },
+    ['via.sound.SoundUserData'] = {
+        abstract = {
+            'app.SoundGameParameterApp_CharacterType',
+            'app.SoundGameParameterApp_HumanScale',
+            'app.SoundGameParameterApp_SnakeRootPosSpeed',
+            'app.SoundGameParameterApp_WeaponCharacterType',
+            'app.SoundRagdollAppListData',
+            'app.SoundRigidBodyAppListData',
+            'app.SoundSwitchApp_CharacterSize',
+            'app.SoundSwitchApp_CharacterType',
+            'app.SoundSwitchApp_DamageEfficacyLevel',
+            'app.SoundSwitchApp_DamageInfo',
+            'app.SoundSwitchApp_DamageMaterial',
+            'app.SoundSwitchApp_EquipInfo',
+            'app.SoundSwitchApp_HumanScale',
+            'app.SoundSwitchApp_MatelialType',
+            'app.SoundSwitchApp_MatelialTypeToMaterialHolder',
+            'app.SoundSwitchApp_ShellOwner',
+            'app.SoundSwitchApp_WeaponDamageInfo',
+            'app.WwiseJointAngleRefTableTriggerListData',
+            'app.WwiseJointAngleStopRefTableTriggerListData',
+            'app.WwiseJointContactRefTableTriggerListData',
+            'app.WwiseJointRotationRefTableTriggerListData',
+            'app.WwiseJointTwistAngleRefTableTriggerListData',
+            'app.WwiseJointVelocityRefTableTriggerListData',
+            'app.WwiseSpaceDeterminationBgmData',
+            'app.WwiseSpaceDeterminationEnvControlData',
+            'app.WwiseSpaceDeterminationObsOclAndAuxSendsData',
+            'app.WwiseSpaceDeterminationUserDataBase',
+            'soundlib.SoundBankListData',
+            'soundlib.SoundContainableUserData',
+            'soundlib.SoundContainerExtensionDataBase',
+            'soundlib.SoundContainerListData',
+            'soundlib.SoundGameParameterAppListData',
+            'soundlib.SoundGetGameParameterListData',
+            'soundlib.SoundGpuClothTriggerListData',
+            'soundlib.SoundJointAngleStopTriggerListData',
+            'soundlib.SoundJointAngleTriggerListData',
+            'soundlib.SoundJointContactTriggerListData',
+            'soundlib.SoundJointRotationTriggerListData',
+            'soundlib.SoundJointTwistAngleTriggerListData',
+            'soundlib.SoundJointVelocityTriggerListData',
+            'soundlib.SoundManagerSettings',
+            'soundlib.SoundManagerSettingsBase',
+            'soundlib.SoundMaterialObsOclListData',
+            'soundlib.SoundPackageListData',
+            'soundlib.SoundPhysicsListData',
+            'soundlib.SoundRagdollListData',
+            'soundlib.SoundRigidBodyListData',
+            'soundlib.SoundSetStateListData',
+            'soundlib.SoundStateAppListData',
+            'soundlib.SoundSwitchAppListData',
+            'soundlib.SoundTargetOperationTriggerListData',
+            'soundlib.SoundTriggerInfoListData',
+            'soundlib.SoundUserDataBase',
+            'soundlib.SoundVibInfoByTriggerListData',
+            'soundlib.SoundVibInfoByWavListData',
+            'soundlib.SoundVibInfoListDataBase',
+            'soundlib.SoundVibrationDefineInfoListData',
+            'via.sound.SoundContainableUserData'
         }
     },
     ['app.QuestUniqueParamData.Data'] = {

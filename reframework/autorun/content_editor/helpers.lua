@@ -268,7 +268,7 @@ local array_accessors = {
 
 --- @type ArrayLikeAccessors
 local list_accessors = {
-    length = function (list) return list:get_Count() end,
+    length = function (list) return list.get_Count and list:get_Count() or 0 end,
     foreach = utils.list_iterator,
     get_elements = function (list)
         local items = {}

@@ -304,7 +304,12 @@ build_typecache = function (typedef, typecache)
         local genericType = sdk.find_type_definition(fullname)
         local args = genericType:get_generic_argument_types()
         local keyType = args[1]
-        local keyTypeStr = args[1]:get_full_name()
+        if not keyType then
+            print('failed to determine dictionary generic parameters', fullname)
+            typecache[fullname] = { type = handlerType.readonly, itemCount = 999 }
+            return
+        end
+        local keyTypeStr = keyType:get_full_name()
         local valueType = args[2]
 
         local elementType = valueType:get_full_name()

@@ -187,7 +187,7 @@ if core.editor_enabled then
         },
         ['app.ItemMixMaterialParam.CombineData'] = {
             fields = {
-                _PairList = { label = 'Pair items', extensions = { { type = 'tooltip', text = 'Combinting with any item from this list will create the combine item' } } },
+                _PairList = { label = 'Pair items', extensions = { { type = 'tooltip', text = 'Combining with any item from this list will create the combine item' } } },
                 _CombineItem = { label = 'Output item' },
                 _CombineMakeNum = { label = 'Output count' },
             }

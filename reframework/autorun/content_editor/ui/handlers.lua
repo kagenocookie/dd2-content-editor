@@ -442,7 +442,9 @@ end
 --- @type ObjectFieldAccessors
 local default_accessor = {
     get = function (object, fieldname)
-        if object ~= nil then return object[fieldname]
+        if object ~= nil then
+            local suc, ret = pcall(function(o, f) return o[f] end, object, fieldname)
+            if suc then return ret else return nil end
         else return nil end
     end,
     set = function (object, value, fieldname) object[fieldname] = value end,
@@ -465,6 +467,34 @@ local getter_prop_accessor = {
     get = function (object, propGetter) return object:call(propGetter) end,
     set = function (object, value, fieldname) print('WARNING: Attempted to set read-only prop', object, fieldname, value) end
 }
+
+--- @param classname string
+--- @param field string
+--- @return ObjectFieldAccessors
+local function createGetterSetter(classname, field)
+    local t = sdk.find_type_definition(classname)
+    local basename = field:sub(2, -17) -- k__BackingField
+    local prefix = ''
+    if basename:find('.', nil, true) ~= nil then
+        local lastDot = basename:find('.', nil, true)
+        local nextDot = basename:find('.', lastDot + 1, true)
+        while nextDot ~= nil do
+            lastDot = nextDot
+            nextDot = basename:find('.', lastDot + 1, true)
+        end
+        prefix = basename:sub(1, lastDot)
+        basename = basename:sub(lastDot + 1)
+        -- basename = basename:sub(basename:find('.') + 1)
+    end
+    local getter = t:get_method(prefix .. 'get_' .. basename)
+    local setter = t:get_method(prefix .. 'set_' .. basename)
+    return {
+        get = function (object) return getter:call(object) end,
+        set = function (object, value) setter:call(object, value) end
+        -- get = function (object) return pcall(getter.call, getter, object) end,
+        -- set = function (object, value) pcall(setter.call, setter, object, value) end
+    }
+end
 
 --- @type ObjectFieldAccessors
 local hashset_accessor = {
@@ -915,7 +945,14 @@ field_editor_factories = {
                 local type = subfield[2]
                 local overrides = fieldSettings[name]
                 local sublabel = format_field_label(overrides and overrides.label or generate_field_label(name), label)
-                fields[#fields+1] = { name, type, flags, sublabel, overrides and overrides.accessors or default_accessor }
+                local access = default_accessor
+                if overrides and overrides.accessors then
+                    access = overrides.accessors
+                elseif name:find('k__BackingField') then
+                    -- many pragmata fields don't work when accessed directly through backing fields, use prop access instead
+                    access = createGetterSetter(classname, name)
+                end
+                fields[#fields+1] = { name, type, flags, sublabel, access }
             end
         end
 
@@ -1017,7 +1054,7 @@ field_editor_factories = {
                     local overrides = fieldSettings[name]
                     local sublabel = format_field_label(overrides and overrides.label or generate_field_label(name), label)
                     fieldCount = fieldCount + 1
-                    fields[fieldCount] = { name, type, flags, sublabel, overrides and overrides.accessors or default_accessor }
+                    fields[fieldCount] = { name, type, flags, sublabel, overrides and overrides.accessors or name:find('k__BackingField') and createGetterSetter(classname, name) or default_accessor }
                 end
             end
             local fieldsFilterable = fieldCount > 10
@@ -1220,8 +1257,12 @@ create_field_editor = function(parentContext, containerClass, field, fieldClass,
         -- for full interchangeability between raw lua table data and REManagedObjects
         if settings.is_raw_data then
             accessors = default_accessor
+        elseif fieldOverrides.accessors then
+            accessors = fieldOverrides.accessors
+        elseif type(field) == 'string' and field:find('k__Backingfield') then
+            accessors = createGetterSetter(containerClass, field)
         else
-            accessors = fieldOverrides.accessors or default_accessor
+            accessors = default_accessor
         end
     end
 

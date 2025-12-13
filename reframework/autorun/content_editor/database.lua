@@ -1277,6 +1277,7 @@ re.on_draw_ui(function ()
         if imgui.tree_node('Settings') then
             local changed
             changed, internal.config.data.disable_injection_cache = imgui.checkbox('Disable injection cache', internal.config.data.disable_injection_cache)
+            if imgui.is_item_hovered() then imgui.set_tooltip('Prevent reimporting entities that should not have changed to make scripts reset faster.') end
             if changed then internal.config.save() end
             imgui.tree_pop()
         end
