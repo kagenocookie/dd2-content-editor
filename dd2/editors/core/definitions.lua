@@ -2250,6 +2250,9 @@ definitions.override('dd2', {
             'via.sound.SoundContainableUserData'
         }
     },
+    ['app.NPCGenearateCondition'] = {
+        abstract = { 'app.NPCGenearateCondition_AlwaysTrue' }
+    },
     ['app.QuestUniqueParamData.Data'] = {
         fields = { _IDValue = { import_ignore = true } }
     },
