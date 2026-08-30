@@ -126,6 +126,37 @@ local armorCatalogs = {
         { name = 'Chain', dict = '_BackpackChainCatalog' },
         { name = 'Clsp', dict = '_BackpackCollisionShapePresetCatalog' },
     },
+    Hair = {
+        { name = 'Mesh', dict = '_HairMeshCatalog', enum = 'app.CharacterEditDefine.HairMeshID' },
+        { name = 'Chain', dict = '_HairChainCatalog' },
+        { name = 'Clsp', dict = '_HairCollisionShapePresetCatalog' },
+    },
+    HairSkin = {
+        { name = 'Skin', dict = '_HairSkinCatalog', enum = 'app.CharacterEditDefine.HairSkinID' },
+        { name = 'SkinBeastren', dict = '_HairBeastSkinCatalog' },
+    },
+    Beard = {
+        { name = 'Mesh', dict = '_BeardMeshCatalog', enum = 'app.CharacterEditDefine.BeardMeshID' },
+        -- note, there's these separate enums here, but the values are identical to BeardMeshID apart from Texture missing a few so we can just group them up anyway
+        { name = 'Skin', dict = '_BeardSkinCatalog', enum = 'app.CharacterEditDefine.BeardSkinID' },
+        { name = 'Texture', dict = '_BeardTextureCatalog', enum = 'app.CharacterEditDefine.BeardTextureID' },
+        { name = 'WrapDeformer', dict = '_BeardWrapDeformerCatalog' },
+    },
+    BodyHair = {
+        { name = 'Texture', dict = '_BodyHairTextureCatalog', enum = 'app.CharacterEditDefine.BodyHairTextureID' },
+    },
+    EyeLeft = {
+        { name = 'Texture', dict = '_EyeLeftTextureCatalog', enum = 'app.CharacterEditDefine.EyeLeftTextureID' },
+    },
+    EyeRight = {
+        { name = 'Texture', dict = '_EyeRightTextureCatalog', enum = 'app.CharacterEditDefine.EyeRightTextureID' },
+    },
+    EyeLeftParallax = {
+        { name = 'Texture', dict = '_EyeLeftParallaxCatalog', enum = 'app.CharacterEditDefine.EyeRightParallaxID' },
+    },
+    EyeRightParallax = {
+        { name = 'Texture', dict = '_EyeRightParallaxCatalog', enum = 'app.CharacterEditDefine.EyeLeftParallaxID' },
+    },
 }
 local recordTypes = utils.get_sorted_table_keys(armorCatalogs)
 
@@ -265,6 +296,7 @@ if core.editor_enabled then
             partSwapper:swapHelm()
             partSwapper:swapUnderwear()
             partSwapper:swapFacewear()
+            partSwapper:swapHair()
         end
     end
 
