@@ -79,7 +79,7 @@ local recordClasses = {
     HelmStyle = { styleDb = '_HelmDB', swap = 'app.HelmSwapItem', enum = 'app.HelmStyle', styleDict = 'HelmDict', slot = 2, styleField = '_HelmStyle', styleNoEnum = enums.get_virtual_enum('HelmStyleNo', {}), furmaskIndex = 5 },
     MantleStyle = { styleDb = '_MantleDB', swap = 'app.MantleSwapItem', enum = 'app.MantleStyle', styleDict = 'MantleDict', slot = 5, styleField = '_MantleStyle', styleNoEnum = enums.get_virtual_enum('MantleStyleNo', {}) },
     BackpackStyle = { styleDb = '_BackpackDB', swap = 'app.BackpackSwapItem', enum = 'app.BackpackStyle', styleField = '_BackpackStyle' },
-    UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_Style' },
+    UnderwearStyle = { styleDb = '_UnderwearDB', swap = 'app.UnderwearSwapItem', enum = 'app.UnderwearStyle', styleField = '_Style', styleNoEnum = enums.get_virtual_enum('UnderwearStyle', {}) },
     FacewearStyle = { styleDb = '_FacewearDB', swap = 'app.FacewearSwapItem', enum = 'app.FacewearStyle', styleDict = 'FaceDict', slot = 7, styleField = '_Style', styleNoEnum = enums.get_virtual_enum('FacewearStyleNo', {}), furmaskIndex = 6 },
     -- _BodySkinDB = {'app.BodySkinSwapItem', 'app.SkinStyle'},
     -- _BodyMuscleDB = {'app.BodyMuscleSwapItem', 'app.MuscleStyle'},
@@ -410,7 +410,7 @@ definitions.override('styles', {
     ['app.PantsSwapItem'] = { fields = { _PantsStyle = { ui_ignore = true, import_ignore = true } } },
     ['app.MantleSwapItem'] = { fields = { _MantleStyle = { ui_ignore = true, import_ignore = true } } },
     ['app.BackpackSwapItem'] = { fields = { _BackpackStyle = { ui_ignore = true, import_ignore = true } } },
-    ['app.UnderwearSwapItem'] = { fields = { _UnderwearStyle = { ui_ignore = true, import_ignore = true } } },
+    ['app.UnderwearSwapItem'] = { fields = { _Style = { ui_ignore = true, import_ignore = true } } },
     ['app.FacewearSwapItem'] = { fields = { _Style = { ui_ignore = true, import_ignore = true } } },
 })
 
@@ -430,6 +430,7 @@ if core.editor_enabled then
     end
 
     definitions.override('', {
+        ['app.TopsSwapItem'] = { fields = { _UnderwearStyle = { uiHandler = ui.handlers.common.enum('UnderwearStyle') } } },
         ['app.TopsAmPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.TopsBdPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
         ['app.TopsBtPartFlags'] = { uiHandler = ui.handlers.common.enum_flags(nil, 6) },
