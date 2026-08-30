@@ -586,14 +586,14 @@ local function file_exists(fn)
     return previousContents and previousContents ~= ''
 end
 
-local function log_all(...)
-    local out = '__LOG__'
-    for _, arg in ipairs({...}) do
-        out = out .. ' ' .. tostring(arg)
-    end
-    log.info(out)
-    print(out)
+local function log_common(logfunc, context, ...)
+    logfunc(context .. ' | ' .. table.concat({...}, ' '))
 end
+
+local function log_debug(...) log_common(log.debug, 'CE', ...) end
+local function log_info(...) log_common(log.info, 'CE', ...) end
+local function log_error(...) log_common(log.error, 'CE', ...) end
+local function log_warning(...) log_common(log.warn, 'CE', ...) end
 
 local function string_join(sep, ...)
     return table.concat({...}, sep)
@@ -854,7 +854,11 @@ local function get_player_null()
 end
 
 usercontent.utils = {
-    log = log_all,
+    debug = log_debug,
+    log = log_info,
+    warn = log_warning,
+    error = log_error,
+
     get_irl_timestamp = get_irl_timestamp,
     iso_dateformat_to_unix_utc = iso_dateformat_to_unix_utc,
     get_game_start_time = get_game_start_time,

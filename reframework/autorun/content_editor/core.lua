@@ -184,8 +184,7 @@ local function log_debug(...)
         end
     end
     if not isDebug then return end
-    print('[DEBUG] Content editor:', ...)
-    log.info('[DEBUG] Content editor: ' .. table.concat({...}, '\t'))
+    utils.debug(...)
 end
 
 --- @type ContentInjectorAPI
