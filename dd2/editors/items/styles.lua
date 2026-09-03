@@ -177,12 +177,12 @@ udb.events.on('get_existing_data', function (whitelist)
 
         local wl = whitelist and whitelist[name]
         if type.styleDict then
-            local root_enumerator = ItemManager[type.styleDict]:GetEnumerator()
+            local root_enumerator = ItemManager[type.styleDict]:call('System.Collections.IEnumerable.GetEnumerator()')
             while root_enumerator:MoveNext() do
                 local styleId = root_enumerator._current.key
                 if not wl or wl[styleId] then
                     local styleHash = root_enumerator._current.value
-                    local variants = CharacterEditManager[type.styleDb]:GetEnumerator()
+                    local variants = CharacterEditManager[type.styleDb]:call('System.Collections.IEnumerable.GetEnumerator()')
                     while variants:MoveNext() do
                         local variant = variants._current.key
                         if variants._current.value:ContainsKey(styleHash) then
@@ -204,11 +204,11 @@ udb.events.on('get_existing_data', function (whitelist)
             end
         else
             -- underwears and backpacks don't have distinct style numbers, use hash == nr here
-            local root_dict = CharacterEditManager[type.styleDb]:GetEnumerator()
+            local root_dict = CharacterEditManager[type.styleDb]:call('System.Collections.IEnumerable.GetEnumerator()')
             while root_dict:MoveNext() do
                 local root_item = root_dict._current
                 local variantId = root_item.key
-                local enumerator = root_item.value:GetEnumerator()
+                local enumerator = root_item.value:call('System.Collections.IEnumerable.GetEnumerator()')
                 while enumerator:MoveNext() do
                     local item = enumerator._current
                     local styleHash = item.key
@@ -335,8 +335,8 @@ for _, name in ipairs(recordTypes) do
             if not styleItemLookups then
                 -- construct item lookup table
                 styleItemLookups = {}
-                local isValidItemFunc = sdk.find_type_definition('app.ItemManager'):get_method('isValidItem')
-                for pair in utils.enumerate(ItemManager._ItemDataDict) do
+                local isValidItemFunc = sdk.find_type_definition('app.ItemIDUtil'):get_method('isValidItem')
+                for pair in utils.enumerate(ItemManager._ItemDataDict, 'System.Collections.IEnumerable.GetEnumerator()') do
                     local itemId = pair.key---@type integer
                     local item = pair.value
                     --- @cast item app.ItemArmorParam
@@ -418,6 +418,7 @@ if core.editor_enabled then
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
     local helpers = require('content_editor.helpers')
+    local prefabs = require('content_editor.prefabs')
 
     --- @param character app.Character
     local function forceRefresh(character, part)
@@ -495,7 +496,7 @@ if core.editor_enabled then
                     if furmask then
                         if newpath and newpath ~= '' then
                             if newpath ~= path then
-                                furmask._Item:set_Path(newpath)
+                                prefabs.set_path(furmask._Item, newpath)
                                 udb.mark_entity_dirty(selectedItem)
                             end
                         else
@@ -539,7 +540,7 @@ if core.editor_enabled then
                 if refreshPart then
                     local player = CharacterManager:get_ManualPlayer()
                     if player then forceRefresh(player, refreshPart) end
-                    local it = PawnManager._PawnCharacterList:GetEnumerator()
+                    local it = PawnManager._PawnCharacterList:call('System.Collections.IEnumerable.GetEnumerator()')
                     while it:MoveNext() do forceRefresh(it._current, refreshPart) end
                 end
             end

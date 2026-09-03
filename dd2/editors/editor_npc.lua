@@ -19,22 +19,26 @@ udb.events.on('get_existing_data', function (whitelist)
     local NPCManager = sdk.get_managed_singleton('app.NPCManager') ---@type app.NPCManager
 
     if not whitelist or whitelist.npc_data then
-        for _, charaData in pairs(NPCManager.CharacterDataList.characterDataList) do
-            if charaData and (not whitelist or whitelist.npc_data[charaData.ID]) then
-                local id = charaData.ID
-                if charaData._SubNPC then
-                    local mainNpc = udb.get_entity('npc_data', id)
-                    if not udb.get_entity('npc_data', id) then
-                        print('WARNING: Main and sub NPC are out of order', id, get_chara_enum().get_label(id))
+        local lists = NPCManager.CharacterDataList
+        for list in utils.list_iterator(lists) do
+            --- @cast list app.CharacterDataList
+            for _, charaData in pairs(list.characterDataList) do
+                if charaData and (not whitelist or whitelist.npc_data[charaData.ID]) then
+                    local id = charaData.ID
+                    if charaData._SubNPC then
+                        local mainNpc = udb.get_entity('npc_data', id)
+                        if not udb.get_entity('npc_data', id) then
+                            print('WARNING: Main and sub NPC are out of order', id, get_chara_enum().get_label(id))
+                        else
+                            mainNpc.sub_instance = charaData
+                        end
                     else
-                        mainNpc.sub_instance = charaData
+                        udb.register_pristine_entity({
+                            id = id,
+                            type = 'npc_data',
+                            runtime_instance = charaData,
+                        })
                     end
-                else
-                    udb.register_pristine_entity({
-                        id = id,
-                        type = 'npc_data',
-                        runtime_instance = charaData,
-                    })
                 end
             end
         end

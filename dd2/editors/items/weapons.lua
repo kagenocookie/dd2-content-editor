@@ -46,7 +46,7 @@ udb.events.on('get_existing_data', function (whitelist)
     -- app.ItemManagerBehavior - contains the source data that gets cataloged into the singleton at some point
     -- so the solution for adding new entries might be to modify the behavior and call ItemManager:setupWeapomAdditionalData() again
 
-    local enumerator = EquipmentManager.WeaponCatalog:GetEnumerator()
+    local enumerator = EquipmentManager.WeaponCatalog:call('System.Collections.IEnumerable.GetEnumerator()')
     while enumerator:MoveNext() do
         local id = enumerator._current.key
         if not hasRefcounterType then
@@ -211,6 +211,7 @@ sdk.hook(
 if core.editor_enabled then
     local editor = require('content_editor.editor')
     local ui = require('content_editor.ui')
+    local prefabs = require('content_editor.prefabs')
 
     definitions.override('', {
         ['app.WeaponSetting.OffsetSetting'] = {
@@ -241,7 +242,7 @@ if core.editor_enabled then
                     EquipmentManager.WeaponCatalog[selectedItem.id] = pfbCtrl
                     udb.mark_entity_dirty(selectedItem)
                 elseif newpath ~= path then
-                    pfbCtrl._Item._Item:set_Path(newpath)
+                    prefabs.set_path(pfbCtrl._Item._Item, newpath)
                     udb.mark_entity_dirty(selectedItem)
                 end
             else

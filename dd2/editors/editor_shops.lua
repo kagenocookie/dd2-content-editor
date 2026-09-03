@@ -22,8 +22,8 @@ local ItemManager = sdk.get_managed_singleton('app.ItemManager') ---@type app.It
 -- fetch current game data
 udb.events.on('get_existing_data', function (whitelist)
     if whitelist and not whitelist.shop then return end
-    local dataRoot = ItemManager.ItemShopData
-    for _, shop in ipairs(dataRoot._Params:get_elements()) do
+    for pair in utils.enumerate(ItemManager.ShopParamTable) do
+        local shop = pair.value
         --- @cast shop app.ItemShopParam
         if not whitelist or whitelist.shop[shop._ShopId] then
             --- @type DBEntity
@@ -40,11 +40,10 @@ end)
 
 udb.events.on('entities_created', function (data)
     if data.shop and #data.shop > 0 then
-        ItemManager.ItemShopData._Params = helpers.expand_system_array(
-            ItemManager.ItemShopData._Params,
-            utils.pluck(data.shop, 'runtime_instance'),
-            'app.ItemShopParam'
-        )
+        for _, shop in ipairs(data.shop) do
+            --- @cast shop ItemShopData
+            ItemManager.ShopParamTable:Set(shop.id, shop.runtime_instance)
+        end
     end
 end)
 

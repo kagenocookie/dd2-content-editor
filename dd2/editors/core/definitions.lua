@@ -1,6 +1,8 @@
 local core = require('content_editor.core')
 local definitions = require('content_editor.definitions')
 
+local prefabs = require('content_editor.prefabs')
+
 local offset_QuestActionParamBase_Param = sdk.find_type_definition('app.quest.action.QuestActionBase'):get_field('_Param'):get_offset_from_base()
 
 local quest_action_Param_parent_accessors = {
@@ -46,7 +48,7 @@ definitions.override('dd2', {
                 if src == nil or src == '' or src == 'null' then return nil end
                 target = target or sdk.create_instance('app.PrefabController'):add_ref()
                 target._Item = target._Item or sdk.create_instance('via.Prefab'):add_ref() ---@type via.Prefab
-                target._Item:set_Path(src)
+                prefabs.set_path(target._Item, src)
                 return target
             end
         }

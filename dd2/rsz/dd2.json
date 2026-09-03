@@ -25463,11 +25463,9 @@
   },
   "app.Job04Parameter.ParryCounterParameter": {
     "import_field_whitelist": [
-      "_FreeFallSpeedRateHorizontal",
       "_FreeFallSpeedRateVertical",
       "_FreeFallUpLimitSpeed",
-      "_FinishSmallAttackUserDataName",
-      "_FinishLargeAttackUserDataName"
+      "_FreeFallSpeedRateHorizontal"
     ]
   },
   "app.Job04Parameter.PowderParameter": {

@@ -3,6 +3,7 @@ local udb = require('content_editor.database')
 local utils = require('content_editor.utils')
 local import_handlers = require('content_editor.import_handlers')
 local enums = require('content_editor.enums')
+local prefabs = require('content_editor.prefabs')
 
 local CharacterEditManager = sdk.get_managed_singleton("app.CharacterEditManager") --- @type app.CharacterEditManager
 local CharacterManager = sdk.get_managed_singleton('app.CharacterManager') --- @type app.CharacterManager
@@ -280,7 +281,7 @@ if core.editor_enabled then
                     dict[id] = pfbCtrl
                     return true
                 elseif newpath ~= path then
-                    pfbCtrl._Item:set_Path(newpath)
+                    prefabs.set_path(pfbCtrl._Item, newpath)
                     return true
                 end
             else
@@ -297,7 +298,7 @@ if core.editor_enabled then
         if imgui.button('Force update meshes') then
             local player = CharacterManager:get_ManualPlayer()
             if player then forceUpdateSwapParts(player) end
-            local it = PawnManager._PawnCharacterList:GetEnumerator()
+            local it = PawnManager._PawnCharacterList:call('System.Collections.IEnumerable.GetEnumerator()')
             while it:MoveNext() do forceUpdateSwapParts(it._current) end
         end
         if imgui.is_item_hovered() then imgui.set_tooltip('Will force all mesh parts of the player and pawns to refresh based on the currently defined meshes') end

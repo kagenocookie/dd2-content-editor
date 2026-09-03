@@ -102,7 +102,7 @@ local function get_quest_scene_collector()
         return qscollector
     end
 
-    local collectors = utils.enumerator_to_table(QuestManager.SceneCollectorDict:GetEnumerator())
+    local collectors = utils.enumerator_to_table(QuestManager.SceneCollectorDict:call('System.Collections.IEnumerable.GetEnumerator()'))
 
     if collectors == nil or #collectors == 0 then
         return nil
@@ -113,7 +113,7 @@ end
 local function get_quest_root_folder()
     local collector = get_quest_scene_collector()
     if not collector then return nil end
-    local enumerator = collector--[[@as any]]:get_QuestSceneFolderDict():GetEnumerator()
+    local enumerator = collector--[[@as any]]:get_QuestSceneFolderDict():call('System.Collections.IEnumerable.GetEnumerator()')
     if enumerator:MoveNext() then
         -- return enumerator
         local current = enumerator:get_Current()
@@ -200,50 +200,6 @@ re.on_application_entry('UpdateBehavior', function()
         end
     end
 end)
-
---- @type table<string, via.Prefab|nil>
-local prefab_cache = {}
-
---- comment
---- @param pfb_path string
---- @param parentFolder via.Folder
---- @param callback fun(gameObject: via.GameObject)
---- @param timeLimit integer|nil
---- @return boolean created, via.GameObject|nil gameObject
-local function instantiate_prefab(pfb_path, parentFolder, callback, timeLimit)
-    local pfb = prefab_cache[pfb_path]
-    if not pfb then
-        pfb = sdk.create_instance("via.Prefab"):add_ref()--[[@as via.Prefab]]
-        prefab_cache[pfb_path] = pfb
-        pfb:set_Path(pfb_path)
-        pfb:set_Standby(true)
-    end
-
-    if pfb:get_Ready() then
-        print('Prefab is ready: ', pfb_path)
-        local go = pfb:call('instantiate(via.vec3, via.Folder)', ValueType.new(sdk.find_type_definition('via.vec3')), parentFolder)
-        callback(go)
-        return true, go
-    end
-
-    timeLimit = timeLimit == nil and 5 or timeLimit
-    local starttime = os.clock()
-    frame_funcs[#frame_funcs+1] = function ()
-        if pfb:get_Ready() then
-            return instantiate_prefab(pfb_path, parentFolder, callback)
-        end
-
-        if os.clock() - starttime > timeLimit then
-            print('Prefab instantiation timed out after ' .. timeLimit .. ' seconds:', pfb_path)
-            pfb:release()
-            prefab_cache[pfb_path] = nil
-            return true
-        end
-        print('Waiting for prefab init', pfb_path)
-        return false
-    end
-    return false, nil
-end
 
 --- @param questId integer
 --- @param processorId integer

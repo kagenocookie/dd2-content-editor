@@ -13,7 +13,7 @@ end
 
 local function dictionary_get_values(dict)
     local result = {}
-    local enumerator = dict:GetEnumerator()
+    local enumerator = dict:call('System.Collections.IEnumerable.GetEnumerator()')
     while enumerator:MoveNext() do
         local current = enumerator:get_Current()
         result[#result+1] = current.value
@@ -24,7 +24,7 @@ end
 
 local function dictionary_to_table(dict)
     local result = {}
-    local enumerator = dict:GetEnumerator()
+    local enumerator = dict:call('System.Collections.IEnumerable.GetEnumerator()')
     while enumerator:MoveNext() do
         local current = enumerator:get_Current()
         result[current.key] = current.value
@@ -323,7 +323,7 @@ end
 --- @param enumerator_method string|nil Defaults to `GetEnumerator()`
 --- @return fun(): REManagedObject|any iterator
 local function enumerate(list, enumerator_method)
-    local it = list:call(enumerator_method or 'GetEnumerator()')
+    local it = list:call(enumerator_method or 'System.Collections.IEnumerable.GetEnumerator()')
     return function ()
         if it:MoveNext() then
             return it._current
@@ -340,7 +340,7 @@ end
 --- @param currentField string|nil Field on the iterator that gives us the current value. Defaults to `_current`
 --- @return fun(): item: REManagedObject|'null', index: integer
 local function enumerate_indexed(list, enumerator_method, currentField)
-    local it = list:call(enumerator_method or 'GetEnumerator()')
+    local it = list:call(enumerator_method or 'System.Collections.IEnumerable.GetEnumerator()')
     currentField = currentField or '_current'
     local index = -1
     return function ()
@@ -366,17 +366,19 @@ local function generic_list_to_itable(list)
 end
 
 ---@param typename string
----@param items table
+---@param items table|number
 ---@return SystemArray
 local function create_array(typename, items)
-    if typename:find('`') then
-        return nil
+    if type(items) == 'number' then
+        return sdk.create_managed_array(typename, items):add_ref()--[[@as SystemArray]]
+    else
+        local arr = sdk.create_managed_array(typename, #items):add_ref()--[[@as SystemArray]]
+        for i, item in ipairs(items) do
+            -- TMP array setter arr[i - 1] = item
+            arr:Set(i - 1, item)
+        end
+        return arr
     end
-    local arr = sdk.create_managed_array(typename, #items):add_ref()
-    for i, item in ipairs(items) do
-        arr[i - 1] = item
-    end
-    return arr
 end
 
 ---@param odds number [0-1] value of how likely a chance you want
@@ -587,7 +589,11 @@ local function file_exists(fn)
 end
 
 local function log_common(logfunc, context, ...)
-    logfunc(context .. ' | ' .. table.concat({...}, ' '))
+    local args = {}
+    for i, v in ipairs({...}) do
+        args[i] = tostring(v)
+    end
+    logfunc(context .. ' | ' .. table.concat(args, ' '))
 end
 
 local function log_debug(...) log_common(log.debug, 'CE', ...) end

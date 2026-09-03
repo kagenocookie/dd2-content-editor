@@ -9,6 +9,7 @@ local helpers = require('content_editor.helpers')
 local common = require('content_editor.ui.common')
 local udb = require('content_editor.database')
 local ui_context = require('content_editor.ui.context')
+local prefabs = require('content_editor.prefabs')
 
 local type_settings = require('content_editor.definitions')
 local typecache = require('content_editor.typecache')
@@ -426,7 +427,7 @@ object_handlers['via.Prefab'] = function (context)
     context.data.newpath = select(2, imgui.input_text('Path', context.data.newpath or path or ''))
     if context.data.newpath and context.data.newpath ~= path then
         if imgui.button('Change') then
-            pfb:set_Path(context.data.newpath)
+            prefabs.set_path(pfb, context.data.newpath)
             context.data.newpath = nil
             changed = true
         end
@@ -888,9 +889,14 @@ local function dictionary_ui(meta, classname, label, settings)
 
             if refreshBtn or not items then
                 if type(dict) == 'userdata' then
-                    local it = dict:GetEnumerator()
+                    local it = dict:call('System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,TValue>>.GetEnumerator()')
                     items = {}
-                    while it:MoveNext() do
+                    local function safeMoveNext(iterator)
+                        local success, moved = pcall(iterator.MoveNext, iterator)
+                        return success and moved
+                    end
+
+                    while safeMoveNext(it) do
                         local key = type(it._current.key) == 'userdata' and it._current.key.add_ref and it._current.key:add_ref() or it._current.key
                         local value = type(it._current.value) == 'userdata' and it._current.value.add_ref and it._current.value:add_ref() or it._current.value
                         items[#items+1] = { key, value }

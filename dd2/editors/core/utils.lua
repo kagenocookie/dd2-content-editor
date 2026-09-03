@@ -56,7 +56,7 @@ local function get_player_party()
 
     local list = { player }
 ---@diagnostic disable-next-line: undefined-field
-    local it = PawnManager._PawnCharacterList:GetEnumerator()
+    local it = PawnManager._PawnCharacterList:call('System.Collections.IEnumerable.GetEnumerator()')
     while it:MoveNext() do list[#list+1] = it._current end
     it:Dispose()
     return list

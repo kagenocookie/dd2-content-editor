@@ -28,7 +28,7 @@ end)
 local function activate_all_processors()
     local qc = gamedb.get_quest_scene_collector() --- @type any
     local dict = qc:get_QuestSceneFolderDict()
-    local enumerator = dict:get_Keys():GetEnumerator()
+    local enumerator = dict:get_Keys():call('System.Collections.IEnumerable.GetEnumerator()')
     while enumerator:MoveNext() do
         local questId = enumerator:get_Current()
         local folder = dict[questId] ---@type via.Folder
@@ -133,7 +133,7 @@ local function process_quest_folder(questId, folder, state)
             end
 
             if proctype == 'app.QuestController' and imgui.tree_node('See proc folders') then
-                for fld_i, fld in ipairs(utils.enumerator_to_table(proc.ProcessorFolderControllerList:GetEnumerator())) do
+                for fld_i, fld in ipairs(utils.enumerator_to_table(proc.ProcessorFolderControllerList:call('System.Collections.IEnumerable.GetEnumerator()'))) do
                     imgui.text(tostring(fld_i))
                     imgui.same_line()
                     object_explorer:handle_address(fld)
@@ -163,7 +163,7 @@ editor.define_window('quest_processors', 'Quest processors', function (state)
             activate_all_processors()
             local qc = gamedb.get_quest_scene_collector() --- @type any
             local dict = qc:get_QuestSceneFolderDict()
-            local enumerator = dict:get_Keys():GetEnumerator()
+            local enumerator = dict:get_Keys():call('System.Collections.IEnumerable.GetEnumerator()')
             local dump_output = {}
             while enumerator:MoveNext() do
                 local questId = enumerator:get_Current()

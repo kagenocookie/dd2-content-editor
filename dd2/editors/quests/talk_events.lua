@@ -246,7 +246,7 @@ end
 udb.events.on('get_existing_data', function (whitelist)
     local enumerator
     if not whitelist or whitelist.talk_event then
-        enumerator = TalkEventManager._ResourceCatalog:get_MergedCatalog():GetEnumerator()
+        enumerator = TalkEventManager._ResourceCatalog:get_MergedCatalog():call('System.Collections.IEnumerable.GetEnumerator()')
         while enumerator:MoveNext() do
             local kv = enumerator._current
             --- @type TalkEventData
@@ -263,7 +263,7 @@ udb.events.on('get_existing_data', function (whitelist)
     end
 
     if not whitelist or whitelist.quest_dialogue_pack then
-        enumerator = TalkEventManager._QuestDialoguePackCatalog:GetEnumerator()
+        enumerator = TalkEventManager._QuestDialoguePackCatalog:call('System.Collections.IEnumerable.GetEnumerator()')
         while enumerator:MoveNext() do
             local kv = enumerator._current
             --- @type QuestDialogueEntity
@@ -280,7 +280,7 @@ udb.events.on('get_existing_data', function (whitelist)
 
     if not whitelist or whitelist.pawn_talk_monologue then
         -- note: both loops are identical, just need different enumerators
-        enumerator = TalkManager._PawnCommonTalkMonologueCatalog:get_MergedCatalog():GetEnumerator()
+        enumerator = TalkManager._PawnCommonTalkMonologueCatalog:get_MergedCatalog():call('System.Collections.IEnumerable.GetEnumerator()')
         while enumerator:MoveNext() do
             local kv = enumerator._current
             --- @type PawnTalkData
@@ -294,7 +294,7 @@ udb.events.on('get_existing_data', function (whitelist)
             end
         end
 
-        enumerator = TalkManager._PawnQuestTalkMonologueCatalog:get_MergedCatalog():GetEnumerator()
+        enumerator = TalkManager._PawnQuestTalkMonologueCatalog:get_MergedCatalog():call('System.Collections.IEnumerable.GetEnumerator()')
         while enumerator:MoveNext() do
             local kv = enumerator._current
             --- @type PawnTalkData

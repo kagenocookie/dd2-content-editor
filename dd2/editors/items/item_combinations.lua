@@ -28,11 +28,10 @@ udb.events.on('get_existing_data', function (whitelist)
     -- multiple instances supported
 
     if not whitelist or whitelist.item_combination then
-        local mixData = ItemManager.ItemMixData
-
-        for item in utils.list_iterator(mixData._MaterialList) do
-            --- @cast item app.ItemMixMaterialParam
-            local id = item._ItemID
+        for item in utils.enumerate(ItemManager.RecipeListTable) do
+            local value = item.value
+            --- @cast value app.ItemMixMaterialParam
+            local id = value._ItemID
 
             if not whitelist or whitelist.item_combination[id] then
                 local e = udb.get_entity('item_combination', id) --[[@as ItemCombinationEntity|nil]]
@@ -48,8 +47,9 @@ udb.events.on('get_existing_data', function (whitelist)
             end
         end
 
-        for i = 0, mixData._Params:get_size() - 1 do
-            local item = mixData._Params[i]
+        for itemEntry in utils.list_iterator(ItemManager.ItemMixParamTable) do
+            --- @cast itemEntry app.ItemMixParamHolder
+            local item = itemEntry.Param
             local id = item._ItemId
 
             if not whitelist or whitelist.item_combination[id] then
@@ -75,17 +75,10 @@ local function batch_remove(entries)
     for _, e in pairs(entries) do
         if e._removeMix then
             for _, m in ipairs(e._removeMix) do
-                removedMix[m] = true
+                ItemManager.ItemMixParamTable:Remove(m)
             end
         end
         e._removeMix = nil
-    end
-
-    local mixData = ItemManager.ItemMixData
-    if next(removedMix) then
-        mixData._Params = helpers.system_array_filtered(mixData._Params, function (item)
-            return not removedMix[item]
-        end, 'app.ItemMixParam')
     end
 end
 
@@ -96,15 +89,10 @@ local function batch_add(entries)
         --- @cast e ItemCombinationEntity|table
         if e._addedMix then
             for _, m in ipairs(e._addedMix) do
-                addedMix[#addedMix+1] = m
+                ItemManager.ItemMixParamTable:Add(m)
             end
         end
         e._addedMix = nil
-    end
-
-    local mixData = ItemManager.ItemMixData
-    if #addedMix > 0 then
-        mixData._Params = helpers.expand_system_array(mixData._Params, addedMix, 'app.ItemMixParam')
     end
 end
 
@@ -133,13 +121,13 @@ udb.register_entity_type('item_combination', {
         --- @cast entity ItemCombinationEntity
 
         if not import.material then
-            if entity.material then ItemManager.ItemMixData._MaterialList--[[@as any]]:Remove(entity.material) end
+            if entity.material then ItemManager.RecipeListTable:Remove(entity.material._ItemID) end
             entity.material = nil
         else
             local prev_mat = entity.material
             entity.material = import_handlers.import('app.ItemMixMaterialParam', import.material, entity.material)
             if not prev_mat then
-                ItemManager.ItemMixData._MaterialList--[[@as any]]:Add(entity.material)
+                ItemManager.RecipeListTable:TryAdd(entity.material._ItemID, entity.material)
             end
         end
 
@@ -198,11 +186,19 @@ if core.editor_enabled then
     --- @param entity ItemCombinationEntity
     local function mix_onadd(obj, entity)
         obj._ItemId = entity.id
-        ItemManager.ItemMixData._Params = helpers.expand_system_array(ItemManager.ItemMixData._Params, {obj}, 'app.ItemMixParam')
+        local holder = sdk.create_instance('app.ItemMixParamHolder')--[[@as app.ItemMixParamHolder]]
+        holder.Param = obj
+        ItemManager.ItemMixParamTable:Add(holder)
     end
 
     local function mix_onremove(obj)
-        ItemManager.ItemMixData._Params = helpers.system_array_remove(ItemManager.ItemMixData._Params, obj, 'app.ItemMixParam')
+        for _, item in pairs(ItemManager.ItemMixParamTable) do
+            ---@cast item app.ItemMixParamHolder
+            if item.Param == obj then
+                ItemManager.ItemMixParamTable:Remove(item)
+                break
+            end
+        end
     end
 
     ui.editor.set_entity_editor('item_combination', function (entity, state)
@@ -214,7 +210,7 @@ if core.editor_enabled then
         if not entity.material then
             if imgui.button('Add') then
                 entity.material = sdk.create_instance('app.ItemMixMaterialParam'):add_ref()--[[@as app.ItemMixMaterialParam]]
-                ItemManager.ItemMixData._MaterialList--[[@as any]]:Add(entity.material)
+                ItemManager.RecipeListTable:Add(entity.material._ItemID, entity.material)
             end
         end
         if entity.material then

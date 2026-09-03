@@ -5,6 +5,7 @@ local utils = require('content_editor.utils')
 local type_settings = require('content_editor.definitions')
 local typecache = require('content_editor.typecache')
 local helpers = require('content_editor.helpers')
+local prefabs = require('content_editor.prefabs')
 
 -- helper functions
 local type_guid = sdk.find_type_definition('System.Guid')
@@ -82,7 +83,7 @@ local prefab = {
     import = function (src, target)
         if src == nil or src == '' or src == 'null' then return nil end
         target = target or sdk.create_instance('via.Prefab'):add_ref()
-        target:set_Path(src)
+        prefabs.set_path(target, src)
         return target
     end
 }
@@ -310,7 +311,8 @@ importer_factories = {
             import = function (src, target)
                 if src and target and #src == target:get_size() then
                     for i, vv in ipairs(src) do
-                        target[i - 1] = elementHandler.import(vv, target[i - 1])
+                        -- TMP array setter target[i - 1] = elementHandler.import(vv, target[i - 1])
+                        target:Set(i - 1, elementHandler.import(vv, target[i - 1]))
                     end
                     return target
                 end
@@ -330,7 +332,7 @@ importer_factories = {
                 local result = {}
                 if not src then return result end
                 if src.get_Count == nil then
-                    print('lol get count is nil wtf ', helpers.get_type(src), src:get_type_definition():get_full_name())
+                    utils.error('lol get count is nil wtf ', helpers.get_type(src), src:get_type_definition():get_full_name())
                 end
                 for idx = 0, src:get_Count() - 1 do
                     local el = src[idx]
@@ -377,7 +379,7 @@ importer_factories = {
             import = function (src, target)
                 target = target or helpers.create_generic_instance(typedef)
                 -- remove any keys that aren't present in our import data
-                local it = target:GetEnumerator()
+                local it = target:call('System.Collections.IEnumerable.GetEnumerator()')
                 local keysToRemove = {}
                 local handledKeys = {}
                 while it:MoveNext() do
@@ -472,6 +474,9 @@ importer_factories = {
             -- we need to check for empty fields because the stupid JSON dump saves {} as null, sigh.
 
             for _, fieldData in ipairs(meta.fields) do
+                if not fieldData or not fieldData[1] then
+                    utils.error('A FIELD MIGHT BE MISSING:' .. fullname .. json.dump_string(meta))
+                end
                 local fieldName = fieldData[1]
                 local flags = fieldData[3]
                 local override = fieldOverrides and fieldOverrides[fieldName] or {}

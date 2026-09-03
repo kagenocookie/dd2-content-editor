@@ -46,6 +46,26 @@ local arrayActivator = sdk.find_type_definition('System.Array'):get_method('Crea
 --- @param arrayLength integer|nil If nil, creates a normal class instance, if a number then creates an array with that length
 --- @return REManagedObject|SystemArray|nil
 local function create_generic(classname, arrayLength)
+    if type(classname) == 'string' then
+        local straightInst
+        if arrayLength ~= nil then
+            straightInst = sdk.create_managed_array(classname, arrayLength)
+        else
+            straightInst = sdk.create_instance(classname)
+        end
+        if straightInst then return straightInst:add_ref() end
+    elseif classname.create_instance then
+        local straightInst
+        if arrayLength ~= nil then
+            straightInst = sdk.create_managed_array(classname:get_full_name(), arrayLength)
+        else
+            straightInst = classname:create_instance()
+        end
+        if straightInst then return straightInst:add_ref() end
+    end
+
+    -- below used to be required, but create_instance seems to Just Work now; leaving as backup
+    -- System.Array is no longer a thing in the latest patch so it won't really work anyway
     local genType = type(classname) == 'string' and generic_types.typedef(classname)
         or classname.get_runtime_type and generic_types.typedef(classname:get_full_name())
         or classname
@@ -65,32 +85,20 @@ end
 local function create_array(elementClassname, length, items)
     local array
     local len = length and length >= 0 and length or items and #items or 0
-    if elementClassname:find('`') then
-        array = create_generic(elementClassname, len)
+    if items and #items == length then
+        return utils.create_array(elementClassname, items)
     else
-        array = sdk.create_managed_array(elementClassname, len):add_ref()
+        array = utils.create_array(elementClassname, len):add_ref()
     end
 
     if items then
         for i, item in ipairs(items) do
             if i > len then break end
-            array[i - 1] = item
+            -- TMP array setter array[i - 1] = item
+            array:Set(i-1, item)
         end
     end
     return array--[[@as SystemArray]]
-end
-
----@param list_classname string Classname - e.g. System.Collections.Generic.List`1<System.String>
----@param items any[]
----@return nil|REManagedObject System.Collections.Generic.List<{typename}>
-local function create_generic_list(list_classname, items)
-    local list = create_generic(list_classname)
-    if not list then return nil end
-
-    for _, item in ipairs(items) do
-        list--[[@as any]]:Add(item)
-    end
-    return list
 end
 
 --- @param org_array SystemArray
@@ -115,7 +123,8 @@ local function expand_system_array(org_array, appended_items, elementType, prepe
     else
         local arr = create_array(elementType, arr_len + added_len, newElements)
         for i = 1, added_len do
-            arr[arr_len + i - 1] = appended_items[i]
+            -- TMP array setter arr[arr_len + i - 1] = appended_items[i]
+            arr:Set(arr_len + i - 1, appended_items[i])
         end
         return arr
     end
@@ -196,9 +205,6 @@ create_new_instance = function(classname, luaValue)
                 return sdk.create_instance(ts.abstract_default or ts.abstract[1]):add_ref()
             end
         else
-            if classname:find('`') then
-                return create_generic(classname)
-            end
             if luaValue then
                 return create_lua_object(meta, classname)
             elseif meta.no_default_constructor then
@@ -229,7 +235,7 @@ create_new_instance = function(classname, luaValue)
         return create_array(meta.elementType, 0)
     end
     if meta.type == typecache.handlerTypes.genericList or meta.type == typecache.handlerTypes.dictionary then
-        return create_generic(classname)
+        return sdk.create_instance(classname):add_ref()
     end
     if meta.type == typecache.handlerTypes.readonly then
         return sdk.create_instance(classname):add_ref()
@@ -285,7 +291,7 @@ local ienumerable_accessors = {
     foreach = utils.enumerate,
     get_elements = function (list)
         local items = {}
-        local it = list:GetEnumerator()
+        local it = list:call('System.Collections.IEnumerable.GetEnumerator()')
         while it:MoveNext() do
             items[#items+1] = it._current
         end
@@ -519,7 +525,7 @@ local function to_string_concat_fields(classname, whitelistedFlags, includeClass
     whitelistedFlags = whitelistedFlags or typecache.fieldFlags.All
     local meta = typecache.get(classname)
     local funcs = {}
-    for _, f in ipairs(meta.fields) do
+    for _, f in ipairs(meta.fields or {}) do
         local name = f[1]
         local fc = f[2]
         local flags = f[3]
@@ -673,7 +679,6 @@ end
 usercontent._ui_utils = {
     create_instance = create_new_instance,
     create_generic_instance = create_generic,
-    create_generic_list = create_generic_list,
 
     is_basic_type = function (classname) return classname == 'System.Boolean' or integer_types[classname] or float_types[classname] end,
     is_integer_type = function (classname) return integer_types[classname] end,

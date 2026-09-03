@@ -229,36 +229,23 @@ local function replace_item_icon(item, tex)
     if not item._texture then
         if not item.icon_path or item.icon_path == '' then return false end
         local immediateInst
-        if item.icon_path:match('.tex$') then
-            -- issue with using a tex resource directly:
-            -- the texture loads up but then game crashes next time it shows up
-            -- does the resource get garbage collected despite the add_ref()?
-            -- anyway, storing it in a gameobject works
-            immediateInst = prefabs.get_shared_instance(item.icon_path)
-            if not immediateInst then
-                local holder
-                immediateInst, holder = utils.gameobject.create_with_component('_' .. item.icon_path, 'app.GUITextureHolder')
-                ---@cast holder app.GUITextureHolder
-                holder._Texture = import_handlers.import('via.render.TextureResourceHolder', item.icon_path):add_ref()
-                item._texture = holder._Texture
-                prefabs.store_shared_instance(item.icon_path, immediateInst)
-            else
-                local holder = utils.gameobject.get_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
-                item._texture = holder._Texture
-            end
-            apply_icon_rect(tex, item)
+        -- issue with using a tex resource directly:
+        -- the texture loads up but then game crashes next time it shows up
+        -- does the resource get garbage collected despite the add_ref()?
+        -- anyway, storing it in a cached gameobject works
+        immediateInst = prefabs.get_shared_instance(item.icon_path)
+        if not immediateInst then
+            local holder
+            immediateInst, holder = utils.gameobject.create_with_component('_' .. item.icon_path, 'app.GUITextureHolder')
+            ---@cast holder app.GUITextureHolder
+            holder._Texture = import_handlers.import('via.render.TextureResourceHolder', item.icon_path):add_ref()
+            item._texture = holder._Texture
+            prefabs.store_shared_instance(item.icon_path, immediateInst)
         else
-            immediateInst = prefabs.instantiate_shared(item.icon_path, function (gameObj)
-                if not item._texture then
-                    local texHolder = utils.gameobject.get_component(gameObj, 'app.GUITextureHolder') --[[@as app.GUITextureHolder|nil]]
-                    item._texture = texHolder and (texHolder._Texture or texHolder._UVSequense)
-                end
-
-                if tex and sdk.is_managed_object(tex) and item._texture then
-                    apply_icon_rect(tex, item)
-                end
-            end)
+            local holder = utils.gameobject.get_component(immediateInst, 'app.GUITextureHolder')--[[@as app.GUITextureHolder]]
+            item._texture = holder._Texture
         end
+        apply_icon_rect(tex, item)
         -- apply a default transparent texture instead of having it flash white.png until the prefab loads
         -- (iconNo = 8099 is empty for basegame icons, may need to change if devs add more content)
         if not immediateInst then
@@ -372,8 +359,7 @@ sdk.hook(
 -- sdk.find_type_definition('app.GUIBase'):get_method('getElfMsg') seems like it would work fine for both name and detail but receives a string like item_detail_{id} so we'd need to parse that which isn't nice
 -- everything mostly ends up calling one of these methods
 
-local function hook_pre_getItemName(args)
-    local itemId = sdk.to_int64(args[2]) & 0xffffffff
+local function hook_pre_getItemName(itemId)
     if udb.is_custom_entity_id('item_data', itemId) then
         local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
         if item and item.name then
@@ -385,13 +371,29 @@ local function hook_pre_getItemName(args)
 end
 sdk.hook(
     sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName'),
-    hook_pre_getItemName,
+    function (args) return hook_pre_getItemName(sdk.to_int64(args[2]) & 0xffffffff) end,
     function (ret) return thread.get_hook_storage().name or ret end
 )
 
 sdk.hook(
     sdk.find_type_definition('app.GUIBase'):get_method('getItemName(System.Int32)'),
-    hook_pre_getItemName,
+    function (args) return hook_pre_getItemName(sdk.to_int64(args[2]) & 0xffffffff) end,
+    function (ret) return thread.get_hook_storage().name or ret end
+)
+sdk.hook(
+    sdk.find_type_definition('app.GUIBase'):get_method('getItemName(app.ItemDefine.StorageData, System.Boolean)'),
+    function (args)
+        local storage = sdk.to_valuetype(args[2], 'app.ItemDefine.StorageData')--[[@as app.ItemDefine.StorageData]]
+        return hook_pre_getItemName(storage._ItemId)
+    end,
+    function (ret) return thread.get_hook_storage().name or ret end
+)
+sdk.hook(
+    sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName(app.ItemDefine.StorageData, System.Boolean)'),
+    function (args)
+        local storage = sdk.to_valuetype(args[2], 'app.ItemDefine.StorageData')--[[@as app.ItemDefine.StorageData]]
+        return hook_pre_getItemName(storage._ItemId)
+    end,
     function (ret) return thread.get_hook_storage().name or ret end
 )
 
@@ -426,7 +428,7 @@ sdk.hook(
 local ptr_true = sdk.to_ptr(true)
 sdk.hook(
     -- ensure all isValid checks pass for custom items
-    sdk.find_type_definition('app.ItemManager'):get_method('isValidItem'),
+    sdk.find_type_definition('app.ItemIDUtil'):get_method('isValidItem'),
     function(args)
         local id = sdk.to_int64(args[2]) & 0xffffffff
         if udb.is_custom_entity_id('item_data', id) and udb.get_entity('item_data', id) ~= nil then
@@ -623,7 +625,7 @@ if core.editor_enabled then
         ui.basic.setting_text('Name', item, 'name', markdirty)
         ui.basic.setting_text('Description', item, 'description', markdirty, 4)
         ui.basic.setting_text('Icon filepath', item, 'icon_path', markdirty)
-        ui.basic.tooltip('Can either be the path to a .tex file or to a .pfb with an app.GUITextureHolder component')
+        ui.basic.tooltip('The path to a .tex file')
         if not item.icon_rect then
             local enable_rect = imgui.checkbox('Use custom icon UV rect', false)
             if enable_rect then
@@ -662,7 +664,7 @@ if core.editor_enabled then
                             item.enhance = import_handlers.import(enhanceClass .. '[]', preset)
                             for i = 0, 12 do item.enhance[i]._ItemId = item.id end
                         else
-                            item.enhance = sdk.create_managed_array(enhanceClass, 13)
+                            item.enhance = utils.create_array(enhanceClass, 13)-- sdk.create_managed_array(enhanceClass, 13)
                             for i = 0, 12 do
                                 item.enhance[i] = import_handlers.import(enhanceClass, {
                                     _Type = i // 3,

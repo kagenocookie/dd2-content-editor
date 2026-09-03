@@ -132,10 +132,10 @@ local function fetch_all_locations()
 end
 
 local ItemManager = sdk.get_managed_singleton('app.ItemManager')
-local getItem = sdk.find_type_definition('app.ItemManager'):get_method('getItem(System.Int32, System.Int32, app.CharacterID, System.Boolean, System.Boolean, System.Boolean, app.ItemManager.GetItemEventType)')
+local getItem = sdk.find_type_definition('app.ItemManager'):get_method('getItem(System.Int32, System.Int32, app.CharacterID)')
 local function give_item(itemId, count)
     print('giving player item id ', itemId, count)
-    getItem:call(ItemManager, itemId, count, CharacterID.labelToValue.ch000000_00, true, false, false, 1)
+    getItem:call(ItemManager, itemId, count, CharacterID.labelToValue.ch000000_00)
 end
 
 --#region IMGUI

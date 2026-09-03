@@ -278,7 +278,7 @@ sdk.hook(
 
 scripts.define_script_hook(
     'app.quest.condition.CheckLocalArea',
-    'evaluate',
+    'onEvalute',
     function (args)
         local target = sdk.to_managed_object(args[2]) --[[@as app.quest.condition.CheckLocalArea]]
         return target._Param._Type >= 100000 and target._Param._Type or nil
