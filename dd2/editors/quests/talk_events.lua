@@ -85,149 +85,78 @@ local RoutineType = enums.get_enum('app.actinter.cmd.TalkTo.RoutineType')
 local pretalk_str = sdk.create_managed_string('PreTalk')
 local method_requestSpeech = sdk.find_type_definition('app.SpeechController'):get_method('requestSpeech(app.TalkEventDefine.ID, app.Character, app.Character, System.Collections.Generic.List`1<app.Character>, System.Boolean)')
 
-local function hook_return(storage, value)
-    storage.retval = value
-    return sdk.PreHookResult.SKIP_ORIGINAL
-end
+-- local ptr_true = sdk.to_ptr(true)
 
--- TODO: this hook getting triggered kills the ui input. figure out why and fix please
--- I think it's a 1:1 translation of the actual source aside from replacing the enum lookup, but I may have missed something or made a mistake with my lua return value overrides
 -- sdk.hook(
---     sdk.find_type_definition('app.actinter.cmd.TalkTo'):get_method('updateImpl'),
+--     sdk.find_type_definition('app.TalkEventManager'):get_method('isQuestNpcTalkEvent'),
 --     function (args)
---         local storage = thread.get_hook_storage()
---         -- full call chain:
---         -- app.ActionInterface:update()
---         -- app.actinter.Executor:update()
---         -- app.actinter.CommandExecutor:update()
---         -- app.actinter.cmd.TalkTo:updateImpl()
---         print('TalkTo updateImpl call')
---         local this = sdk.to_managed_object(args[2])--[[@as app.actinter.cmd.TalkTo]]
---         if this:get_Target() == nil then
---             return hook_return(storage, ReturnCommand.labelToValue.Break) end
---         local targetCharacter = this:get_Target():get_Character()
---         if targetCharacter == nil or not targetCharacter:get_Enabled() then
---             return hook_return(storage, ReturnCommand.labelToValue.Break) end
---         if this.CachedSpeechController == nil or not this.CachedSpeechController:get_Enabled() then
---             return hook_return(storage, ReturnCommand.labelToValue.Break) end
---         if this:get_Routine() ~= RoutineType.labelToValue.Interact then
---             if this:get_Routine() == RoutineType.labelToValue.End then
---                 --- TODO what are they comparing this against?
---                 -- *(_DWORD *)(qword_14F84E8D8 + 504)      qword_14F84E8D8 dq 5CD39470h
---                 -- I'm assuming it's TalkEventDefine.ID.None
---                 print('end routine')
---                 return hook_return(storage, this.TalkingID == 0 and ReturnCommand.labelToValue.Next or ReturnCommand.labelToValue.Continue)
---             end
---             print('non interact')
---             return hook_return(storage, ReturnCommand.labelToValue.Break)
+--         local talkId = sdk.to_int64(args[2]) & 0xffffffff
+--         -- print('isQuestNpcTalkEvent', talkId)
+--         local talkEvent = udb.get_entity('talk_event', talkId)
+--         if talkEvent and talkEvent.questId ~= nil and udb.get_entity_bundle(talkEvent) then
+--             print('!!! isQuestNpcTalkEvent', talkEvent.id)
+--             thread.get_hook_storage().result = ptr_true
+--             return sdk.PreHookResult.SKIP_ORIGINAL
 --         end
---         local agg = this:get_AIBBCtrl():get_BBAggregate()
---         local situation = agg and agg:get_Situation()
---         local paramString = situation:call('getValue(app.BBKeys.Situation.String)', 1) -- app.BBKeys.Situation.String.Param01
-
---         local talkEnum = enums.get_enum('app.TalkEventDefine.ID')
-
---         -- replaced instead of Enum.TryParseInternal
---         local talkEventId = talkEnum.labelToValue[paramString]
---         if not talkEventId then talkEventId = tonumber(paramString, 10) end
-
---         if not talkEventId then
---             this.TalkingID = 0
---             return hook_return(storage, ReturnCommand.labelToValue.Break)
---         end
---         this.TalkingID = talkEventId
---         if not NPCUtilcanStartTalk:call(nil, this:get_Character(), this.TalkingID, true) then
---             print('cannot start')
---             return hook_return(storage, ReturnCommand.labelToValue.Break)
---         end
-
---         if method_requestSpeech:call(this.CachedSpeechController, this.TalkingID, this:get_Character(), this:get_Target():get_Character(), nil, true) then
---             print('requested speech, end routine')
---             this:set_Routine(RoutineType.labelToValue.End)
---         end
-
---         OccupiedManager:unlock(pretalk_str, 11) -- 11 = app.OccupiedManager.LockType.PreTalk
---         print('continuing...')
---          -- continue means the command is "in progress"
---         return hook_return(storage, ReturnCommand.labelToValue.Continue)
+--         thread.get_hook_storage().result = nil
 --     end,
---     function ()
---         return sdk.to_ptr(thread.get_hook_storage().retval)
+--     function (ret)
+--         return thread.get_hook_storage().result or ret
 --     end
 -- )
 
-sdk.hook(
-    sdk.find_type_definition('app.TalkEventManager'):get_method('isQuestNpcTalkEvent'),
-    function (args)
-        local talkId = sdk.to_int64(args[2]) & 0xffffffff
-        -- print('isQuestNpcTalkEvent', talkId)
-        local talkEvent = udb.get_entity('talk_event', talkId)
-        if talkEvent and talkEvent.questId ~= nil and udb.get_entity_bundle(talkEvent) then
-            print('!!! isQuestNpcTalkEvent', talkEvent.id)
-            thread.get_hook_storage().result = true
-            return sdk.PreHookResult.SKIP_ORIGINAL
-        end
-        thread.get_hook_storage().result = nil
-    end,
-    function (ret)
-        local result = thread.get_hook_storage().result
-        if result ~= nil then return sdk.to_ptr(result) end
-        return ret
-    end
-)
-
 -- called from NPCUtil.canStartTalk, PawnUtil.canStartTalk
-sdk.hook(
-    sdk.find_type_definition('app.TalkEventManager'):get_method('isEventPlayable'),
-    function (args)
-        local talkId = sdk.to_int64(args[3]) & 0xffffffff
-        thread.get_hook_storage().talkId = talkId
+-- sdk.hook(
+--     sdk.find_type_definition('app.TalkEventManager'):get_method('isEventPlayable'),
+--     function (args)
+--         local talkId = sdk.to_int64(args[3]) & 0xffffffff
+--         thread.get_hook_storage().talkId = talkId
 
-        -- local talkEvent = udb.get_entity('talk_event', talkId)
-        -- if talkEvent and talkEvent.questId ~= nil and udb.get_entity_bundle(talkEvent) then
-        --     print('!!! isEventPlayable', talkEvent.id)
-        --     thread.get_hook_storage().result = true
-        --     return sdk.PreHookResult.SKIP_ORIGINAL
-        -- end
-    end,
-    function (ret)
-        local result = thread.get_hook_storage().result
-        if result ~= nil then return sdk.to_ptr(result) end
-        print('isEventPlayable', thread.get_hook_storage().talkId, sdk.to_int64(ret) & 1)
-        return ret
-    end
-)
+--         -- local talkEvent = udb.get_entity('talk_event', talkId)
+--         -- if talkEvent and talkEvent.questId ~= nil and udb.get_entity_bundle(talkEvent) then
+--         --     print('!!! isEventPlayable', talkEvent.id)
+--         --     thread.get_hook_storage().result = true
+--         --     return sdk.PreHookResult.SKIP_ORIGINAL
+--         -- end
+--     end,
+--     function (ret)
+--         local result = thread.get_hook_storage().result
+--         if result ~= nil then return sdk.to_ptr(result) end
+--         print('isEventPlayable', thread.get_hook_storage().talkId, sdk.to_int64(ret) & 1)
+--         return ret
+--     end
+-- )
 
-sdk.hook(
-    sdk.find_type_definition('app.TalkEventDefine'):get_method('getQuestIdFromSegment'),
-    function (args)
-        local str = sdk.to_managed_object(args[2]):ToString()
-        thread.get_hook_storage().qid = lookup_quest_id_from_segment_name(str)
-        return sdk.PreHookResult.SKIP_ORIGINAL
-    end,
-    function ()
-        return sdk.to_ptr(thread.get_hook_storage().qid)
-    end
-)
+-- sdk.hook(
+--     sdk.find_type_definition('app.TalkEventDefine'):get_method('getQuestIdFromSegment'),
+--     function (args)
+--         local str = sdk.to_managed_object(args[2]):ToString()
+--         thread.get_hook_storage().qid = lookup_quest_id_from_segment_name(str)
+--         return sdk.PreHookResult.SKIP_ORIGINAL
+--     end,
+--     function ()
+--         return sdk.to_ptr(thread.get_hook_storage().qid)
+--     end
+-- )
 
-sdk.hook(
-    sdk.find_type_definition('app.TalkEventManager'):get_method('getQuestIdFromTalkEventId'),
-    function (args)
-        local talkEventId = sdk.to_int64(args[2]) & 0xffffffff
-        local talkEvt = udb.get_entity('talk_event', talkEventId)
-        print('getQuestIdFromTalkEventId', talkEventId)
-        if talkEvt and udb.get_entity_bundle(talkEvt) then
-            print('Overriding getQuestIdFromTalkEventId', talkEventId)
-            thread.get_hook_storage().qid = talkEvt.questId
-            return sdk.PreHookResult.SKIP_ORIGINAL
-        end
-        thread.get_hook_storage().qid = nil
-    end,
-    function (ret)
-        local override = thread.get_hook_storage().qid
-        return override and sdk.to_ptr(override) or ret
-    end
-)
+-- sdk.hook(
+--     sdk.find_type_definition('app.TalkEventManager'):get_method('getQuestIdFromTalkEventId'),
+--     function (args)
+--         local talkEventId = sdk.to_int64(args[2]) & 0xffffffff
+--         local talkEvt = udb.get_entity('talk_event', talkEventId)
+--         print('getQuestIdFromTalkEventId', talkEventId)
+--         if talkEvt and udb.get_entity_bundle(talkEvt) then
+--             print('Overriding getQuestIdFromTalkEventId', talkEventId)
+--             thread.get_hook_storage().qid = talkEvt.questId
+--             return sdk.PreHookResult.SKIP_ORIGINAL
+--         end
+--         thread.get_hook_storage().qid = nil
+--     end,
+--     function (ret)
+--         local override = thread.get_hook_storage().qid
+--         return override and sdk.to_ptr(override) or ret
+--     end
+-- )
 
 local function get_talk_event_enum_id_to_quest_id(id)
     -- te5 prefix enum labels are for quests, so then we have te5{:6_quest_id}_{:3_talk_subid}
