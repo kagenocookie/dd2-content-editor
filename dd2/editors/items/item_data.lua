@@ -238,7 +238,12 @@ local function replace_item_icon(item, tex)
             local holder
             immediateInst, holder = utils.gameobject.create_with_component('_' .. item.icon_path, 'app.GUITextureHolder')
             ---@cast holder app.GUITextureHolder
-            holder._Texture = import_handlers.import('via.render.TextureResourceHolder', item.icon_path):add_ref()
+            holder._Texture = import_handlers.import('via.render.TextureResourceHolder', item.icon_path)
+            if not holder._Texture then
+                log.error('Missing or invalid item icon texture: ' .. item.icon_path)
+                return
+            end
+            holder._Texture = holder._Texture:add_ref()--[[@as any]]
             item._texture = holder._Texture
             prefabs.store_shared_instance(item.icon_path, immediateInst)
         else
