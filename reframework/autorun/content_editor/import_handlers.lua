@@ -363,7 +363,7 @@ importer_factories = {
     end,
 
     [typecache.handlerTypes.dictionary] = function (meta, fullname)
-        local typedef = usercontent.generics.typedef(fullname) or sdk.find_type_definition(fullname)
+        local typedef = sdk.find_type_definition(fullname)
         if not typedef then print('[ContentEditor] Attempted import of unhandled dictionary type', fullname) return import_export_ignore end
 
         -- only allow strings and integer key types, ignore the rest
@@ -562,6 +562,7 @@ importer_factories = {
         return resultHandler
     end,
 }
+importer_factories[typecache.handlerTypes.genericEnumerable] = importer_factories[typecache.handlerTypes.genericList]
 
 --- @param classname string
 --- @param meta TypeCacheData|nil
