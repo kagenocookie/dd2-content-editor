@@ -14,12 +14,12 @@ local function get_item_style_type(item)
 end
 
 local ItemManager = sdk.get_managed_singleton('app.ItemManager')
-local getItem = sdk.find_type_definition('app.ItemManager'):get_method('getItem(System.Int32, System.Int32, app.CharacterID, System.Boolean, System.Boolean, System.Boolean, app.ItemManager.GetItemEventType)')
+local getItem = sdk.find_type_definition('app.ItemManager'):get_method('getItem(System.Int32, System.Int32, app.CharacterID)')
 --- @param characterId app.CharacterID|nil
 --- @param itemId integer
 --- @param count integer
 local function give_item(characterId, itemId, count)
-    getItem:call(ItemManager, itemId, count, characterId, true, false, false, 1)
+    getItem:call(ItemManager, itemId, count, characterId)
 end
 
 --- @param item ItemDataEntity
