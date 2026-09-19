@@ -387,6 +387,7 @@ re.on_frame(function ()
     if reframework:is_drawing_ui() then
         if config.data.editor.show_window then
             local font_succeeded = pcall(imgui.push_font, utf16_font)
+            imgui.push_font(imgui.get_default_font_size())
 
             config.data.editor.show_window = imgui.begin_window(window_title, config.data.editor.show_window)
             if config.data.editor.show_window then
@@ -416,6 +417,7 @@ re.on_frame(function ()
             end
 
             if font_succeeded then imgui.pop_font() end
+            imgui.pop_font()
         end
 
     end
