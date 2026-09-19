@@ -374,6 +374,13 @@ local function hook_pre_getItemName(itemId)
     end
     thread.get_hook_storage().name = nil
 end
+local function hook_pre_getItemName_str(itemIdStr)
+    if type(itemIdStr) ~= 'string' then
+        return nil
+    end
+    local id = tonumber(itemIdStr:match('(%d+)$'))
+    if id then return hook_pre_getItemName(id) end
+end
 sdk.hook(
     sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName'),
     function (args) return hook_pre_getItemName(sdk.to_int64(args[2]) & 0xffffffff) end,
@@ -400,6 +407,41 @@ sdk.hook(
         return hook_pre_getItemName(storage._ItemId)
     end,
     function (ret) return thread.get_hook_storage().name or ret end
+)
+
+sdk.hook(
+    sdk.find_type_definition('app.GUIBase'):get_method('getElfMsg(System.String, System.Boolean)'),
+    function (args) return hook_pre_getItemName_str(sdk.to_managed_object(args[2]):ToString()) end,
+    function (ret) return thread.get_hook_storage().name or ret end
+)
+
+sdk.hook(
+    sdk.find_type_definition('app.GUIBase'):get_method('getMsg(System.String, System.Boolean)'),
+    function (args) return hook_pre_getItemName_str(sdk.to_managed_object(args[2]):ToString()) end,
+    function (ret) return thread.get_hook_storage().name or ret end
+)
+
+sdk.hook(
+    sdk.find_type_definition('app.ui023301.Notice'):get_method('setupText'),
+    function (args)
+        local this = sdk.to_managed_object(args[2])--[[@as app.ui023301.Notice]]
+        local itemId = this.Data and this.Data.ItemId
+        if itemId == 0 then return end
+
+        local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
+        if item and item.name then
+            thread.get_hook_storage().elem = this.TxtName
+            thread.get_hook_storage().name = item.name
+            return
+        end
+    end,
+    function (ret)
+        local d = thread.get_hook_storage()
+        if d.elem and d.name then
+            d.elem:set_Message(d.name)
+        end
+        return ret
+    end
 )
 
 sdk.hook(
