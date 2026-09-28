@@ -162,11 +162,13 @@ for armorMeshType, fieldData in pairs(armorCatalogs) do
         import = function (import_data, instance)
             for _, entry in ipairs(fieldData) do
                 for _, comp in ipairs(entry.components) do
-                    instance[comp.name] = import_handlers.import('app.PrefabController', import_data[comp.name], instance[comp.name])
-                    if instance[comp.name] then
-                        local idLookup = comp.hashCatalog and CharacterEditManager[comp.hashCatalog]
-                        local entryId = idLookup and idLookup:ContainsKey(instance.id) and idLookup[instance.id] or instance.id
-                        comp.dict[entryId] = instance[comp.name]
+                    if type(import_data[comp.name]) == 'string' then
+                        instance[comp.name] = import_handlers.import('app.PrefabController', import_data[comp.name], instance[comp.name])
+                        if instance[comp.name] then
+                            local idLookup = comp.hashCatalog and CharacterEditManager[comp.hashCatalog]
+                            local entryId = idLookup and idLookup:ContainsKey(instance.id) and idLookup[instance.id] or instance.id
+                            comp.dict[entryId] = instance[comp.name]
+                        end
                     end
                 end
             end
