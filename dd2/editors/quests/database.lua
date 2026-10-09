@@ -106,26 +106,30 @@ local function refresh_game_data(whitelist)
             end
         end
 
-        for _, oracle in ipairs(catalog._QuestOracleData._QuestHints:get_elements()) do
-            --- @cast oracle app.QuestOracleHintGroup
-            local id = oracle._QuestID
-            local summary = questData[id]
-            if summary then
-                summary.OracleHints = oracle
-            elseif id ~= -1 then
-                print('Oracle hint data for unknown quest id', id)
+        if catalog._QuestOracleData then
+            for _, oracle in ipairs(catalog._QuestOracleData._QuestHints:get_elements()) do
+                --- @cast oracle app.QuestOracleHintGroup
+                local id = oracle._QuestID
+                local summary = questData[id]
+                if summary then
+                    summary.OracleHints = oracle
+                elseif id ~= -1 then
+                    print('Oracle hint data for unknown quest id', id)
+                end
             end
         end
 
         -- what's so unique about recommended levels lol?
-        for _, recData in ipairs(catalog._QuestUniqueParamData._DataList:ToArray():get_elements()) do
-            --- @cast recData app.QuestUniqueParamData.Data
-            local id = recData._IDValue
-            local summary = questData[id]
-            if summary then
-                summary.UniqueParam = recData
-            elseif id ~= -1 then
-                print('NPC Override data for unknown quest id', id)
+        if catalog._QuestUniqueParamData then
+            for _, recData in ipairs(catalog._QuestUniqueParamData._DataList:ToArray():get_elements()) do
+                --- @cast recData app.QuestUniqueParamData.Data
+                local id = recData._IDValue
+                local summary = questData[id]
+                if summary then
+                    summary.UniqueParam = recData
+                elseif id ~= -1 then
+                    print('NPC Override data for unknown quest id', id)
+                end
             end
         end
 

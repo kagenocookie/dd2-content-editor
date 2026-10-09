@@ -29,7 +29,7 @@ local GenerateManager = sdk.get_managed_singleton('app.GenerateManager') ---@typ
 udb.events.on('get_existing_data', function (whitelist)
     local catalogs = gamedb.get_catalogs()
     for _, catalog in ipairs(catalogs) do
-        if not whitelist or whitelist.event_context then
+        if (not whitelist or whitelist.event_context) and catalog._QuestSuddenTableData then
             for _, ctx in ipairs(catalog._QuestSuddenTableData._ContextDataArray:get_elements()) do
                 --- @cast ctx app.SuddenQuestContextData
                 local ignore = whitelist and not whitelist.event_context[ctx._SerialNum] or false
@@ -50,7 +50,7 @@ udb.events.on('get_existing_data', function (whitelist)
             end
         end
 
-        if not whitelist or whitelist.event then
+        if (not whitelist or whitelist.event) and catalog._QuestSuddenTableData then
             for _, selectData in ipairs(catalog._QuestSuddenTableData._SelectDataArray:get_elements()) do
                 --- @cast selectData app.SuddenQuestSelectData
                 if not whitelist or whitelist.event[selectData._SerialNum] then
