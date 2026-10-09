@@ -13,7 +13,9 @@ end
 --- @param immediate boolean
 local function changeWeather(weather, immediate)
     if immediate then
-        manager():changeWeatherLookImmediate(weather.weather_type, weather.area)
+        -- TODO: only changeWeatherLookImmediate seems to make it die now, don't use it
+        -- manager():changeWeatherLookImmediate(weather.weather_type, weather.area)
+        manager():changeWeatherLook(weather.weather_type, weather.area)
     else
         manager():changeWeatherLook(weather.weather_type, weather.area)
     end
