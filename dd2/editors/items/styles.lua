@@ -556,6 +556,7 @@ if core.editor_enabled then
     end
 
     local equipped_style_result
+    local matchedItemId
     editor.define_window('styles', 'Styles', function (state)
         local styleIdx = select(2, ui.basic.tabs(recordTypes, utils.table_index_of(recordTypes, state.style_type or '')))
         state.style_type = recordTypes[styleIdx]
@@ -578,6 +579,7 @@ if core.editor_enabled then
                     local playerId = enums.get_enum('app.CharacterID').labelToValue.ch000000_00
                     local equipData = ItemManager:getEquipData(playerId):get(recordData.slot)
                     local styleNo = equipData and equipData._ItemData and equipData._ItemData--[[@as app.ItemCommonParam|app.ItemArmorParam]]._StyleNo
+                    matchedItemId = (equipData and equipData._ItemData and equipData._ItemData--[[@as app.ItemCommonParam|app.ItemArmorParam]])._Id
                     if styleNo then
                         local styleEntity = udb.get_entity(entity_type, styleNo)
                         if not styleEntity then
@@ -622,6 +624,8 @@ if core.editor_enabled then
             if equipped_style_result then
                 imgui.text('Could not find a style for style number: ' .. equipped_style_result)
                 imgui.text('Try and find it manually somehow please')
+            elseif matchedItemId then
+                imgui.text('Item ID: ' .. matchedItemId)
             end
             local selectedItem = ui.editor.entity_picker(entity_type, state)
             if selectedItem then
