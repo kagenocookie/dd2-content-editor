@@ -199,7 +199,7 @@ sdk.hook(
                     weapon._kind = figure_out_weapon_kind(weapon)
                 end
                 local compId = sdk.to_int64(args[3]) & 0xffffffff
-                thread.get_hook_storage().ret = compId == weapon._kind and ptr_true or ptr_false
+                thread.get_hook_storage().ret = (compId == weapon._kind or compId == weaponId) and ptr_true or ptr_false
                 return sdk.PreHookResult.SKIP_ORIGINAL
             end
         end
