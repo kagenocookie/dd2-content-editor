@@ -580,6 +580,25 @@ if core.editor_enabled then
                     local styleNo = equipData and equipData._ItemData and equipData._ItemData--[[@as app.ItemCommonParam|app.ItemArmorParam]]._StyleNo
                     if styleNo then
                         local styleEntity = udb.get_entity(entity_type, styleNo)
+                        if not styleEntity then
+                            if recordData.styleDict and ItemManager[recordData.styleDict]:ContainsKey(styleNo) then
+                                -- attempt to match inherited style data (DA DLC items)
+                                local styleHash = ItemManager[recordData.styleDict][styleNo]
+                                local realStyleHash
+                                if entity_type == 'TopsStyle' then
+                                    realStyleHash = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getTopsInheritedStyle'):call(nil, styleHash)
+                                elseif entity_type == 'PantsStyle' then
+                                    realStyleHash = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getPantsInheritedStyle'):call(nil, styleHash)
+                                elseif entity_type == 'HelmStyle' then
+                                    realStyleHash = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getHelmInheritedStyle'):call(nil, styleHash)
+                                end
+                                if realStyleHash then
+                                    styleEntity = select(2, next(udb.get_entities_where(entity_type, function (entity)
+                                        return entity.styleHash == realStyleHash
+                                    end)))
+                                end
+                            end
+                        end
                         if styleEntity then
                             ui.editor.set_selected_entity_picker_entity(state, entity_type, styleEntity)
                         else
