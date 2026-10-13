@@ -16,9 +16,12 @@ local import_handlers = require('content_editor.import_handlers')
 local helpers = require('content_editor.helpers')
 local utils = require('content_editor.utils')
 local enums = require('content_editor.enums')
+local callbacks = require('content_editor.callbacks')
 
 local ItemManager = sdk.get_managed_singleton('app.ItemManager') ---@type app.ItemManager
 
+local lateSetupCallbacks = {} ---@type function[]
+local isAllShopsReady = false
 -- fetch current game data
 udb.events.on('get_existing_data', function (whitelist)
     if whitelist and not whitelist.shop then return end
@@ -36,6 +39,35 @@ udb.events.on('get_existing_data', function (whitelist)
             udb.register_pristine_entity(entity)
         end
     end
+
+    -- Norgan shops only load once the game reaches the main menu,
+    -- therefore breaking all of our assumptions regarding data setup
+    isAllShopsReady = ItemManager:getItemShopData(200) ~= nil
+    if isAllShopsReady then return end
+    utils.log('Waiting for DLC shops to load ...')
+
+    callbacks.hook_interval('UpdateBehavior', function ()
+        if ItemManager:getItemShopData(200) == nil then return false end
+
+        for pair in utils.enumerate(ItemManager.ShopParamTable) do
+            local shop = pair.value
+            --- @cast shop app.ItemShopParam
+            if pair.key >= 200 and (not whitelist or whitelist.shop[shop._ShopId]) then
+                --- @type DBEntity
+                local entity = {
+                    id = shop._ShopId,
+                    type = 'shop',
+                    runtime_instance = shop,
+                }
+
+                udb.register_pristine_entity(entity)
+            end
+        end
+        utils.log('DLC shops ready!')
+        isAllShopsReady = true
+        for _, cb in ipairs(lateSetupCallbacks) do cb() end
+        return true
+    end, 0.5, false)
 end)
 
 udb.events.on('entities_created', function (data)
@@ -101,7 +133,14 @@ local function register_partial_entity_array(parent_entity, partial_type_name, e
             local importedItems = {}
             local arr = array_getter(data.parent_id)
             if not arr then
-                re.msg('error in partial entity ' .. partial_type_name .. ' - array was not found for ID ' .. tostring(instance.parent_id))
+                if not isAllShopsReady then
+                    lateSetupCallbacks[#lateSetupCallbacks+1] = function ()
+                        log.info('Starting shop entity reimport...')
+                        udb.reimport_entity(instance, data)
+                    end
+                    return
+                end
+                re.msg('error in partial entity ' .. partial_type_name .. ' - target list was not found for ID ' .. tostring(instance.parent_id))
                 instance.items = {}
                 return
             end

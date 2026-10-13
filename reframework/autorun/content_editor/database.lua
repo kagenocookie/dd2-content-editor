@@ -852,7 +852,6 @@ local function set_entity_bundle(entity, newBundleName)
     tracked.dirty = true
 end
 
---- comment
 --- @param type string
 --- @param id integer
 local function reload_entity(type, id)
@@ -1090,11 +1089,12 @@ end
 
 --- Triggers the import function of the entity, to force apply any changes made to it. Will re-trigger the `entities_updated` event.
 --- @param entity DBEntity
+--- @param data table|nil Raw data table for the import. If unset, it will be generated from the entity's export procedure
 --- @return boolean success
-local function reimport_entity(entity)
+local function reimport_entity(entity, data)
     local tt = entity_types[entity.type]
     if tt then
-        tt.import(tt.export(entity), entity, true)
+        tt.import(data or tt.export(entity), entity, true)
         injection.update_cache(entity.type, entity.id, 1)
         events.emit('entities_updated', {[entity.type] = { entity }})
         return true
