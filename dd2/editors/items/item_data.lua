@@ -360,7 +360,6 @@ sdk.hook(
 --#region Name overrides
 -- sdk.find_type_definition('app.GUIBase'):get_method('getItemName') is used for item pickup and drop notifications
 -- sdk.find_type_definition('app.GUIBase'):get_method('getElfItemName') is used for name in inventory
--- sdk.find_type_definition('app.GUIBase'):get_method('getElfItemDetail') works for description but isn't actually ever getting called (likely inlined)
 -- sdk.find_type_definition('app.GUIBase'):get_method('getElfMsg') seems like it would work fine for both name and detail but receives a string like item_detail_{id} so we'd need to parse that which isn't nice
 -- everything mostly ends up calling one of these methods
 
@@ -374,6 +373,17 @@ local function hook_pre_getItemName(itemId)
     end
     thread.get_hook_storage().name = nil
 end
+local function hook_pre_getItemDetail(itemId)
+    if udb.is_custom_entity_id('item_data', itemId) then
+        local item = udb.get_entity('item_data', itemId) --[[@as ItemDataEntity]]
+        if item and item.description then
+            thread.get_hook_storage().description = sdk.to_ptr(sdk.create_managed_string(item.description))
+            return
+        end
+    end
+    thread.get_hook_storage().description = nil
+end
+
 local function hook_pre_getItemName_str(itemIdStr)
     if type(itemIdStr) ~= 'string' then
         return nil
@@ -442,6 +452,15 @@ sdk.hook(
         end
         return ret
     end
+)
+
+sdk.hook(
+    sdk.find_type_definition('app.GUIBase'):get_method('getElfItemDetail(System.Int32, System.Boolean)'),
+    function (args)
+        local itemId = sdk.to_int64(args[2]) & 0xffffffff
+        return hook_pre_getItemDetail(itemId)
+    end,
+    function (ret) return thread.get_hook_storage().description or ret end
 )
 
 sdk.hook(
