@@ -462,33 +462,6 @@ sdk.hook(
     end,
     function (ret) return thread.get_hook_storage().description or ret end
 )
-
-sdk.hook(
-    sdk.find_type_definition('app.GUIBase.ItemWindowRef'):get_method('setup(app.ItemCommonParam, System.Int32, System.Boolean)'),
-    function (args)
-        local data = sdk.to_managed_object(args[3]) --[[@as app.ItemCommonParam]]
-        local id = data and data._Id
-        local s = thread.get_hook_storage()
-        if id and udb.is_custom_entity_id('item_data', id) then
-            local item = udb.get_entity('item_data', id) --[[@as ItemDataEntity]]
-            if item and item.name then
-                s.this = sdk.to_managed_object(args[2])
-                s.description = item.description
-                return
-            end
-        end
-        s.this = nil
-        s.description = nil
-    end,
-    function (ret)
-        local s = thread.get_hook_storage()
-        if s.this then
-            local this = s.this --[[@as app.GUIBase.ItemWindowRef]]
-            this._TxtInfo:set_Message(s.description)
-        end
-        return ret
-    end
-)
 --#endregion
 
 local ptr_true = sdk.to_ptr(true)
