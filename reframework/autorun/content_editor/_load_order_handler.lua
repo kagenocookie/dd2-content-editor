@@ -29,7 +29,7 @@ return function (udb)
                 imgui.set_tooltip('Author: ' .. (bundle.author or '<unknown>') .. (bundle.description and bundle.description ~= '' and ('\n\nDescription:\n' .. bundle.description) or ''))
             end
             imgui.same_line()
-            changed, val = imgui.checkbox('Active  ', udb.get_bundle_enabled(bundle.name))
+            local changed, val = imgui.checkbox('Active  ', udb.get_bundle_enabled(bundle.name))
             if changed then
                 udb.set_bundle_enabled(bundle.name, val)
             end

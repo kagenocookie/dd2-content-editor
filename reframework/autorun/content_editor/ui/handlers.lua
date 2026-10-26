@@ -227,10 +227,10 @@ object_handlers['via.GameObject'] = function (context)
     if tag and tag ~= '' then labelAppend = labelAppend .. ' #' .. tag end
     imgui.text(context.label .. ': GameObject ' .. labelAppend)
 
-    changed, val = imgui.checkbox('UpdateSelf', go:get_UpdateSelf())
+    local changed, val = imgui.checkbox('UpdateSelf', go:get_UpdateSelf())
     if changed then go:set_UpdateSelf(val) end
 
-    changed2, val = imgui.checkbox('DrawSelf', go:get_DrawSelf())
+    local changed2, val = imgui.checkbox('DrawSelf', go:get_DrawSelf())
     if changed2 then go:set_DrawSelf(val) end
 
     local folder = go.get_FolderSelf and go:get_FolderSelf() or go.get_Folder and go:get_Folder()
@@ -967,6 +967,7 @@ field_editor_factories = {
         return function (context)
             local value = context.get()
             context.object = value
+            local changed = false
 
             for _, subfieldData in ipairs(fields) do
                 local subfield = subfieldData[1]
@@ -1496,7 +1497,7 @@ local function show_object_list(targetContainer, field, owner, label, classname,
         })
         rootCtx.ui = create_arraylike_ui(typecache.get(arrayClassname), arrayClassname, label or arrayClassname, accessorWrapper, settings or {})
     end
-    changed = rootCtx:ui() or changed
+    local changed = rootCtx:ui()
     return changed
 end
 
