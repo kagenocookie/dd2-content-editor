@@ -104,6 +104,7 @@ sdk.hook(
     sdk.find_type_definition('app.MockupCtrl'):get_method('isControlVisor'),
     function (args)
         local mockup = sdk.to_managed_object(args[2]) --[[@as app.MockupCtrl]]
+        if not mockup or not mockup.CompBuilder then return end
         local style = mockup.CompBuilder._RefPartSwapper._Meta._HelmStyle
         if visorIds[style] then
             thread.get_hook_storage().rv = ptr_true
@@ -119,6 +120,7 @@ sdk.hook(
     sdk.find_type_definition('app.MockupCtrl'):get_method('changeVisor(app.Character, System.Boolean, System.Boolean)'),
     function (args)
         local mockup = sdk.to_managed_object(args[2]) --[[@as app.MockupCtrl]]
+        if not mockup or not mockup.CompBuilder then return end
         local partSwapper = mockup.CompBuilder._RefPartSwapper
         local style = partSwapper._Meta._HelmStyle
         if visorIds[style] then
