@@ -192,8 +192,11 @@ if core.editor_enabled then
 
         --- @param ctx UIContainer
         return function (ctx)
-            local questId = ctx.get()[questIdField]
-            local nameHash = ctx.get()[nameHashField]
+            local vv = ctx.get()
+            if not vv then return nil end
+
+            local questId = vv[questIdField]
+            local nameHash = vv[nameHashField]
             local quest
             if questId == -1 then
                 quest = ctx.owner and ctx.owner.type == 'quest' and ctx.owner
