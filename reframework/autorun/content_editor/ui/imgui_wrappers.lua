@@ -141,6 +141,7 @@ local UI_DEFAULT_MARGIN = 4
 --- @return boolean changed, integer value, string filter
 local function _combo_filterable_internal(label, index, options, filter)
     local changed
+    imgui.push_id(label)
     imgui.set_next_item_width(imgui.calc_item_width() / 3 * 2)
     changed, newIndex = imgui.combo('##combo_c__' .. label, index, options)
     imgui.same_line()
@@ -154,7 +155,14 @@ local function _combo_filterable_internal(label, index, options, filter)
     end
 
     imgui.same_line()
+    if imgui.button('^') and index > 0 then newIndex = index - 1 changed = true end
+    imgui.same_line()
+    if imgui.button('v') and index < #options then newIndex = index + 1 changed = true end
+
+    imgui.same_line()
     imgui.text(label)
+
+    imgui.pop_id()
 
     if changed then
         return true, newIndex, filter
@@ -214,6 +222,10 @@ local function imgui_enum_picker(label, currentLabel, enum)
     local changed
     local idx = enum.find_index_by_label(currentLabel)
     changed, idx = imgui.combo(label, idx, enum.displayLabels or enum.labels)
+    imgui.same_line()
+    if imgui.button('^') and idx > 0 then idx = idx - 1 changed = true end
+    imgui.same_line()
+    if imgui.button('v') and idx < #enum.labels then idx = idx + 1 changed = true end
     if changed then
         return true, enum.labels[idx]
     end
