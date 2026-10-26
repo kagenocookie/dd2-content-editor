@@ -16,7 +16,7 @@ local tempNewBundle = ''
 ---@param obj DBEntity
 local function show_save_settings(obj)
     local curBundle = udb.get_entity_bundle(obj)
-    local changed, newBundle = ui.enum_picker('Data bundle', curBundle or '', udb.bundles_enum)
+    local changed, newBundle = ui.enum_picker('Data bundle', curBundle or '', udb.bundles_enum, true)
 
     if changed then
         udb.set_entity_bundle(obj, newBundle)

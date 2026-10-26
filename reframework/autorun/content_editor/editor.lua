@@ -346,7 +346,7 @@ local function draw_editor()
     local w = imgui.calc_item_width()
     imgui.set_next_item_width(w / 2)
     local newbundle
-    changed, newbundle, bundle_filter = imgui_wrappers.filterable_enum_picker('Active bundle', config.data.editor.active_bundle, udb.bundles_enum, bundle_filter)
+    changed, newbundle, bundle_filter = imgui_wrappers.filterable_enum_picker('Active bundle', config.data.editor.active_bundle, udb.bundles_enum, bundle_filter, true)
     if changed then
         if newbundle == '' or newbundle == udb.bundles_enum.valueToLabel[0] then newbundle = nil end
         config.data.editor.active_bundle = newbundle

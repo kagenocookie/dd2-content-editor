@@ -138,15 +138,16 @@ local UI_DEFAULT_MARGIN = 4
 --- @param index integer
 --- @param options string[]
 --- @param filter string
+--- @param noButtons boolean|nil
 --- @return boolean changed, integer value, string filter
-local function _combo_filterable_internal(label, index, options, filter)
+local function _combo_filterable_internal(label, index, options, filter, noButtons)
     local changed
     imgui.push_id(label)
     imgui.set_next_item_width(imgui.calc_item_width() / 3 * 2)
-    changed, newIndex = imgui.combo('##combo_c__' .. label, index, options)
+    changed, newIndex = imgui.combo('##combo_c', index, options)
     imgui.same_line()
     imgui.set_next_item_width(imgui.calc_item_width() / 3)
-    local filterChanged, newFilter = imgui.input_text('##combo_f__' .. label, filter or '')
+    local filterChanged, newFilter = imgui.input_text('##combo_f', filter or '')
     if filterChanged then
         filter = newFilter
     end
@@ -154,10 +155,12 @@ local function _combo_filterable_internal(label, index, options, filter)
         changed = true
     end
 
-    imgui.same_line()
-    if imgui.button('^') and index > 0 then newIndex = index - 1 changed = true end
-    imgui.same_line()
-    if imgui.button('v') and index < #options then newIndex = index + 1 changed = true end
+    if noButtons ~= true then
+        imgui.same_line()
+        if imgui.button('^') and index > 0 then newIndex = index - 1 changed = true end
+        imgui.same_line()
+        if imgui.button('v') and index < #options then newIndex = index + 1 changed = true end
+    end
 
     imgui.same_line()
     imgui.text(label)
@@ -176,8 +179,9 @@ end
 --- @param labels string[]
 --- @param filter string
 --- @param values TVal[]|nil A pair array of the labels array, to use custom values instead of using the labels directly
+--- @param noButtons boolean|nil
 --- @return boolean changed, TVal value, string filter
-local function combo_filterable(label, value, labels, filter, values)
+local function combo_filterable(label, value, labels, filter, values, noButtons)
     local visible_labels, visible_values
     if filter and filter ~= '' then
         visible_labels, visible_values = filter_entries(filter, labels, values)
@@ -186,7 +190,7 @@ local function combo_filterable(label, value, labels, filter, values)
         visible_labels, visible_values = labels, values or labels
     end
     local idx = utils.table_index_of(visible_values, value)
-    local changed, newIdx, newFilter = _combo_filterable_internal(label, idx, visible_labels, filter)
+    local changed, newIdx, newFilter = _combo_filterable_internal(label, idx, visible_labels, filter, noButtons)
     if newIdx ~= 0 then
         value = visible_values[newIdx]
     end
@@ -197,35 +201,40 @@ end
 ---@param value integer The current enum value
 ---@param enum EnumSummary Enum to filter on
 ---@param filter string Current filter string
+---@param noButtons boolean|nil
 ---@return boolean changed, integer newValue, string filter
-local function imgui_filterable_enum_value_picker(label, value, enum, filter)
-    return combo_filterable(label, value, enum.displayLabels or enum.labels, filter, enum.values)
+local function imgui_filterable_enum_value_picker(label, value, enum, filter, noButtons)
+    return combo_filterable(label, value, enum.displayLabels or enum.labels, filter, enum.values, noButtons)
 end
 
 ---@param label string IMGUI label
 ---@param currentLabel string The enum's label will be used for the stored variable, since the numeric values tend to be random
 ---@param enum EnumSummary Enum to filter on
 ---@param filter string Current filter string
+---@param noButtons boolean|nil
 ---@return boolean changed, string newLabel, string filter
-local function imgui_filterable_enum_picker(label, currentLabel, enum, filter)
+local function imgui_filterable_enum_picker(label, currentLabel, enum, filter, noButtons)
     local changed, newValue
     local value = enum.labelToValue[currentLabel]
-    changed, newValue, filter = imgui_filterable_enum_value_picker(label, value, enum, filter)
+    changed, newValue, filter = imgui_filterable_enum_value_picker(label, value, enum, filter, noButtons)
     return changed, enum.valueToLabel[newValue], filter
 end
 
 ---@param label string
 ---@param currentLabel string
 ---@param enum EnumSummary
+---@param noButtons boolean|nil
 ---@return boolean, string
-local function imgui_enum_picker(label, currentLabel, enum)
+local function imgui_enum_picker(label, currentLabel, enum, noButtons)
     local changed
     local idx = enum.find_index_by_label(currentLabel)
     changed, idx = imgui.combo(label, idx, enum.displayLabels or enum.labels)
-    imgui.same_line()
-    if imgui.button('^') and idx > 0 then idx = idx - 1 changed = true end
-    imgui.same_line()
-    if imgui.button('v') and idx < #enum.labels then idx = idx + 1 changed = true end
+    if noButtons ~= true then
+        imgui.same_line()
+        if imgui.button('^') and idx > 0 then idx = idx - 1 changed = true end
+        imgui.same_line()
+        if imgui.button('v') and idx < #enum.labels then idx = idx + 1 changed = true end
+    end
     if changed then
         return true, enum.labels[idx]
     end
