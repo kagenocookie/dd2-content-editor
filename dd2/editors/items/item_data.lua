@@ -325,8 +325,6 @@ sdk.hook(
             end
             if upgradeMenuFoundCustomItems then
                 sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUV'):call(nil, this.UpgradeDetail.TexIcon, itemIcon)
-            else
-                sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUVS_ui01c01'):call(nil, this.UpgradeDetail.TexIcon, itemIcon)
             end
         end
 
@@ -337,7 +335,7 @@ sdk.hook(
 sdk.hook(
     -- I think this is the earliest common method where the game fetches item icons
     -- the game then calls getUVSequenceResourceHolder() and then applyUVSettings() when setting item icons, but we can override it right here already
-    sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUV'),
+    sdk.find_type_definition('app.GUIBase'):get_method('setItemIconUV(via.gui.Texture, System.UInt32)'),
     function (args)
         local iconNo = sdk.to_int64(args[3]) & 0xffffffff
         if udb.is_custom_entity_id('item_data', iconNo) then
