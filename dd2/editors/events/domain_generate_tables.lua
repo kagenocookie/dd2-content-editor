@@ -65,7 +65,8 @@ udb.register_entity_type('domain_query_generate_table', {
         return 'DomainQueryGenerate ' .. entity.id .. ' - ' .. enums.get_enum('app.DomainQueryGenerateRequestID').get_label(entity.table._RequestID)
     end,
     root_types = {'app.DomainQueryGenerateTable'},
-    replaced_enum = 'app.DomainQueryGenerateRequestID',
+    -- note: these are no longer 1:1 with the GenerateTable, don't link the enum
+    -- replaced_enum = 'app.DomainQueryGenerateRequestID',
     insert_id_range = {1000, 9999900},
 })
 
