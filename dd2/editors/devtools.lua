@@ -152,11 +152,20 @@ editor.define_window('dev_tools', 'Dev tools', function (state)
     if imgui.button('Teleport to AIKeyLocation') and state.pos_picker then
         warp_player(get_AIKeyLocation_uni_position(tonumber(state.pos_picker)))
     end
-    imgui.same_line()
+
     if imgui.button('Bookmark location') and state.pos_picker then
         storage.loc_bookmarks = storage.loc_bookmarks or {}
         storage.loc_bookmarks[#storage.loc_bookmarks+1] = { id = state.pos_picker, label = bookmarkName }
         editor.persistent_storage.save()
+    end
+    if player and player:get_Valid() then
+        local pos = player:get_Transform():get_UniversalPosition()
+        imgui.same_line()
+        if imgui.button('Bookmark player coordinates') and state.pos_picker then
+            storage.loc_bookmarks = storage.loc_bookmarks or {}
+            storage.loc_bookmarks[#storage.loc_bookmarks+1] = { coords = {x = pos.x, y = pos.y, z = pos.z}, label = bookmarkName }
+            editor.persistent_storage.save()
+        end
     end
     imgui.same_line()
     imgui.set_next_item_width(imgui.calc_item_width() - 300)
@@ -164,8 +173,17 @@ editor.define_window('dev_tools', 'Dev tools', function (state)
     if storage.loc_bookmarks and #storage.loc_bookmarks > 0 and imgui.tree_node('Bookmarked locations') then
         imgui.begin_list_box('##Bookmarks', Vector2f.new(300, math.min((#storage.loc_bookmarks + 1) * (imgui.get_default_font_size() + 4), 400)))
         for idx, loc in ipairs(storage.loc_bookmarks) do
-            if imgui.button(loc.label .. ' - ' .. AIKeyLocation.get_label(loc.id)) then
-                warp_player(get_AIKeyLocation_uni_position(loc.id))
+            if loc.id then
+                if imgui.button(loc.label .. ' - ' .. AIKeyLocation.get_label(loc.id)) then
+                    warp_player(get_AIKeyLocation_uni_position(loc.id))
+                end
+            elseif loc.coords then
+                local pos = loc.coords
+                if imgui.button(loc.label .. ' - (' .. pos.x .. ', ' .. pos.y .. ', ' .. pos.z .. ')') then
+                    warp_player(loc.coords)
+                end
+            else
+                imgui.text('Unsupported bookmark object')
             end
             imgui.same_line()
             if imgui.button('X') then
