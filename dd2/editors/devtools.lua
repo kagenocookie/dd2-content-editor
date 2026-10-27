@@ -168,10 +168,11 @@ editor.define_window('dev_tools', 'Dev tools', function (state)
         end
     end
     imgui.same_line()
-    imgui.set_next_item_width(imgui.calc_item_width() - 300)
+    local ww = imgui.calc_item_width()
+    imgui.set_next_item_width(ww - 300)
     bookmarkName = select(2, imgui.input_text('Bookmark label', bookmarkName))
     if storage.loc_bookmarks and #storage.loc_bookmarks > 0 and imgui.tree_node('Bookmarked locations') then
-        imgui.begin_list_box('##Bookmarks', Vector2f.new(300, math.min((#storage.loc_bookmarks + 1) * (imgui.get_default_font_size() + 4), 400)))
+        imgui.begin_list_box('##Bookmarks', Vector2f.new(ww, math.min((#storage.loc_bookmarks + 1) * (imgui.get_default_font_size() + 4), 400)))
         for idx, loc in ipairs(storage.loc_bookmarks) do
             if loc.id then
                 if imgui.button(loc.label .. ' - ' .. AIKeyLocation.get_label(loc.id)) then
