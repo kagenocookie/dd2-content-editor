@@ -172,26 +172,28 @@ editor.define_window('dev_tools', 'Dev tools', function (state)
     imgui.set_next_item_width(ww - 300)
     bookmarkName = select(2, imgui.input_text('Bookmark label', bookmarkName))
     if storage.loc_bookmarks and #storage.loc_bookmarks > 0 and imgui.tree_node('Bookmarked locations') then
-        imgui.begin_list_box('##Bookmarks', Vector2f.new(ww, math.min((#storage.loc_bookmarks + 1) * (imgui.get_default_font_size() + 4), 400)))
-        for idx, loc in ipairs(storage.loc_bookmarks) do
-            if loc.id then
-                if imgui.button(loc.label .. ' - ' .. AIKeyLocation.get_label(loc.id)) then
-                    warp_player(get_AIKeyLocation_uni_position(loc.id))
+        local showlist = imgui.begin_list_box('##Bookmarks', Vector2f.new(ww, math.min((#storage.loc_bookmarks + 1) * (imgui.get_default_font_size() + 4), 400)))
+        if showlist then
+            for idx, loc in ipairs(storage.loc_bookmarks) do
+                if loc.id then
+                    if imgui.button(loc.label .. ' - ' .. AIKeyLocation.get_label(loc.id)) then
+                        warp_player(get_AIKeyLocation_uni_position(loc.id))
+                    end
+                elseif loc.coords then
+                    local pos = loc.coords
+                    if imgui.button(loc.label .. ' - (' .. pos.x .. ', ' .. pos.y .. ', ' .. pos.z .. ')') then
+                        warp_player(loc.coords)
+                    end
+                else
+                    imgui.text('Unsupported bookmark object')
                 end
-            elseif loc.coords then
-                local pos = loc.coords
-                if imgui.button(loc.label .. ' - (' .. pos.x .. ', ' .. pos.y .. ', ' .. pos.z .. ')') then
-                    warp_player(loc.coords)
+                imgui.same_line()
+                if imgui.button('X') then
+                    table.remove(storage.loc_bookmarks, idx)
                 end
-            else
-                imgui.text('Unsupported bookmark object')
             end
-            imgui.same_line()
-            if imgui.button('X') then
-                table.remove(storage.loc_bookmarks, idx)
-            end
+            imgui.end_list_box()
         end
-        imgui.end_list_box()
         imgui.tree_pop()
     end
 

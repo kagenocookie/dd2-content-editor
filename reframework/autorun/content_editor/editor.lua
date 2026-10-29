@@ -331,13 +331,15 @@ local function draw_editor()
         window_filter = select(2, imgui.input_text('Filter', window_filter))
 
         local w = imgui.calc_item_width()
-        imgui.begin_list_box('Windows', Vector2f.new(w, math.min(300, 4 + #editor_labels * (imgui.get_default_font_size() + 6))))
-        for i, label in ipairs(editor_labels) do
-            if (window_filter == '' or label:lower():find(window_filter:lower())) and imgui.menu_item(label, '', false, true) then
-                open_editor_window(editor_ids[i])
+        local showlist = imgui.begin_list_box('Windows', Vector2f.new(w, math.min(300, 4 + #editor_labels * (imgui.get_default_font_size() + 6))))
+        if showlist then
+            for i, label in ipairs(editor_labels) do
+                if (window_filter == '' or label:lower():find(window_filter:lower())) and imgui.menu_item(label, '', false, true) then
+                    open_editor_window(editor_ids[i])
+                end
             end
+            imgui.end_list_box()
         end
-        imgui.end_list_box()
         imgui.tree_pop()
     else
         window_filter = ''
