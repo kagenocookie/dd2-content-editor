@@ -156,7 +156,7 @@ local value_type_handler_defs = {
     ['via.Float4'] = common.vec4,
     ['via.Color'] = common.color,
     ['via.Position'] = common.vec3,
-    ['via.Quaternion'] = common.vec4,
+    ['via.Quaternion'] = common.quaternion,
 }
 
 local newGuidMethod = sdk.find_type_definition('System.Guid'):get_method('NewGuid')

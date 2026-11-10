@@ -364,6 +364,26 @@ local function create_vec_n(fields, imgui_callback, imgui_value_creator)
     end
 end
 
+local mathEx = sdk.find_type_definition('via.MathEx')
+local quatNormalize = mathEx and mathEx:get_method('normalize')
+--- @type UIHandler
+local function handle_quat(ctx)
+    local quat = ctx.get()
+    local changed, newval = imgui.drag_float4(ctx.label, quat, 0.01, -1, 1)
+
+    if changed then
+        quat.x = newval.x
+        quat.y = newval.y
+        quat.z = newval.z
+        quat.w = newval.w
+        if quatNormalize then
+            quat = quatNormalize:call(nil, quat)
+        end
+        ctx.set(quat)
+    end
+    return changed
+end
+
 --- @type UIHandler
 local function handle_mat4(ctx)
     local mat = ctx.get()
@@ -475,6 +495,7 @@ usercontent._common_handlers = {
     vec2 = float_vec2,
     vec3 = float_vec3,
     vec4 = float_vec4,
+    quaternion = handle_quat,
     mat4 = handle_mat4,
     vec2_int = int_vec2,
     vec3_int = int_vec3,
