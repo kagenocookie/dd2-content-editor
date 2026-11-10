@@ -1243,7 +1243,7 @@ usercontent.database = {
 
 local load_order_handler = require('content_editor._load_order_handler')(usercontent.database)
 re.on_draw_ui(function ()
-    if imgui.tree_node('Content database') then
+    if imgui.tree_node('Content Editor Database') then
         imgui.text('Version: ' .. table.concat(core.VERSION, '.'))
 
         if internal.need_restart_for_clean_data then

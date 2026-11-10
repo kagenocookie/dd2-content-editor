@@ -11,8 +11,19 @@ local function translate_character_name(characterId)
 end
 
 local getItemName = sdk.find_type_definition("app.GUIBase"):get_method("getItemName(System.Int32)")
+local getMsgGuid = sdk.find_type_definition('via.gui.message'):get_method('getGuidByName')
+local getMsg = sdk.find_type_definition("via.gui.message"):get_method("get(System.Guid)")
+
 local function translate_item_name(itemId)
-    return getItemName:call(nil, itemId)
+    local baseName = getItemName:call(nil, itemId)--[[@as string]]
+    if baseName:find('<') then
+        baseName = baseName:gsub('<REF%s+([%w_]+)>', function (str)
+            ---@cast str string
+            local guid = getMsgGuid:call(nil, str)
+            return getMsg:call(nil, guid)
+        end):gsub('</?[%w_ ]+>', '')
+    end
+    return baseName
 end
 
 local field_time_getTimeData = sdk.find_type_definition('app.TimeManager'):get_field('_TimeData')
