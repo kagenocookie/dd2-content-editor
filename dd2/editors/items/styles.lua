@@ -92,8 +92,6 @@ local recordTypes = utils.get_sorted_table_keys(recordClasses) ---@type string[]
 
 local visorIds = {}
 
-local styleItemLookups = nil
-
 local function dict_get_safe(dict, key)
     return dict and dict:ContainsKey(key) and dict[key] or nil
 end
@@ -239,6 +237,87 @@ local function get_ex_furmasks(furmaskIndex, styleHash)
     return nil
 end
 
+local style_id_enum_maps = {}
+local function buildStyleIdMap(enumName, idStartOffset)
+    local result = {}
+    local enum = enums.get_enum(enumName)
+    for label, value in pairs(enum.labelToValue) do
+        if label:len() > idStartOffset then
+            local labelId = 0 + label:sub(idStartOffset)
+            result[value] = labelId
+        end
+    end
+    return result
+end
+
+style_id_enum_maps['TopsStyle'] = buildStyleIdMap('app.TopsStyle', 6) -- 'Tops_'
+style_id_enum_maps['PantsStyle'] = buildStyleIdMap('app.PantsStyle', 7) -- 'Pants_'
+style_id_enum_maps['HelmStyle'] = buildStyleIdMap('app.HelmStyle', 6) -- 'Helm_'
+
+local func_inherited_tops = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getTopsInheritedStyle')
+local func_inherited_pants = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getPantsInheritedStyle')
+local func_inherited_helm = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getHelmInheritedStyle')
+local function get_real_item_style_no(styleNo, entityType)
+    local recordData = recordClasses[entityType]
+    local styleHash = ItemManager[recordData.styleDict][styleNo]
+    local realStyleHash
+    if entityType == 'TopsStyle' then
+        realStyleHash = func_inherited_tops:call(nil, styleHash)
+    elseif entityType == 'PantsStyle' then
+        realStyleHash = func_inherited_pants:call(nil, styleHash)
+    elseif entityType == 'HelmStyle' then
+        realStyleHash = func_inherited_helm:call(nil, styleHash)
+    end
+
+    if realStyleHash then
+        local mappedStyleNo = style_id_enum_maps[entityType][realStyleHash]
+        if mappedStyleNo then return mappedStyleNo end
+    end
+    return styleNo
+end
+
+local styleItemLookups = nil
+--- @param styleNo integer
+--- @param curRecord StyleRecordType
+--- @return integer|nil
+local function get_style_item_id(styleNo, curRecord)
+    if not styleItemLookups then
+        styleItemLookups = {}
+        local isValidItemFunc = sdk.find_type_definition('app.ItemIDUtil'):get_method('isValidItem')
+        for pair in utils.enumerate(ItemManager._ItemDataDict, 'System.Collections.IEnumerable.GetEnumerator()') do
+            local itemId = pair.key---@type integer
+            local item = pair.value
+            --- @cast item app.ItemArmorParam
+            local itemType = item:get_DataType()
+            if itemType == 3 and item._StyleNo ~= 0 then
+                if not styleItemLookups[item._EquipCategory] then styleItemLookups[item._EquipCategory] = {} end
+                if styleItemLookups[item._EquipCategory][item._StyleNo] then
+                    local previousValid = isValidItemFunc:call(nil, styleItemLookups[item._EquipCategory][item._StyleNo])
+                    local newValid = isValidItemFunc:call(nil, itemId)
+                    if previousValid ~= newValid and newValid then
+                        styleItemLookups[item._EquipCategory][item._StyleNo] = itemId
+                    elseif newValid and previousValid and item._StyleNo ~= 1 then
+                        print('Two item IDs were found valid for style entry', item._StyleNo, 'category', item._EquipCategory, 'previous ID', styleItemLookups[item._EquipCategory][item._StyleNo], 'newId', itemId)
+                    end
+                else
+                    styleItemLookups[item._EquipCategory][item._StyleNo] = itemId
+                    -- resolve additional indirect mapping (DLC items)
+                    local equipTypeName = item._EquipCategory == 2 and 'HelmStyle' or item._EquipCategory == 3 and 'TopsStyle' or item._EquipCategory == 4 and 'PantsStyle' or false
+                    if equipTypeName then
+                        local record = recordClasses[equipTypeName]
+                        if ItemManager[record.styleDict]:ContainsKey(item._StyleNo) then
+                            styleItemLookups[item._EquipCategory][get_real_item_style_no(item._StyleNo, equipTypeName)] = itemId
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local itemId = curRecord.slot and styleItemLookups[curRecord.slot] and styleItemLookups[curRecord.slot][styleNo]
+    return itemId
+end
+
 for _, name in ipairs(recordTypes) do
     local record = recordClasses[name]
     local class = record.swap
@@ -295,7 +374,7 @@ for _, name in ipairs(recordTypes) do
                 for k, v in pairs(data.furmasks) do
                     local importedFurmask = import_handlers.import('app.PrefabController', v, entity.furmasks[k])
                     entity.furmasks[k] = importedFurmask
-                    if CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)] then
+                    if CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex]:ContainsKey(tonumber(k)) then
                         if importedFurmask then
                             CharacterEditManager._FurMaskMapGenderCatalog[record.furmaskIndex][tonumber(k)][data.styleHash] = importedFurmask
                         else
@@ -334,34 +413,9 @@ for _, name in ipairs(recordTypes) do
             if not entity.styleHash then return name .. ' ' .. entity.id end
 
             local styleName = (styleHashEnum[entity.styleHash] or (name .. ' ' .. entity.id))
-            if not styleItemLookups then
-                -- construct item lookup table
-                styleItemLookups = {}
-                local isValidItemFunc = sdk.find_type_definition('app.ItemIDUtil'):get_method('isValidItem')
-                for pair in utils.enumerate(ItemManager._ItemDataDict, 'System.Collections.IEnumerable.GetEnumerator()') do
-                    local itemId = pair.key---@type integer
-                    local item = pair.value
-                    --- @cast item app.ItemArmorParam
-                    if item:get_DataType() == 3 and item._StyleNo ~= 0 then
-                        if not styleItemLookups[item._EquipCategory] then styleItemLookups[item._EquipCategory] = {} end
-                        if styleItemLookups[item._EquipCategory][item._StyleNo] then
-                            local previousValid = isValidItemFunc:call(nil, styleItemLookups[item._EquipCategory][item._StyleNo])
-                            local newValid = isValidItemFunc:call(nil, itemId)
-                            if previousValid ~= newValid and newValid then
-                                styleItemLookups[item._EquipCategory][item._StyleNo] = itemId
-                            elseif newValid and previousValid then
-                                print('Two item IDs were found valid for style entry', item._StyleNo, 'category', item._EquipCategory, 'previous ID', styleItemLookups[item._EquipCategory][item._StyleNo], 'newId', itemId)
-                            end
-                        else
-                            styleItemLookups[item._EquipCategory][item._StyleNo] = itemId
-                        end
-                    end
-                end
-            end
-
-            local itemId = record.slot and styleItemLookups[record.slot] and styleItemLookups[record.slot][entity.id]
+            local itemId = get_style_item_id(entity.id, record)
             if itemId then
-                local itemname = utils.dd2.translate_item_name(itemId)
+                local itemname = utils.dd2.translate_item_name(itemId)--[[@as string|nil]]
                 if itemname == 'Invalid' then
                     local itemdata = udb.get_entity('item_data', itemId)--[[@as ItemDataEntity|nil]]
                     itemname = itemdata and itemdata.name
@@ -587,20 +641,7 @@ if core.editor_enabled then
                         if not styleEntity then
                             if recordData.styleDict and ItemManager[recordData.styleDict]:ContainsKey(styleNo) then
                                 -- attempt to match inherited style data (DA DLC items)
-                                local styleHash = ItemManager[recordData.styleDict][styleNo]
-                                local realStyleHash
-                                if entity_type == 'TopsStyle' then
-                                    realStyleHash = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getTopsInheritedStyle'):call(nil, styleHash)
-                                elseif entity_type == 'PantsStyle' then
-                                    realStyleHash = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getPantsInheritedStyle'):call(nil, styleHash)
-                                elseif entity_type == 'HelmStyle' then
-                                    realStyleHash = sdk.find_type_definition('app.CharacterEditDefine'):get_method('getHelmInheritedStyle'):call(nil, styleHash)
-                                end
-                                if realStyleHash then
-                                    styleEntity = select(2, next(udb.get_entities_where(entity_type, function (entity)
-                                        return entity.styleHash == realStyleHash
-                                    end)))
-                                end
+                                styleEntity = udb.get_entity(entity_type, get_real_item_style_no(styleNo))
                             end
                         end
                         if styleEntity then
