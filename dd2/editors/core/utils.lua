@@ -45,8 +45,8 @@ local function get_main_pawn_search_id()
     -- the pawn search id is stored in app.PawnDataContext._SearchId, though it doesn't seem to be set on the runtime context on the character directly
     -- we can just use app.GUIBase.CharaData as a proxy instead and let it fetch it from wherever
     local charaData = sdk.create_instance('app.GUIBase.CharaData'):add_ref()--[[@as app.GUIBase.CharaData]]
-    local mainPawnId_ch000000_00 = 2283028347
-    charaData:call('.ctor(app.CharacterID, System.Boolean)', mainPawnId_ch000000_00, false)
+    local mainPawnId_ch100000_00 = 2283028347
+    charaData:call('.ctor(app.CharacterID, System.Boolean)', mainPawnId_ch100000_00, false)
     local pawnId = charaData:get_PawnId()--[[@as string]]
     return pawnId
 end

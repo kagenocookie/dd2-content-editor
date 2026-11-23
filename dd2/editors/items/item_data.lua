@@ -462,6 +462,51 @@ sdk.hook(
 )
 --#endregion
 
+-- Tailoring support
+sdk.hook(
+    sdk.find_type_definition('app.ui042201_00.MainListRef'):get_method('makeList'),
+    function (args)
+        local list = sdk.to_managed_object(args[3])--[[@as System.Collections.Generic.List<app.ui042201_00.MainListRef.ListInfo>]]
+        if list:get_Count() == 0 then return end -- if we don't know which item category it is, do nothing
+
+        local firstInfo = list[0]---@type app.ui042201_00.MainListRef.ListInfo
+        local firstItemId = list[0]['<ItemId>k__BackingField']--[[@as integer]]
+        local firstItem = udb.get_entity('item_data', firstItemId)--[[@as ItemDataEntity]]
+        local category = firstItem.runtime_instance._EquipCategory
+
+        local insertIndex = list:get_Count()
+        local addedList = {}
+         -- ch000000_00 = 2891076981
+         -- storage box = 65535
+        local storageList = ItemManager:getStorageDict()[65535]:add_ref() --[[@as System.Collections.Generic.List<app.ItemDefine.StorageData>]]
+        for i = 0, storageList:get_Count() - 1 do
+            local storage = storageList[i] --[[@as app.ItemDefine.StorageData]]
+            local itemId = storage._ItemId
+            if not addedList[itemId] and udb.is_custom_entity_id('item_data', itemId) then
+                local item = udb.get_entity('item_data', itemId)--[[@as ItemDataEntity|nil]]
+                if item and item.runtime_instance._EquipCategory == category then
+                    addedList[itemId] = true
+                    local newInfo = sdk.create_instance('app.ui042201_00.MainListRef.ListInfo'):add_ref()--[[@as app.ui042201_00.MainListRef.ListInfo]]
+                    newInfo.InfoIndex = insertIndex
+                    newInfo.ItemIndex = -1
+                    newInfo.IsEnable = true
+                    newInfo.IsCanSelect = true
+                    newInfo.IsVisibleBorder = true
+                    newInfo['<Storage>k__BackingField'] = storage
+                    newInfo['<ItemId>k__BackingField'] = itemId
+                    newInfo['<LabelMsg>k__BackingField'] = item.name
+                    newInfo['<DiscountRate>k__BackingField'] = firstInfo['<DiscountRate>k__BackingField']
+                    newInfo['<DiscountMsgData>k__BackingField'] = firstInfo['<DiscountMsgData>k__BackingField']
+                    newInfo['<Price>k__BackingField'] = firstInfo['<Price>k__BackingField']
+                    newInfo['<SortNo>k__BackingField'] = item.runtime_instance._SortNo
+                    insertIndex = insertIndex + 1
+                    list:Add(newInfo)
+                end
+            end
+        end
+    end
+)
+
 local ptr_true = sdk.to_ptr(true)
 sdk.hook(
     -- ensure all isValid checks pass for custom items
